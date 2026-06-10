@@ -28,6 +28,13 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "rangritii"
+    "scheme": "rangritii",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "068265c0-b59b-4742-b674-39b66151238f"
+      }
+    },
+    "owner": "rangritii"
   }
 }
