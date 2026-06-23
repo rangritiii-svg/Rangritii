@@ -16,7 +16,7 @@ export default function PaymentScreen() {
   const insets = useSafeAreaInsets();
   const { bookingid } = useLocalSearchParams<{ bookingid: string }>();
   const { getBookingById, updateBookingStatus, updatePaymentStatus, getArtistById, language } = useApp();
-  const [selectedMethod, setSelectedMethod] = useState<"online" | "cash" | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<"online" | "cash" | null>("online");
   const [paid, setPaid] = useState(false);
   const isHindi = language === "hi_IN";
 
@@ -203,25 +203,7 @@ export default function PaymentScreen() {
           {selectedMethod === "online" && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
         </TouchableOpacity>
 
-        {/* Cash */}
-        <TouchableOpacity
-          style={[styles.paymentOption, selectedMethod === "cash" && styles.paymentOptionSelected, { backgroundColor: colors.card, borderColor: selectedMethod === "cash" ? colors.gold : colors.border }]}
-          onPress={() => setSelectedMethod("cash")}
-          activeOpacity={0.8}
-        >
-          <View style={[styles.paymentOptionIcon, { backgroundColor: "#FFFBEB" }]}>
-            <MaterialCommunityIcons name="cash" size={28} color="#C9932F" />
-          </View>
-          <View style={styles.paymentOptionInfo}>
-            <Text style={[styles.paymentOptionTitle, { color: colors.text }]}>{getTranslation(language, "cash_pay")}</Text>
-            <Text style={[styles.paymentOptionDesc, { color: colors.mutedForeground }]}>
-              {isHindi
-                ? `सत्र के दिन सीधे आर्टिस्ट को ₹${serviceAmount.toLocaleString("en-IN")} नकद भुगतान करें। प्लेटफ़ॉर्म कमीशन अलग से एकत्र किया जाएगा।`
-                : `Pay ₹${serviceAmount.toLocaleString("en-IN")} cash directly to the artist. Platform commission will be collected separately.`}
-            </Text>
-          </View>
-          {selectedMethod === "cash" && <Ionicons name="checkmark-circle" size={22} color={colors.gold} />}
-        </TouchableOpacity>
+
 
         {/* Interactive QR Code scan card for Online Payment */}
         {selectedMethod === "online" && (
@@ -298,12 +280,7 @@ export default function PaymentScreen() {
           </View>
         )}
 
-        {selectedMethod === "cash" && (
-          <TouchableOpacity style={[styles.payBtn, { backgroundColor: colors.gold }]} onPress={handleCashSelection} activeOpacity={0.85}>
-            <MaterialCommunityIcons name="cash" size={22} color="#fff" />
-            <Text style={styles.payBtnText}>{getTranslation(language, "confirm_cash_btn")}</Text>
-          </TouchableOpacity>
-        )}
+
 
         <View style={{ height: 40 }} />
       </ScrollView>

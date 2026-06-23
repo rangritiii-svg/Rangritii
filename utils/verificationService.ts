@@ -1,16 +1,26 @@
 import { VERIFICATION_CONFIG } from "@/constants/verificationConfig";
+import Constants from "expo-constants";
 
-// Use the configured backend URL if available, otherwise fall back to LAN IP
-const DEV_LAN_IP = "10.254.51.206"; 
+// Try to use the Metro server IP dynamically so real devices can connect
+const hostUri = Constants.expoConfig?.hostUri;
+let DEV_LAN_IP = "10.254.51.206"; // default fallback
+if (hostUri) {
+  const ip = hostUri.split(":")[0];
+  if (ip) {
+    DEV_LAN_IP = ip;
+  }
+}
+
 const BACKEND_URL = VERIFICATION_CONFIG.BACKEND_URL || `http://${DEV_LAN_IP}:3000`;
 
 /**
  * Sends a real verification code to the target email address via the local backend express server.
+ * Gracefully falls back to simulated mode if the server is down.
  */
-export async function sendEmailVerification(email: string, code: string, language: string): Promise<{ success: boolean; previewUrl?: string; error?: string }> {
+export async function sendEmailVerification(email: string, code: string, language: string): Promise<{ success: boolean; previewUrl?: string; isSimulated?: boolean; error?: string }> {
   if (!VERIFICATION_CONFIG.ENABLE_EMAIL_VERIFICATION) {
     console.log("Email verification disabled in config. Skipping API call.");
-    return { success: true };
+    return { success: true, isSimulated: true };
   }
 
   try {
@@ -26,7 +36,8 @@ export async function sendEmailVerification(email: string, code: string, languag
     if (response.ok && data.success) {
       return { 
         success: true, 
-        previewUrl: data.previewUrl 
+        previewUrl: data.previewUrl,
+        isSimulated: data.isEthereal
       };
     } else {
       return { 
@@ -35,12 +46,14 @@ export async function sendEmailVerification(email: string, code: string, languag
       };
     }
   } catch (err: any) {
-    console.warn("Backend server connection failed. Make sure 'npm run server' is running in another terminal. Error:", err.message);
+    console.warn("Backend server connection failed. Falling back to simulated verification. Error:", err.message);
     
-    // Developer helper alert
+    // Graceful fallback to simulation
     return {
-      success: false,
-      error: `Could not connect to the local mail server on ${BACKEND_URL}. Please run 'npm run server' in a second terminal to enable real email verification.`,
+      success: true,
+      isSimulated: true,
+      error: `Could not connect to local server on ${BACKEND_URL}. Using simulation mode.`
     };
   }
 }
+

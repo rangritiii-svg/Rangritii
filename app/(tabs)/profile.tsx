@@ -11,11 +11,13 @@ import { useColors } from "@/hooks/useColors";
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { userProfile, setUserProfile, bookings, favorites, adminStats, language, setLanguage } = useApp();
+  const { userProfile, setUserProfile, bookings, favorites, adminStats, language, setLanguage, adminPasscode } = useApp();
 
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinCode, setPinCode] = useState("");
   const [pinError, setPinError] = useState("");
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const handleToggleLanguage = async () => {
     try { Haptics.selectionAsync().catch(() => {}); } catch (_e) {}
@@ -45,8 +47,8 @@ export default function ProfileScreen() {
     setPinCode(cleanText);
     setPinError("");
 
-    if (cleanText.length === 4) {
-      if (cleanText === "0000") {
+    if (cleanText.length === 6) {
+      if (cleanText === adminPasscode) {
         try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
         setShowPinModal(false);
         setPinCode("");
@@ -257,13 +259,13 @@ export default function ProfileScreen() {
             <Ionicons name="swap-horizontal" size={14} color={colors.gold} />
           </TouchableOpacity>
           <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setShowHelpModal(true)}>
             <Ionicons name="help-circle-outline" size={20} color={colors.mutedForeground} />
             <Text style={[styles.menuText, { color: colors.text }]}>Help & Support</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.border} />
           </TouchableOpacity>
           <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setShowPrivacyModal(true)}>
             <Ionicons name="shield-checkmark-outline" size={20} color={colors.mutedForeground} />
             <Text style={[styles.menuText, { color: colors.text }]}>Privacy & Security</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.border} />
@@ -296,12 +298,12 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="shield-crown" size={38} color={colors.gold} />
               <Text style={[styles.modalTitle, { color: colors.text }]}>Admin Passcode</Text>
               <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
-                Enter the 4-digit administration code to unlock the admin dashboard.
+                Enter the 6-digit administration code to unlock the admin dashboard.
               </Text>
             </View>
 
             <View style={styles.pinContainer}>
-              {[0, 1, 2, 3].map((index) => {
+              {[0, 1, 2, 3, 4, 5].map((index) => {
                 const digit = pinCode[index];
                 const hasValue = digit !== undefined;
                 return (
@@ -331,7 +333,7 @@ export default function ProfileScreen() {
             <TextInput
               style={styles.hiddenInput}
               keyboardType="number-pad"
-              maxLength={4}
+              maxLength={6}
               value={pinCode}
               onChangeText={handlePinChange}
               autoFocus={true}
@@ -349,6 +351,63 @@ export default function ProfileScreen() {
                 <Text style={{ color: colors.mutedForeground, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Help & Support Modal */}
+      <Modal visible={showHelpModal} animationType="slide" transparent={true} onRequestClose={() => setShowHelpModal(false)}>
+        <View style={styles.bottomModalOverlay}>
+          <View style={[styles.bottomModalContent, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Help & Support</Text>
+              <TouchableOpacity onPress={() => setShowHelpModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={[styles.modalSectionTitle, { color: colors.primary }]}>Contact Us</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>📞 Call: +91 99999 88888</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>✉️ Email: support@rangritii.com</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>⏰ Hours: Mon-Sat, 9:00 AM - 7:00 PM</Text>
+              
+              <View style={{ height: 16 }} />
+              <Text style={[styles.modalSectionTitle, { color: colors.primary }]}>Frequently Asked Questions</Text>
+              
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>Q: How do I book an artist?</Text>
+              <Text style={[styles.faqAnswer, { color: colors.mutedForeground }]}>A: Browse artists on the Discover home screen, select your favorite artist, select a slot/package, and tap "Book Now".</Text>
+              
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>Q: What is the cancellation policy?</Text>
+              <Text style={[styles.faqAnswer, { color: colors.mutedForeground }]}>A: You get a full refund if you cancel at least 24 hours before the session. Cancellations within 24 hours are subject to standard tiered fees.</Text>
+
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>Q: How do I pay?</Text>
+              <Text style={[styles.faqAnswer, { color: colors.mutedForeground }]}>A: Payments are processed securely via Online UPI QR code or checkout links generated by the admin.</Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Privacy & Security Modal */}
+      <Modal visible={showPrivacyModal} animationType="slide" transparent={true} onRequestClose={() => setShowPrivacyModal(false)}>
+        <View style={styles.bottomModalOverlay}>
+          <View style={[styles.bottomModalContent, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Privacy & Security</Text>
+              <TouchableOpacity onPress={() => setShowPrivacyModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={[styles.modalSectionTitle, { color: colors.primary }]}>Data Protection Guidelines</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>• We secure your profile information, phone numbers, and bookings under strict encryption policies.</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>• Customer exact location details are never shared with anyone. Artists only see your general city and area.</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>• Payment security is managed directly through banking grade UPI transfer gateways.</Text>
+              
+              <View style={{ height: 16 }} />
+              <Text style={[styles.modalSectionTitle, { color: colors.primary }]}>Account Security & Controls</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>• Admin access is protected by a custom security passcode, which can be modified directly from the admin panel dashboard.</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>• You have the right to request account data deletion or export by contacting our support desk.</Text>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -606,5 +665,41 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
+  },
+  bottomModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "flex-end",
+  },
+  bottomModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    height: "60%",
+  },
+  modalSectionTitle: {
+    fontSize: 14,
+    fontFamily: "Poppins_700Bold",
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  modalBodyText: {
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  faqQuestion: {
+    fontSize: 12,
+    fontFamily: "Poppins_600SemiBold",
+    marginTop: 10,
+  },
+  faqAnswer: {
+    fontSize: 11,
+    fontFamily: "Poppins_400Regular",
+    lineHeight: 16,
+    marginBottom: 10,
   },
 });

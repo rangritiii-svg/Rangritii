@@ -12,8 +12,8 @@ const PORT = process.env.PORT || 3000;
 // ✉️ SMTP EMAIL CONFIGURATION (100% FREE)
 // =========================================================================
 // If you want to send emails to real inboxes, fill in your Gmail/SMTP details below:
-const SMTP_USER = ""; // e.g. "yourname@gmail.com"
-const SMTP_PASS = ""; // e.g. "abcd efgh ijkl mnop" (Google App Password)
+const SMTP_USER = process.env.SMTP_USER || ""; // e.g. "yourname@gmail.com"
+const SMTP_PASS = process.env.SMTP_PASS || ""; // e.g. "abcd efgh ijkl mnop" (Google App Password)
 // =========================================================================
 
 app.post('/api/verify/email', async (req, res) => {

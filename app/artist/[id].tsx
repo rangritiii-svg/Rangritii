@@ -35,6 +35,24 @@ export default function ArtistDetailScreen() {
   const artist = getArtistById(id as string);
   const t = (key: any) => getTranslation(language, key);
 
+  const getStyleDisplayName = (style: string) => {
+    if (style.toLowerCase() === "rajasthani") return "Marwari";
+    return style;
+  };
+
+  const getStyleStartingRate = (styleName: string) => {
+    if (!artist) return 0;
+    const s = styleName.toLowerCase();
+    if (s.includes("bridal")) {
+      return artist.maxPrice;
+    }
+    if (s.includes("minimal") || s.includes("simple") || s.includes("festival")) {
+      return artist.minPrice;
+    }
+    const mid = Math.round((artist.minPrice + artist.maxPrice) / 2);
+    return Math.round(mid / 100) * 100;
+  };
+
   if (!artist) {
     return (
       <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
@@ -130,24 +148,41 @@ export default function ArtistDetailScreen() {
           <View style={styles.stylesRow}>
             {artist.styles.map((style, idx) => (
               <View key={idx} style={[styles.stylePill, { backgroundColor: colors.secondary }]}>
-                <Text style={[styles.stylePillText, { color: colors.secondaryForeground }]}>{style}</Text>
+                <Text style={[styles.stylePillText, { color: colors.secondaryForeground }]}>{getStyleDisplayName(style)}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        {/* Pricing Card */}
+        {/* Pricing Card / Styles starting rates list */}
         <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{language === "en_IN" ? "Services Starting Rate" : "सेवा की शुरुआती दरें"}</Text>
-          <View style={styles.priceContainer}>
-            <View style={styles.priceColumn}>
-              <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>{language === "en_IN" ? "Simple / Festival" : "साधारण / त्यौहार"}</Text>
-              <Text style={[styles.priceValue, { color: colors.secondaryForeground }]}>₹{artist.minPrice}</Text>
-            </View>
-            <View style={[styles.priceDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.priceColumn}>
-              <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>{language === "en_IN" ? "Bridal (Full hand)" : "दुल्हन (पूरा हाथ)"}</Text>
-              <Text style={[styles.priceValue, { color: colors.secondaryForeground }]}>₹{artist.maxPrice}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {language === "en_IN" ? "Specialized Style Rates" : "विशेष शैलियों की दरें"}
+          </Text>
+          <View style={{ gap: 12, marginTop: 8 }}>
+            {artist.styles.map((style) => (
+              <View key={style} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Ionicons name="brush-outline" size={16} color={colors.primary} />
+                  <Text style={{ fontFamily: "Poppins_500Medium", color: colors.text }}>{getStyleDisplayName(style)}</Text>
+                </View>
+                <Text style={{ fontFamily: "Poppins_700Bold", color: colors.secondaryForeground }}>
+                  ₹{getStyleStartingRate(style)}
+                </Text>
+              </View>
+            ))}
+
+            {/* Also include Full Day Package highlight */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 0.5, borderTopColor: colors.border, paddingTop: 12, marginTop: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Ionicons name="calendar-outline" size={16} color={colors.gold} />
+                <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.text }}>
+                  {language === "en_IN" ? "Full Day Package (8 hrs)" : "पूरे दिन का पैकेज (8 घंटे)"}
+                </Text>
+              </View>
+              <Text style={{ fontFamily: "Poppins_700Bold", color: colors.gold }}>
+                ₹{artist.hourlyRate * 8}
+              </Text>
             </View>
           </View>
         </View>
@@ -235,15 +270,12 @@ export default function ArtistDetailScreen() {
 
       {/* Sticky Bottom Actions Bar */}
       <View style={[styles.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: Math.max(16, insets.bottom) }]}>
-        <TouchableOpacity style={[styles.chatBtn, { borderColor: colors.border }]} onPress={handleChatPress} activeOpacity={0.85}>
-          <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.secondaryForeground} />
-          <Text style={[styles.chatBtnText, { color: colors.secondaryForeground }]}>{t("chat_artist")}</Text>
-        </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.bookBtn,
             {
               backgroundColor: isBusy ? colors.muted : colors.primary,
+              flex: 1,
             },
           ]}
           onPress={handleBookPress}

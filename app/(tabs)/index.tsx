@@ -14,7 +14,25 @@ import { useColors } from "@/hooks/useColors";
 
 const { width, height } = Dimensions.get("window");
 
-const SERVICE_FILTERS = ["All", "Bridal", "Arabic", "Traditional", "Modern", "Rajasthani", "Indo-Western", "Minimal"];
+const SERVICE_FILTERS = ["All", "Bridal", "Arabic", "Traditional", "Marwari", "Modern Bridal", "Indo-Western", "Minimal"];
+
+const FILTER_TRANSLATIONS: Record<string, { en: string; hi: string }> = {
+  "All": { en: "All", hi: "सभी" },
+  "Bridal": { en: "Bridal", hi: "दुल्हन" },
+  "Arabic": { en: "Arabic", hi: "अरेबिक" },
+  "Traditional": { en: "Traditional", hi: "पारंपरिक" },
+  "Marwari": { en: "Marwari", hi: "मारवाड़ी" },
+  "Modern Bridal": { en: "Modern Bridal", hi: "मॉडर्न ब्राइडल" },
+  "Indo-Western": { en: "Indo-Western", hi: "इन्डो-वेस्टर्न" },
+  "Minimal": { en: "Minimal", hi: "न्यूनतम" },
+};
+
+const getFilterLabel = (filter: string, lang: string) => {
+  const translation = FILTER_TRANSLATIONS[filter];
+  if (!translation) return filter;
+  return lang === "hi_IN" ? translation.hi : translation.en;
+};
+
 const GRADIENT_SETS: Record<string, [string, string]> = {
   bridal: ["#F9AABF", "#C9932F"],
   arabic: ["#1A4A2E", "#2E7D52"],
@@ -43,7 +61,7 @@ const CITY_COLORS: Record<string, string> = {
 export default function DiscoverScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { artists, favorites, toggleFavorite, userProfile } = useApp();
+  const { artists, favorites, toggleFavorite, userProfile, language } = useApp();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
@@ -127,7 +145,9 @@ export default function DiscoverScreen() {
               onPress={() => { Haptics.selectionAsync().catch(() => {}); setSelectedFilter(f); }}
               style={[styles.filterChip, selectedFilter === f ? styles.filterChipActive : styles.filterChipInactive]}
             >
-              <Text style={[styles.filterChipText, { color: selectedFilter === f ? "#fff" : "#7A3050" }]}>{f}</Text>
+              <Text style={[styles.filterChipText, { color: selectedFilter === f ? "#fff" : "#7A3050" }]}>
+                {getFilterLabel(f, language)}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -136,9 +156,19 @@ export default function DiscoverScreen() {
       {/* Results count */}
       <View style={[styles.resultsBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Text style={[styles.resultsText, { color: colors.mutedForeground }]}>
-          <Text style={{ fontFamily: "Poppins_700Bold", color: colors.text }}>{nearbyArtists.length}</Text> artists found
-          {selectedFilter !== "All" ? ` · ${selectedFilter}` : ""}
-          {userProfile.city ? ` near ${userProfile.city}` : " across India"}
+          {language === "hi_IN" ? (
+            <>
+              <Text style={{ fontFamily: "Poppins_700Bold", color: colors.text }}>{nearbyArtists.length}</Text> कलाकार मिले
+              {selectedFilter !== "All" ? ` · ${getFilterLabel(selectedFilter, language)}` : ""}
+              {userProfile.city ? ` (${userProfile.city} के पास)` : " (संपूर्ण भारत)"}
+            </>
+          ) : (
+            <>
+              <Text style={{ fontFamily: "Poppins_700Bold", color: colors.text }}>{nearbyArtists.length}</Text> artists found
+              {selectedFilter !== "All" ? ` · ${getFilterLabel(selectedFilter, language)}` : ""}
+              {userProfile.city ? ` near ${userProfile.city}` : " across India"}
+            </>
+          )}
         </Text>
       </View>
 

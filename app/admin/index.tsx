@@ -21,7 +21,8 @@ export default function AdminDashboard() {
     bookings, artists, customers, adminStats, 
     updateArtistStatus, toggleUserActiveStatus, updateBookingPaymentLink,
     commissionPercent, commissionLogs, cancellationPolicy, policyLogs,
-    updateCommissionPercent, updateCancellationPolicy, resolveBookingDispute
+    updateCommissionPercent, updateCancellationPolicy, resolveBookingDispute,
+    adminPasscode, updateAdminPasscode, updateBookingStatus
   } = useApp();
 
   const [tab, setTab] = useState<"overview" | "users" | "applications" | "bookings" | "payments" | "settings">("overview");
@@ -45,6 +46,7 @@ export default function AdminDashboard() {
   const [policyTier2Comp, setPolicyTier2Comp] = useState(cancellationPolicy.tier2ArtistCompPercent.toString());
   const [policyTier3Refund, setPolicyTier3Refund] = useState(cancellationPolicy.tier3RefundPercent.toString());
   const [policyTier3Comp, setPolicyTier3Comp] = useState(cancellationPolicy.tier3ArtistCompPercent.toString());
+  const [passcodeInput, setPasscodeInput] = useState(adminPasscode);
 
   // Keep settings inputs synchronized with context changes
   useEffect(() => {
@@ -55,7 +57,31 @@ export default function AdminDashboard() {
     setPolicyTier2Comp(cancellationPolicy.tier2ArtistCompPercent.toString());
     setPolicyTier3Refund(cancellationPolicy.tier3RefundPercent.toString());
     setPolicyTier3Comp(cancellationPolicy.tier3ArtistCompPercent.toString());
-  }, [commissionPercent, cancellationPolicy]);
+    setPasscodeInput(adminPasscode);
+  }, [commissionPercent, cancellationPolicy, adminPasscode]);
+
+  const handleSavePasscode = () => {
+    if (passcodeInput.length !== 6) {
+      Alert.alert("Invalid Passcode", "The administrator security passcode must be exactly 6 digits.");
+      return;
+    }
+
+    Alert.alert(
+      "Update Security Passcode?",
+      "Are you sure you want to change the admin dashboard passcode?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Update Passcode", 
+          onPress: async () => {
+            await updateAdminPasscode(passcodeInput);
+            try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
+            Alert.alert("Passcode Updated ✅", "The administrator security passcode has been updated successfully.");
+          }
+        }
+      ]
+    );
+  };
 
   const sortedBookings = [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const pendingCommission = bookings.filter(b => b.paymentStatus === "commission_due");
@@ -255,19 +281,19 @@ export default function AdminDashboard() {
           <>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>📊 Financials & Bookings</Text>
             <View style={styles.statsGrid}>
-              <StatCard icon="calendar-check" label="Total Bookings" value={adminStats.totalBookings.toString()} color="#6366F1" colors={colors} />
-              <StatCard icon="clock-outline" label="Pending" value={adminStats.pendingBookings.toString()} color="#F59E0B" colors={colors} />
-              <StatCard icon="check-circle-outline" label="Confirmed" value={adminStats.confirmedBookings.toString()} color="#10B981" colors={colors} />
-              <StatCard icon="cash" label="Total Revenue" value={`₹${adminStats.totalRevenue.toLocaleString("en-IN")}`} color="#C9932F" colors={colors} />
-              <StatCard icon="percent" label="Commission Earned" value={`₹${adminStats.totalCommission.toLocaleString("en-IN")}`} color="#F9AABF" colors={colors} />
-              <StatCard icon="alert-circle-outline" label="Commission Pending" value={`₹${adminStats.pendingCommission.toLocaleString("en-IN")}`} color="#EF4444" colors={colors} />
+              <StatCard icon="calendar-check" label="Total Bookings" value={adminStats.totalBookings.toString()} color="#6366F1" colors={colors} onPress={() => setTab("bookings")} />
+              <StatCard icon="clock-outline" label="Pending" value={adminStats.pendingBookings.toString()} color="#F59E0B" colors={colors} onPress={() => setTab("bookings")} />
+              <StatCard icon="check-circle-outline" label="Confirmed" value={adminStats.confirmedBookings.toString()} color="#10B981" colors={colors} onPress={() => setTab("bookings")} />
+              <StatCard icon="cash" label="Total Revenue" value={`₹${adminStats.totalRevenue.toLocaleString("en-IN")}`} color="#C9932F" colors={colors} onPress={() => setTab("payments")} />
+              <StatCard icon="percent" label="Commission Earned" value={`₹${adminStats.totalCommission.toLocaleString("en-IN")}`} color="#F9AABF" colors={colors} onPress={() => setTab("payments")} />
+              <StatCard icon="alert-circle-outline" label="Commission Pending" value={`₹${adminStats.pendingCommission.toLocaleString("en-IN")}`} color="#EF4444" colors={colors} onPress={() => setTab("payments")} />
             </View>
 
             <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 12 }]}>👥 Platform Members</Text>
             <View style={styles.statsGrid}>
-              <StatCard icon="account-group" label="Total Customers" value={adminStats.totalCustomers.toString()} color="#10B981" colors={colors} />
-              <StatCard icon="palette" label="Total Artists" value={adminStats.totalArtists.toString()} color="#C9932F" colors={colors} />
-              <StatCard icon="folder-download" label="Pending Onboarding" value={adminStats.pendingApprovals.toString()} color="#F59E0B" colors={colors} />
+              <StatCard icon="account-group" label="Total Customers" value={adminStats.totalCustomers.toString()} color="#10B981" colors={colors} onPress={() => { setTab("users"); setUsersSubTab("customers"); }} />
+              <StatCard icon="palette" label="Total Artists" value={adminStats.totalArtists.toString()} color="#C9932F" colors={colors} onPress={() => { setTab("users"); setUsersSubTab("artists"); }} />
+              <StatCard icon="folder-download" label="Pending Onboarding" value={adminStats.pendingApprovals.toString()} color="#F59E0B" colors={colors} onPress={() => setTab("applications")} />
             </View>
           </>
         )}
@@ -498,6 +524,45 @@ export default function AdminDashboard() {
                       </Text>
                     </View>
                   </View>
+
+                  {/* Accept/Decline Actions for Pending Bookings */}
+                  {b.status === "Pending" && (
+                    <View style={{ flexDirection: "row", gap: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }}>
+                      <TouchableOpacity 
+                        style={{ flex: 1, backgroundColor: "#10B981", borderRadius: 10, paddingVertical: 8, alignItems: "center", justifyContent: "center" }}
+                        onPress={() => {
+                          try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
+                          updateBookingStatus(b.id, "Confirmed");
+                          Alert.alert("Booking Confirmed ✅", "The booking request has been confirmed.");
+                        }}
+                      >
+                        <Text style={{ color: "#fff", fontSize: 12, fontFamily: "Poppins_700Bold" }}>Accept Booking</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={{ flex: 1, borderColor: colors.destructive, borderWidth: 1, borderRadius: 10, paddingVertical: 8, alignItems: "center", justifyContent: "center" }}
+                        onPress={() => {
+                          try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {}); } catch (_e) {}
+                          Alert.alert(
+                            "Decline Booking?",
+                            "Are you sure you want to decline this booking request?",
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Decline",
+                                style: "destructive",
+                                onPress: () => {
+                                  updateBookingStatus(b.id, "Cancelled");
+                                  Alert.alert("Booking Declined ❌", "The booking request has been cancelled.");
+                                }
+                              }
+                            ]
+                          );
+                        }}
+                      >
+                        <Text style={{ color: colors.destructive, fontSize: 12, fontFamily: "Poppins_700Bold" }}>Decline Booking</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                   
                   {/* Payment Link Section for Admin */}
                   {b.paymentMethod !== "cash" && b.status !== "Cancelled" && (
@@ -694,6 +759,31 @@ export default function AdminDashboard() {
               <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary, marginTop: 14 }]} onPress={handleSavePolicy}>
                 <Ionicons name="save-outline" size={16} color="#fff" />
                 <Text style={styles.saveBtnText}>Save Cancellation Policy</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Admin Security Passcode Card */}
+            <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 16 }]}>
+              <Text style={[styles.settingsCardTitle, { color: colors.text }]}>🔑 Admin Security Passcode</Text>
+              <Text style={[styles.settingsCardDesc, { color: colors.mutedForeground }]}>
+                Change the 6-digit passcode used to access the Administrator Dashboard.
+              </Text>
+              
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={[styles.settingsInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, width: 140 }]}
+                  keyboardType="numeric"
+                  value={passcodeInput}
+                  onChangeText={setPasscodeInput}
+                  maxLength={6}
+                  secureTextEntry={false}
+                  placeholder="6-digit code"
+                />
+              </View>
+
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSavePasscode}>
+                <Ionicons name="save-outline" size={16} color="#fff" />
+                <Text style={styles.saveBtnText}>Update Security Passcode</Text>
               </TouchableOpacity>
             </View>
 
@@ -913,13 +1003,18 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ icon, label, value, color, colors }: any) {
+function StatCard({ icon, label, value, color, colors, onPress }: any) {
+  const CardContainer = onPress ? TouchableOpacity : View;
   return (
-    <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <CardContainer 
+      style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      onPress={onPress}
+      activeOpacity={onPress ? 0.7 : 1}
+    >
       <MaterialCommunityIcons name={icon} size={24} color={color} />
       <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</Text>
-    </View>
+    </CardContainer>
   );
 }
 

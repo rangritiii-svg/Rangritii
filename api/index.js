@@ -11,9 +11,10 @@ app.use(express.json());
 // =========================================================================
 // ✉️ SMTP EMAIL CONFIGURATION (100% FREE)
 // =========================================================================
-// Fill in your Gmail details to send emails to real inboxes 24/7 in the cloud:
-const SMTP_USER = ""; // e.g. "yourname@gmail.com"
-const SMTP_PASS = ""; // e.g. "abcd efgh ijkl mnop" (Google App Password)
+// Fill in your Gmail details to send emails to real inboxes 24/7 in the cloud.
+// It is recommended to set these as Vercel Environment Variables: SMTP_USER and SMTP_PASS.
+const SMTP_USER = process.env.SMTP_USER || ""; // e.g. "yourname@gmail.com"
+const SMTP_PASS = process.env.SMTP_PASS || ""; // e.g. "abcd efgh ijkl mnop" (Google App Password)
 // =========================================================================
 
 app.post('/api/verify/email', async (req, res) => {

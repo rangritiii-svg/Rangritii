@@ -3,23 +3,34 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet, Text, TextInput, TouchableOpacity, View, Linking
+import { Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView,
+  StyleSheet, Text, TextInput, TouchableOpacity, View, Linking, Modal, FlatList
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { sendEmailVerification } from "@/utils/verificationService";
 
+const INDIAN_STATES_CITIES: Record<string, string[]> = {
+  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
+  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Aurangabad"],
+  "Delhi": ["Delhi", "New Delhi", "Noida", "Gurugram"],
+  "Uttar Pradesh": ["Lucknow", "Kanpur", "Noida", "Ghaziabad", "Agra", "Varanasi"],
+  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhinagar"],
+  "Haryana": ["Gurugram", "Faridabad", "Panipat", "Ambala"],
+  "Karnataka": ["Bengaluru", "Mysuru", "Hubballi", "Mangaluru"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli"]
+};
+
 export default function CustomerLoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { setUserProfile, addCustomer, language } = useApp();
+  const { setUserProfile, addCustomer, language, customers } = useApp();
 
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
   const [otp, setOtp] = useState("");
@@ -31,6 +42,10 @@ export default function CustomerLoginScreen() {
   const [emailOtp, setEmailOtp] = useState("");
   const [generatedEmailOtp, setGeneratedEmailOtp] = useState("");
   const [emailPreviewUrl, setEmailPreviewUrl] = useState("");
+
+  // Dropdown Modal states
+  const [stateModalVisible, setStateModalVisible] = useState(false);
+  const [cityModalVisible, setCityModalVisible] = useState(false);
 
   // OTP System States
   const [generatedOtp, setGeneratedOtp] = useState("");
@@ -53,10 +68,26 @@ export default function CustomerLoginScreen() {
     if (!isLogin && !name.trim()) { Alert.alert("Required", "Please enter your full name."); return; }
     if (phone.length !== 10) { Alert.alert("Invalid Number", "Please enter a valid 10-digit mobile number."); return; }
     if (!isLogin && !email.trim()) { Alert.alert("Required", "Please enter your email address."); return; }
-    if (!isLogin && !city.trim()) { Alert.alert("Required", "Please enter your city."); return; }
-    
+    if (!isLogin && !state) { Alert.alert("Required", "Please select your state."); return; }
+    if (!isLogin && !city) { Alert.alert("Required", "Please select your city."); return; }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setLoading(true);
+
+    const userPhone = `+91 ${phone}`;
+
+    // Block login for unregistered customers
+    if (isLogin) {
+      const registered = customers.some(c => c.phone === userPhone);
+      if (!registered) {
+        Alert.alert(
+          "Not Registered",
+          "This phone number is not registered as a customer. Please switch to the 'Sign Up' tab first to create an account."
+        );
+        setLoading(false);
+        return;
+      }
+    }
 
     setTimeout(async () => {
       // 1. Generate SMS Code
@@ -75,6 +106,16 @@ export default function CustomerLoginScreen() {
           Alert.alert("Verification Email Failed", res.error);
           return;
         }
+
+        // Handle fallback simulated OTP
+        if (res.isSimulated) {
+          Alert.alert(
+            "Express Server Offline",
+            `We couldn't connect to the backend server. The email OTP has been simulated. Your code is: ${emailCode}`,
+            [{ text: "OK" }]
+          );
+        }
+
         if (res.previewUrl) {
           setEmailPreviewUrl(res.previewUrl);
         } else {
@@ -133,14 +174,31 @@ export default function CustomerLoginScreen() {
     setLoading(true);
 
     const userPhone = `+91 ${phone}`;
-    const userCity = city.trim() || "India";
-    const userArea = area.trim();
-    const userName = isLogin ? "Customer" : name.trim();
+    let userName = name.trim();
+    let userCity = city.trim();
+    let userState = state.trim();
+    let userArea = area.trim();
+
+    if (isLogin) {
+      const existingCustomer = customers.find(c => c.phone === userPhone);
+      if (existingCustomer) {
+        userName = existingCustomer.name;
+        userCity = existingCustomer.city;
+        userState = existingCustomer.state;
+        userArea = existingCustomer.area;
+      } else {
+        userName = "Customer";
+        userCity = "India";
+        userState = "";
+        userArea = "";
+      }
+    }
 
     if (!isLogin) {
       addCustomer({
         name: userName,
         phone: userPhone,
+        state: userState,
         city: userCity,
         area: userArea
       });
@@ -150,6 +208,7 @@ export default function CustomerLoginScreen() {
       role: "customer",
       name: userName,
       phone: userPhone,
+      state: userState,
       city: userCity,
       area: userArea,
     });
@@ -225,11 +284,32 @@ export default function CustomerLoginScreen() {
               <TextInput style={[styles.input, { color: colors.text }]} placeholder="yourname@domain.com" placeholderTextColor={colors.mutedForeground} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
             </View>
 
+            <Text style={[styles.label, { color: colors.text }]}>State *</Text>
+            <TouchableOpacity style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setStateModalVisible(true)}>
+              <Ionicons name="map-outline" size={18} color={colors.mutedForeground} />
+              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: state ? colors.text : colors.mutedForeground }}>
+                {state || "Select State"}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
+
             <Text style={[styles.label, { color: colors.text }]}>City *</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <TouchableOpacity 
+              style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border, opacity: state ? 1 : 0.6 }]} 
+              onPress={() => {
+                if (!state) {
+                  Alert.alert("Select State First", "Please select a state to view available cities.");
+                  return;
+                }
+                setCityModalVisible(true);
+              }}
+            >
               <Ionicons name="business-outline" size={18} color={colors.mutedForeground} />
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. Mumbai, Delhi, Jaipur" placeholderTextColor={colors.mutedForeground} value={city} onChangeText={setCity} autoCapitalize="words" />
-            </View>
+              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: city ? colors.text : colors.mutedForeground }}>
+                {city || "Select City"}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
 
             <Text style={[styles.label, { color: colors.text }]}>Area / Locality</Text>
             <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -354,6 +434,67 @@ export default function CustomerLoginScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* State Selector Modal */}
+      <Modal visible={stateModalVisible} animationType="slide" transparent={true} onRequestClose={() => setStateModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select State</Text>
+              <TouchableOpacity onPress={() => setStateModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={Object.keys(INDIAN_STATES_CITIES)}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setState(item);
+                    setCity("");
+                    setStateModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.text }, state === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
+                  {state === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* City Selector Modal */}
+      <Modal visible={cityModalVisible} animationType="slide" transparent={true} onRequestClose={() => setCityModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select City</Text>
+              <TouchableOpacity onPress={() => setCityModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={state ? INDIAN_STATES_CITIES[state] : []}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setCity(item);
+                    setCityModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.text }, city === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
+                  {city === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -441,4 +582,43 @@ const styles = StyleSheet.create({
   featureText: { fontSize: 13, fontFamily: "Poppins_400Regular" },
   switchRole: { alignItems: "center", paddingVertical: 16 },
   switchRoleText: { fontSize: 13, fontFamily: "Poppins_400Regular", textAlign: "center" },
+  
+  // Custom Modal Styles for Bottom Sheet picker
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: "65%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.05)",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: "Poppins_700Bold",
+  },
+  modalItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+  },
+  modalItemText: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+  },
 });

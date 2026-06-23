@@ -17,9 +17,6 @@ export default function OnboardingScreen() {
   const { setUserProfile, language, setLanguage } = useApp();
 
   const [showLanguageSelect, setShowLanguageSelect] = useState(true);
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pinCode, setPinCode] = useState("");
-  const [pinError, setPinError] = useState("");
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -41,31 +38,7 @@ export default function OnboardingScreen() {
     router.push("/auth/artist-login");
   };
 
-  const handlePinChange = async (text: string) => {
-    const cleanText = text.replace(/[^0-9]/g, "");
-    setPinCode(cleanText);
-    setPinError("");
-
-    if (cleanText.length === 4) {
-      if (cleanText === "0000") {
-        try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
-        setShowPinModal(false);
-        setPinCode("");
-        await setUserProfile({ role: "admin", name: "Administrator", city: "Mumbai" });
-        router.replace("/(tabs)");
-        setTimeout(() => {
-          router.push("/admin");
-        }, 500);
-      } else {
-        try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {}); } catch (_e) {}
-        setPinError("Incorrect PIN code");
-        setTimeout(() => {
-          setPinCode("");
-          setPinError("");
-        }, 1200);
-      }
-    }
-  };
+  // Removed admin login from onboarding
 
   const t = (key: any) => getTranslation(language, key);
   const webTop = Platform.OS === "web" ? 67 : insets.top;
@@ -148,95 +121,8 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
 
           <Text style={styles.termsText}>By continuing, you agree to our Terms of Service & Privacy Policy</Text>
-
-          <TouchableOpacity 
-            style={styles.adminPortalBtn} 
-            onPress={() => {
-              try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); } catch (_e) {}
-              setShowPinModal(true);
-            }}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.adminPortalText}>
-              {t("role_admin_btn")}
-            </Text>
-          </TouchableOpacity>
         </Animated.View>
       </View>
-
-      {/* PIN Verification Modal */}
-      <Modal
-        visible={showPinModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => {
-          setShowPinModal(false);
-          setPinCode("");
-          setPinError("");
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.modalHeader}>
-              <MaterialCommunityIcons name="shield-crown" size={38} color={colors.gold} />
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Admin Passcode</Text>
-              <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
-                Enter the 4-digit administration code to unlock the admin dashboard.
-              </Text>
-            </View>
-
-            <View style={styles.pinContainer}>
-              {[0, 1, 2, 3].map((index) => {
-                const digit = pinCode[index];
-                const hasValue = digit !== undefined;
-                return (
-                  <View
-                    key={index}
-                    style={[
-                      styles.pinDot,
-                      {
-                        borderColor: pinError ? colors.destructive : hasValue ? colors.gold : colors.border,
-                        backgroundColor: pinError ? colors.destructive + "15" : hasValue ? colors.gold + "15" : "transparent"
-                      }
-                    ]}
-                  >
-                    {hasValue && (
-                      <View style={[styles.pinDotInner, { backgroundColor: pinError ? colors.destructive : colors.gold }]} />
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-
-            {pinError ? (
-              <Text style={[styles.pinErrorText, { color: colors.destructive }]}>{pinError}</Text>
-            ) : null}
-
-            {/* Hidden overlay TextInput */}
-            <TextInput
-              style={styles.hiddenInput}
-              keyboardType="number-pad"
-              maxLength={4}
-              value={pinCode}
-              onChangeText={handlePinChange}
-              autoFocus={true}
-            />
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, { borderColor: colors.border }]}
-                onPress={() => {
-                  setShowPinModal(false);
-                  setPinCode("");
-                  setPinError("");
-                }}
-              >
-                <Text style={{ color: colors.mutedForeground, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </LinearGradient>
   );
 }

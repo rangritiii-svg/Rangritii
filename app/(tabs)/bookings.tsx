@@ -29,7 +29,7 @@ export default function BookingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { bookings, userProfile, updateBookingStatus, updatePaymentStatus, cancelBooking, raiseBookingDispute, language } = useApp();
-  const [activeTab, setActiveTab] = useState<"all" | "pending" | "confirmed">("all");
+  const [activeTab, setActiveTab] = useState<"pending_artist" | "pending_payment" | "confirmed">("pending_artist");
   const isHindi = language === "hi_IN";
 
   // Dispute modal state
@@ -45,8 +45,9 @@ export default function BookingsScreen() {
     : bookings.filter(b => b.customerName === (userProfile.name || "Customer") || true); // customer sees all for demo
 
   const filtered = myBookings.filter(b => {
-    if (activeTab === "pending") return b.status === "Pending";
-    if (activeTab === "confirmed") return b.status === "Confirmed" || b.status === "Completed";
+    if (activeTab === "pending_artist") return b.status === "Pending";
+    if (activeTab === "pending_payment") return b.status === "Confirmed" && b.paymentStatus === "unpaid";
+    if (activeTab === "confirmed") return (b.status === "Confirmed" && b.paymentStatus === "paid") || b.status === "Completed";
     return true;
   });
 
@@ -255,14 +256,18 @@ export default function BookingsScreen() {
 
         {/* Tabs */}
         <View style={styles.tabRow}>
-          {(["all", "pending", "confirmed"] as const).map(tab => (
+          {(["pending_artist", "pending_payment", "confirmed"] as const).map(tab => (
             <TouchableOpacity
               key={tab}
               style={[styles.tab, activeTab === tab && styles.tabActive]}
               onPress={() => setActiveTab(tab)}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab === "all" ? (isHindi ? "सभी" : "All") : tab === "pending" ? (isHindi ? "⏳ लंबित" : "⏳ Pending") : (isHindi ? "✅ पुष्टि" : "✅ Confirmed")}
+                {tab === "pending_artist" 
+                  ? (isHindi ? "⏳ लंबित आर्टिस्ट" : "⏳ Pending Artist") 
+                  : tab === "pending_payment" 
+                    ? (isHindi ? "💳 लंबित भुगतान" : "💳 Pending Payment") 
+                    : (isHindi ? "✅ स्वीकृत" : "✅ Confirmed")}
               </Text>
             </TouchableOpacity>
           ))}

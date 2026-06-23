@@ -5,15 +5,26 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Linking
+  StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Linking, Modal, FlatList
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { sendEmailVerification } from "@/utils/verificationService";
 
+const INDIAN_STATES_CITIES: Record<string, string[]> = {
+  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
+  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Aurangabad"],
+  "Delhi": ["Delhi", "New Delhi", "Noida", "Gurugram"],
+  "Uttar Pradesh": ["Lucknow", "Kanpur", "Noida", "Ghaziabad", "Agra", "Varanasi"],
+  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhinagar"],
+  "Haryana": ["Gurugram", "Faridabad", "Panipat", "Ambala"],
+  "Karnataka": ["Bengaluru", "Mysuru", "Hubballi", "Mangaluru"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli"]
+};
+
 const MEHNDI_TYPES = [
-  "Bridal", "Arabic", "Traditional", "Rajasthani", "Indo-Western",
+  "Bridal", "Arabic", "Traditional", "Marwari", "Modern Bridal", "Indo-Western",
   "Modern / Minimal", "Mughal", "South Indian", "Gujarati", "Pakistani"
 ];
 
@@ -42,6 +53,10 @@ export default function ArtistRegisterScreen() {
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailPreviewUrl, setEmailPreviewUrl] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Dropdown Modal states
+  const [stateModalVisible, setStateModalVisible] = useState(false);
+  const [cityModalVisible, setCityModalVisible] = useState(false);
 
   // Step 1 — Personal Info
   const [fullName, setFullName] = useState("");
@@ -137,12 +152,20 @@ export default function ArtistRegisterScreen() {
     if (res.success) {
       setEmailOtpSent(true);
       setEmailOtp("");
+      if (res.isSimulated) {
+        Alert.alert(
+          "Express Server Offline",
+          `We couldn't connect to the backend server. The email OTP has been simulated. Your code is: ${code}`,
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert("Code Sent", "A 4-digit verification code has been sent to your email address.");
+      }
       if (res.previewUrl) {
         setEmailPreviewUrl(res.previewUrl);
       } else {
         setEmailPreviewUrl("");
       }
-      Alert.alert("Code Sent", "A 4-digit verification code has been sent to your email address.");
     } else {
       Alert.alert("Error", res.error);
     }
@@ -359,11 +382,32 @@ export default function ArtistRegisterScreen() {
             <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>Where do you provide your services?</Text>
 
             <Field label="State *" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. Maharashtra" placeholderTextColor={colors.mutedForeground} value={state} onChangeText={setState} autoCapitalize="words" />
+              <TouchableOpacity style={{ flex: 1, flexDirection: "row", alignItems: "center" }} onPress={() => setStateModalVisible(true)}>
+                <Ionicons name="map-outline" size={18} color={colors.mutedForeground} style={{ marginRight: 10 }} />
+                <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: state ? colors.text : colors.mutedForeground }}>
+                  {state || "Select State"}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
+              </TouchableOpacity>
             </Field>
 
             <Field label="City *" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. Mumbai" placeholderTextColor={colors.mutedForeground} value={city} onChangeText={setCity} autoCapitalize="words" />
+              <TouchableOpacity 
+                style={{ flex: 1, flexDirection: "row", alignItems: "center", opacity: state ? 1 : 0.6 }} 
+                onPress={() => {
+                  if (!state) {
+                    Alert.alert("Select State First", "Please select a state to view available cities.");
+                    return;
+                  }
+                  setCityModalVisible(true);
+                }}
+              >
+                <Ionicons name="business-outline" size={18} color={colors.mutedForeground} style={{ marginRight: 10 }} />
+                <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: city ? colors.text : colors.mutedForeground }}>
+                  {city || "Select City"}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
+              </TouchableOpacity>
             </Field>
 
             <Field label="Area / Locality *" colors={colors}>
@@ -597,6 +641,67 @@ export default function ArtistRegisterScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* State Selector Modal */}
+      <Modal visible={stateModalVisible} animationType="slide" transparent={true} onRequestClose={() => setStateModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select State</Text>
+              <TouchableOpacity onPress={() => setStateModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={Object.keys(INDIAN_STATES_CITIES)}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setState(item);
+                    setCity("");
+                    setStateModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.text }, state === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
+                  {state === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* City Selector Modal */}
+      <Modal visible={cityModalVisible} animationType="slide" transparent={true} onRequestClose={() => setCityModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select City</Text>
+              <TouchableOpacity onPress={() => setCityModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={state ? INDIAN_STATES_CITIES[state] : []}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setCity(item);
+                    setCityModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.text }, city === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
+                  {city === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -703,4 +808,43 @@ const styles = StyleSheet.create({
   prevBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
   nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14 },
   nextBtnText: { fontSize: 15, fontFamily: "Poppins_700Bold", color: "#fff" },
+
+  // Custom Modal Styles for Bottom Sheet picker
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: "65%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.05)",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: "Poppins_700Bold",
+  },
+  modalItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+  },
+  modalItemText: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+  },
 });

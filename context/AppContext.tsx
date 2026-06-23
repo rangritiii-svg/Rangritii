@@ -55,6 +55,7 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
+  state: string;
   city: string;
   area: string;
   isActive: boolean;
@@ -111,6 +112,7 @@ export interface ChatMessage {
 export interface UserProfile {
   name: string;
   phone: string;
+  state: string;
   city: string;
   area: string;
   role: "customer" | "artist" | "admin" | null;
@@ -173,16 +175,16 @@ const MOCK_ARTISTS: Omit<Artist, "packages" | "strikes">[] = [
   },
   {
     id: "a3", name: "Meera Joshi", city: "Jaipur", state: "Rajasthan", area: "Vaishali Nagar",
-    rating: 4.7, reviewCount: 156, styles: ["Traditional", "Rajasthani"],
+    rating: 4.7, reviewCount: 156, styles: ["Traditional", "Marwari"],
     minPrice: 1500, maxPrice: 8000, hourlyRate: 450, experience: 8, verified: true,
     bio: "Third-generation mehndi artist from Jaipur. Expert in traditional peacock and elephant motifs.",
     bioHi: "जयपुर की तीसरी पीढ़ी की मेहंदी आर्टिस्ट। पारंपरिक मोर और हाथी रूपांकनों में विशेषज्ञ।",
     availability: "Available", portfolioStyle: "traditional", phone: "+91 9654321098",
-    specialization: "Traditional Rajasthani Mehndi",
+    specialization: "Traditional Marwari Mehndi",
     latitude: 26.9124, longitude: 75.7873,
     status: "Approved", isActive: true,
     reviews: [
-      { id: "r6", userName: "Deepa N.", rating: 5, comment: "Authentic Rajasthani patterns. Meera ji is a true artist!", date: "Feb 2025", occasion: "Wedding" },
+      { id: "r6", userName: "Deepa N.", rating: 5, comment: "Authentic Marwari patterns. Meera ji is a true artist!", date: "Feb 2025", occasion: "Wedding" },
     ],
   },
   {
@@ -216,9 +218,9 @@ const MOCK_ARTISTS: Omit<Artist, "packages" | "strikes">[] = [
 ];
 
 const MOCK_CUSTOMERS: Customer[] = [
-  { id: "c1", name: "Sneha Patel", phone: "+91 9876543211", city: "Mumbai", area: "Andheri West", isActive: true, createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "c2", name: "Ritu Mehta", phone: "+91 9765432112", city: "Delhi", area: "Karol Bagh", isActive: true, createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "c3", name: "Kavya Rao", phone: "+91 9654321113", city: "Jaipur", area: "Vaishali Nagar", isActive: false, createdAt: new Date(Date.now() - 86400000 * 10).toISOString() },
+  { id: "c1", name: "Sneha Patel", phone: "+91 9876543211", state: "Maharashtra", city: "Mumbai", area: "Andheri West", isActive: true, createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
+  { id: "c2", name: "Ritu Mehta", phone: "+91 9765432112", state: "Delhi", city: "Delhi", area: "Karol Bagh", isActive: true, createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
+  { id: "c3", name: "Kavya Rao", phone: "+91 9654321113", state: "Rajasthan", city: "Jaipur", area: "Vaishali Nagar", isActive: false, createdAt: new Date(Date.now() - 86400000 * 10).toISOString() },
 ];
 
 const MOCK_ARTIST_REPLIES = [
@@ -275,12 +277,16 @@ interface AppContextType {
   addCustomer: (customer: Omit<Customer, "id" | "isActive" | "createdAt">) => void;
   updateBookingPaymentLink: (bookingId: string, paymentLink: string) => void;
   adminStats: AdminStats;
+  adminPasscode: string;
+  updateAdminPasscode: (newPasscode: string) => Promise<void>;
+  globalNotification: { visible: boolean; title: string; body: string; type: "info" | "success" | "warning" };
+  triggerNotification: (title: string, body: string, type?: "info" | "success" | "warning") => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [userProfile, setUserProfileState] = useState<UserProfile>({ name: "", phone: "", city: "", area: "", role: null });
+  const [userProfile, setUserProfileState] = useState<UserProfile>({ name: "", phone: "", state: "", city: "", area: "", role: null });
   const [language, setLanguageState] = useState<Language>("en_IN");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -293,13 +299,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [commissionLogs, setCommissionLogs] = useState<CommissionLog[]>([]);
   const [cancellationPolicy, setCancellationPolicy] = useState<CancellationPolicy>(DEFAULT_POLICY);
   const [policyLogs, setPolicyLogs] = useState<PolicyLog[]>([]);
+  const [adminPasscode, setAdminPasscode] = useState<string>("000000");
+  
+  // Global simulated notification toast
+  const [globalNotification, setGlobalNotification] = useState<{ visible: boolean; title: string; body: string; type: "info" | "success" | "warning" }>({
+    visible: false,
+    title: "",
+    body: "",
+    type: "info"
+  });
+
+  const triggerNotification = useCallback((title: string, body: string, type: "info" | "success" | "warning" = "info") => {
+    setGlobalNotification({ visible: true, title, body, type });
+    setTimeout(() => {
+      setGlobalNotification((prev) => ({ ...prev, visible: false }));
+    }, 6000);
+  }, []);
   
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [profileStr, langStr, bookingsStr, favoritesStr, chatStr, artistsStr, customersStr, commPercentStr, commLogsStr, policyStr, policyLogsStr] = await Promise.all([
+        const [profileStr, langStr, bookingsStr, favoritesStr, chatStr, artistsStr, customersStr, commPercentStr, commLogsStr, policyStr, policyLogsStr, passcodeStr] = await Promise.all([
           AsyncStorage.getItem("rangritii_profile"),
           AsyncStorage.getItem("rangritii_language"),
           AsyncStorage.getItem("rangritii_bookings"),
@@ -311,6 +333,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem("rangritii_comm_logs"),
           AsyncStorage.getItem("rangritii_policy"),
           AsyncStorage.getItem("rangritii_policy_logs"),
+          AsyncStorage.getItem("rangritii_admin_passcode"),
         ]);
         
         if (profileStr) setUserProfileState(JSON.parse(profileStr));
@@ -318,6 +341,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (bookingsStr) setBookings(JSON.parse(bookingsStr));
         if (favoritesStr) setFavorites(JSON.parse(favoritesStr));
         if (chatStr) setChatMessages(JSON.parse(chatStr));
+        if (passcodeStr) setAdminPasscode(passcodeStr);
         
         if (commPercentStr) setCommissionPercent(parseInt(commPercentStr));
         if (commLogsStr) setCommissionLogs(JSON.parse(commLogsStr));
@@ -351,6 +375,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 descriptionHi: "हाथ के पीछे सुंदर अरेबिक डिज़ाइन बेल",
                 price: a.hourlyRate * 2,
                 durationHours: 2
+              },
+              {
+                id: `p_${a.id}_3`,
+                nameEn: "Full Day Package",
+                nameHi: "पूरे दिन का पैकेज",
+                descriptionEn: "Complete day booking for large functions/weddings (up to 8 hours)",
+                descriptionHi: "बड़े कार्यक्रमों/शादियों के लिए पूरे दिन की बुकिंग (8 घंटे तक)",
+                price: a.hourlyRate * 8,
+                durationHours: 8
               }
             ]
           }));
@@ -446,20 +479,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
       return next;
     });
+
+    // Trigger booking request notification to admin
+    setTimeout(() => {
+      triggerNotification(
+        "📋 New Booking Request!",
+        `${bookingData.customerName} requested ${bookingData.artistName} for ${bookingData.occasion}. Admin action required.`,
+        "info"
+      );
+    }, 500);
+
     return id;
-  }, [commissionPercent, cancellationPolicy]);
+  }, [commissionPercent, cancellationPolicy, triggerNotification]);
 
   const updateBookingStatus = useCallback((bookingId: string, status: Booking["status"], paymentMethod?: Booking["paymentMethod"]) => {
     setBookings((prev) => {
-      const next = prev.map((b) =>
-        b.id === bookingId
-          ? { ...b, status, ...(paymentMethod ? { paymentMethod } : {}) }
-          : b
-      );
+      const next = prev.map((b) => {
+        if (b.id === bookingId) {
+          if (status === "Confirmed") {
+            // Trigger confirmation notification to artist
+            setTimeout(() => {
+              triggerNotification(
+                "📅 Booking Confirmed!",
+                `You have been booked by ${b.customerName} for ${b.occasion} on ${b.date}.`,
+                "success"
+              );
+            }, 500);
+          }
+          return { ...b, status, ...(paymentMethod ? { paymentMethod } : {}) };
+        }
+        return b;
+      });
       AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
       return next;
     });
-  }, []);
+  }, [triggerNotification]);
 
   const updatePaymentStatus = useCallback((bookingId: string, paymentStatus: Booking["paymentStatus"]) => {
     setBookings((prev) => {
@@ -661,6 +715,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           descriptionHi: "हाथ के पीछे सुंदर अरेबिक डिज़ाइन बेल",
           price: artistData.hourlyRate * 2,
           durationHours: 2
+        },
+        {
+          id: `p_${id}_3`,
+          nameEn: "Full Day Package",
+          nameHi: "पूरे दिन का पैकेज",
+          descriptionEn: "Complete day booking for large functions/weddings (up to 8 hours)",
+          descriptionHi: "बड़े कार्यक्रमों/शादियों के लिए पूरे दिन की बुकिंग (8 घंटे तक)",
+          price: artistData.hourlyRate * 8,
+          durationHours: 8
         }
       ]
     };
@@ -716,6 +779,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     pendingApprovals: artists.filter(a => a.status === "Pending").length,
   }), [bookings, artists, customers]);
 
+  const updateAdminPasscode = useCallback(async (newPasscode: string) => {
+    setAdminPasscode(newPasscode);
+    await AsyncStorage.setItem("rangritii_admin_passcode", newPasscode);
+  }, []);
+
   if (!loaded) return null;
 
   return (
@@ -725,6 +793,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       toggleFavorite, addBooking, updateBookingStatus, updatePaymentStatus, cancelBooking, raiseBookingDispute, resolveBookingDispute,
       sendMessage, getArtistById, getBookingById, getArtistBookings,
       updateArtistStatus, toggleUserActiveStatus, registerNewArtist, updateArtistPackages, addCustomer, updateBookingPaymentLink, adminStats,
+      adminPasscode, updateAdminPasscode, globalNotification, triggerNotification,
     }}>
       {children}
     </AppContext.Provider>
