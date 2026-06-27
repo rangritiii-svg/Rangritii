@@ -17,7 +17,36 @@ const SMTP_USER = process.env.SMTP_USER || ""; // e.g. "yourname@gmail.com"
 const SMTP_PASS = process.env.SMTP_PASS || ""; // e.g. "abcd efgh ijkl mnop" (Google App Password)
 // =========================================================================
 
+// Health check — shown when visiting the URL in a browser
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Rangritii API</title>
+        <style>
+          body { font-family: Arial, sans-serif; background: #1A0A0E; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; flex-direction: column; }
+          .card { background: #2A1018; border: 1px solid #C9932F; border-radius: 16px; padding: 40px 60px; text-align: center; }
+          h1 { color: #C9932F; margin: 0 0 8px; font-size: 2rem; }
+          p { color: rgba(255,255,255,0.7); margin: 4px 0; }
+          .dot { display: inline-block; width: 10px; height: 10px; background: #10B981; border-radius: 50%; margin-right: 6px; }
+          .status { margin-top: 20px; font-size: 0.9rem; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>🌿 Rangritii</h1>
+          <p>India's Premier Mehndi Artist Marketplace</p>
+          <div class="status"><span class="dot"></span>API Server is Live & Running</div>
+          <p style="margin-top:16px; font-size:0.8rem; color:#C9932F;">POST /api/verify/email — Email verification endpoint</p>
+        </div>
+      </body>
+    </html>
+  `);
+});
+
 app.post('/api/verify/email', async (req, res) => {
+
   const { email, code, language } = req.body;
 
   if (!email || !code) {
