@@ -7,11 +7,11 @@ export const VERIFICATION_CONFIG = {
   SMTP_USER: "", // e.g. "yourname@gmail.com"
   SMTP_PASS: "", // e.g. "abcd efgh ijkl mnop"
 
-  // --- Backend URL ---
-  // When running locally, the mobile app sends requests to the server.
-  // Replace this with your active Ngrok/Tunnel URL or LAN IP for phone testing.
-  BACKEND_URL: "http://localhost:3000",
+  // --- Backend URL (Live Production) ---
+  // Your Vercel backend is now live at:
+  BACKEND_URL: "https://rangritii-api.vercel.app",
   
   // Set to true to verify email addresses (runs verification code)
   ENABLE_EMAIL_VERIFICATION: true,
 };
+
