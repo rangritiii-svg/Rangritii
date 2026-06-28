@@ -123,13 +123,13 @@ export default function PaymentScreen() {
           </View>
           <Text style={styles.successTitle}>
             {selectedMethod === "cash" 
-              ? (isHindi ? "नकद भुगतान का चयन हुआ!" : "Cash Payment Selected!") 
-              : (isHindi ? "भुगतान की पुष्टि हो गई! 🎉" : "Payment Confirmed! 🎉")}
+              ? (isHindi ? "बुकिंग के लिए धन्यवाद! 💖" : "Thank You for Booking! 💖") 
+              : (isHindi ? "भुगतान और बुकिंग की पुष्टि! 🎉" : "Payment & Booking Confirmed! 🎉")}
           </Text>
           <Text style={styles.successSubtitle}>
             {selectedMethod === "cash"
-              ? (isHindi ? `सत्र के दिन ${booking.artistName} को ₹${serviceAmount.toLocaleString("en-IN")} नकद दें।` : `Pay ₹${serviceAmount.toLocaleString("en-IN")} cash to ${booking.artistName} on session day.`)
-              : (isHindi ? `₹${totalPayable.toLocaleString("en-IN")} रंगरीति को सफलतापूर्वक भुगतान कर दिया गया है।` : `₹${totalPayable.toLocaleString("en-IN")} paid successfully to Rangritii.`)}
+              ? (isHindi ? `सत्र के दिन ${booking.artistName} को ₹${serviceAmount.toLocaleString("en-IN")} नकद भुगतान करें।` : `Please pay ₹${serviceAmount.toLocaleString("en-IN")} cash to ${booking.artistName} on the session day.`)
+              : (isHindi ? `बुकिंग के लिए धन्यवाद! ₹${totalPayable.toLocaleString("en-IN")} रंगरीति को सफलतापूर्वक भुगतान कर दिया गया है।` : `Thank you for booking! ₹${totalPayable.toLocaleString("en-IN")} paid successfully to Rangritii.`)}
           </Text>
           <View style={styles.successDetails}>
             <SuccessRow label={isHindi ? "आर्टिस्ट" : "Artist"} value={booking.artistName} />

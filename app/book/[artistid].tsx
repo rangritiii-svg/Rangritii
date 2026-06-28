@@ -124,8 +124,8 @@ export default function BookArtistScreen() {
       Alert.alert(
         getTranslation(language, "request_sent_title"),
         isHindi 
-          ? `आपका बुकिंग अनुरोध भेज दिया गया है। ${artist.name} के पुष्टि करने पर आपको सूचित किया जाएगा। कृपया पुष्टि होने तक भुगतान न करें।`
-          : `Your booking request has been sent to ${artist.name}. You'll be notified once they confirm. Please do not make payment until confirmed.`,
+          ? `बुकिंग के लिए धन्यवाद! आपका बुकिंग अनुरोध भेज दिया गया है। ${artist.name} के पुष्टि करने पर आपको सूचित किया जाएगा। कृपया पुष्टि होने तक भुगतान न करें।`
+          : `Thank you for booking! Your booking request has been sent to ${artist.name}. You'll be notified once they confirm. Please do not make payment until confirmed.`,
         [
           {
             text: getTranslation(language, "view_my_bookings"),
