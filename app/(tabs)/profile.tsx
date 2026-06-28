@@ -245,7 +245,13 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={16} color={colors.border} />
               </TouchableOpacity>
               <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); } catch (_e) {}
+                  router.push("/artist/rates");
+                }}
+              >
                 <Ionicons name="list-outline" size={20} color={colors.mutedForeground} />
                 <Text style={[styles.menuText, { color: colors.text }]}>Service Rates</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.border} />
