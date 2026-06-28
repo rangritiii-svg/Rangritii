@@ -23,7 +23,8 @@ export default function AdminDashboard() {
     commissionPercent, commissionLogs, cancellationPolicy, policyLogs,
     updateCommissionPercent, updateCancellationPolicy, resolveBookingDispute,
     adminPasscode, updateAdminPasscode, updateBookingStatus,
-    adminUpiId, adminQrCodeUrl, updateAdminUpiId, updateAdminQrCodeUrl
+    adminUpiId, adminQrCodeUrl, updateAdminUpiId, updateAdminQrCodeUrl,
+    adminPhone, adminEmail, updateAdminPhone, updateAdminEmail
   } = useApp();
 
   const [tab, setTab] = useState<"overview" | "users" | "applications" | "bookings" | "payments" | "settings">("overview");
@@ -50,6 +51,8 @@ export default function AdminDashboard() {
   const [passcodeInput, setPasscodeInput] = useState(adminPasscode);
   const [upiInput, setUpiInput] = useState(adminUpiId);
   const [qrInput, setQrInput] = useState(adminQrCodeUrl);
+  const [phoneInput, setPhoneInput] = useState(adminPhone);
+  const [emailInput, setEmailInput] = useState(adminEmail);
 
   // Keep settings inputs synchronized with context changes
   useEffect(() => {
@@ -63,7 +66,9 @@ export default function AdminDashboard() {
     setPasscodeInput(adminPasscode);
     setUpiInput(adminUpiId);
     setQrInput(adminQrCodeUrl);
-  }, [commissionPercent, cancellationPolicy, adminPasscode, adminUpiId, adminQrCodeUrl]);
+    setPhoneInput(adminPhone);
+    setEmailInput(adminEmail);
+  }, [commissionPercent, cancellationPolicy, adminPasscode, adminUpiId, adminQrCodeUrl, adminPhone, adminEmail]);
 
   const handleSaveUpiDetails = async () => {
     if (!upiInput.trim()) {
@@ -73,6 +78,20 @@ export default function AdminDashboard() {
     await updateAdminUpiId(upiInput.trim());
     await updateAdminQrCodeUrl(qrInput.trim());
     Alert.alert("Settings Saved ✅", "Admin UPI ID and QR Code URL updated successfully.");
+  };
+
+  const handleSaveContactDetails = async () => {
+    if (!phoneInput.trim()) {
+      Alert.alert("Invalid Input", "Phone number cannot be blank.");
+      return;
+    }
+    if (!emailInput.trim()) {
+      Alert.alert("Invalid Input", "Email ID cannot be blank.");
+      return;
+    }
+    await updateAdminPhone(phoneInput.trim());
+    await updateAdminEmail(emailInput.trim());
+    Alert.alert("Settings Saved ✅", "Admin Support Contact Details updated successfully.");
   };
 
   const handleSavePasscode = () => {
@@ -717,6 +736,36 @@ export default function AdminDashboard() {
               <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary, marginTop: 16 }]} onPress={handleSaveUpiDetails}>
                 <Ionicons name="save-outline" size={16} color="#fff" />
                 <Text style={styles.saveBtnText}>Save Payment Details</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Admin Support Contact Settings Card */}
+            <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 16 }]}>
+              <Text style={[styles.settingsCardTitle, { color: colors.text }]}>📞 Admin Support Contact Settings</Text>
+              <Text style={[styles.settingsCardDesc, { color: colors.mutedForeground }]}>
+                Configure the support contact phone number and email ID displayed to all users under the Help & Support screen.
+              </Text>
+              
+              <Text style={{ color: colors.text, marginTop: 10, fontSize: 13, fontFamily: "Poppins_600SemiBold" }}>Support Phone Number</Text>
+              <TextInput
+                style={[styles.settingsInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, width: "100%", marginTop: 4, height: 42, paddingHorizontal: 12, borderRadius: 8 }]}
+                value={phoneInput}
+                onChangeText={setPhoneInput}
+                placeholder="e.g. +91 99999 88888"
+              />
+
+              <Text style={{ color: colors.text, marginTop: 12, fontSize: 13, fontFamily: "Poppins_600SemiBold" }}>Support Email ID</Text>
+              <TextInput
+                style={[styles.settingsInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, width: "100%", marginTop: 4, height: 42, paddingHorizontal: 12, borderRadius: 8 }]}
+                value={emailInput}
+                onChangeText={setEmailInput}
+                placeholder="e.g. support@rangritii.com"
+                autoCapitalize="none"
+              />
+
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary, marginTop: 16 }]} onPress={handleSaveContactDetails}>
+                <Ionicons name="save-outline" size={16} color="#fff" />
+                <Text style={styles.saveBtnText}>Save Contact Details</Text>
               </TouchableOpacity>
             </View>
 

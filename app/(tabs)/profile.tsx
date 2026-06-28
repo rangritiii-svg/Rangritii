@@ -11,7 +11,7 @@ import { useColors } from "@/hooks/useColors";
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { userProfile, setUserProfile, bookings, favorites, adminStats, language, setLanguage, adminPasscode } = useApp();
+  const { userProfile, setUserProfile, bookings, favorites, adminStats, language, setLanguage, adminPasscode, adminPhone, adminEmail } = useApp();
 
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinCode, setPinCode] = useState("");
@@ -368,8 +368,8 @@ export default function ProfileScreen() {
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={[styles.modalSectionTitle, { color: colors.primary }]}>Contact Us</Text>
-              <Text style={[styles.modalBodyText, { color: colors.text }]}>📞 Call: +91 99999 88888</Text>
-              <Text style={[styles.modalBodyText, { color: colors.text }]}>✉️ Email: support@rangritii.com</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>📞 Call: {adminPhone}</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>✉️ Email: {adminEmail}</Text>
               <Text style={[styles.modalBodyText, { color: colors.text }]}>⏰ Hours: Mon-Sat, 9:00 AM - 7:00 PM</Text>
               
               <View style={{ height: 16 }} />

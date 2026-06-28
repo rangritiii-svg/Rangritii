@@ -214,6 +214,10 @@ interface AppContextType {
   adminQrCodeUrl: string;
   updateAdminUpiId: (newUpi: string) => Promise<void>;
   updateAdminQrCodeUrl: (newQrUrl: string) => Promise<void>;
+  adminPhone: string;
+  adminEmail: string;
+  updateAdminPhone: (phone: string) => Promise<void>;
+  updateAdminEmail: (email: string) => Promise<void>;
   globalNotification: { visible: boolean; title: string; body: string; type: "info" | "success" | "warning" };
   triggerNotification: (title: string, body: string, type?: "info" | "success" | "warning") => void;
 }
@@ -237,6 +241,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [adminPasscode, setAdminPasscode] = useState<string>("000000");
   const [adminUpiId, setAdminUpiId] = useState<string>("rangritii.admin@upi");
   const [adminQrCodeUrl, setAdminQrCodeUrl] = useState<string>("");
+  const [adminPhone, setAdminPhone] = useState<string>("+91 99999 88888");
+  const [adminEmail, setAdminEmail] = useState<string>("support@rangritii.com");
 
   // Global notification toast
   const [globalNotification, setGlobalNotification] = useState<{ visible: boolean; title: string; body: string; type: "info" | "success" | "warning" }>({
@@ -253,7 +259,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const [profileStr, langStr, favoritesStr, chatStr, commPercentStr, commLogsStr, policyStr, policyLogsStr, passcodeStr, upiIdStr, qrUrlStr] = await Promise.all([
+        const [profileStr, langStr, favoritesStr, chatStr, commPercentStr, commLogsStr, policyStr, policyLogsStr, passcodeStr, upiIdStr, qrUrlStr, phoneStr, emailStr] = await Promise.all([
           AsyncStorage.getItem("rangritii_profile"),
           AsyncStorage.getItem("rangritii_language"),
           AsyncStorage.getItem("rangritii_favorites"),
@@ -265,6 +271,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem("rangritii_admin_passcode"),
           AsyncStorage.getItem("rangritii_admin_upi"),
           AsyncStorage.getItem("rangritii_admin_qr"),
+          AsyncStorage.getItem("rangritii_admin_phone"),
+          AsyncStorage.getItem("rangritii_admin_email"),
         ]);
 
         if (profileStr) setUserProfileState(JSON.parse(profileStr));
@@ -274,18 +282,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (passcodeStr) setAdminPasscode(passcodeStr);
         if (upiIdStr) setAdminUpiId(upiIdStr);
         if (qrUrlStr) setAdminQrCodeUrl(qrUrlStr);
+        if (phoneStr) setAdminPhone(phoneStr);
+        if (emailStr) setAdminEmail(emailStr);
         if (commPercentStr) setCommissionPercent(parseInt(commPercentStr));
         if (commLogsStr) setCommissionLogs(JSON.parse(commLogsStr));
         if (policyStr) setCancellationPolicy(JSON.parse(policyStr));
         if (policyLogsStr) setPolicyLogs(JSON.parse(policyLogsStr));
 
-        // Load admin settings from Firestore (passcode, commission override, UPI ID, QR code)
+        // Load admin settings from Firestore (passcode, commission override, UPI ID, QR code, contact details)
         const adminSettings = await fetchAdminSettings();
         if (adminSettings) {
           if (adminSettings.passcode) setAdminPasscode(adminSettings.passcode);
           if (adminSettings.commissionPercent) setCommissionPercent(adminSettings.commissionPercent);
           if (adminSettings.upiId) setAdminUpiId(adminSettings.upiId);
           if (adminSettings.qrCodeUrl) setAdminQrCodeUrl(adminSettings.qrCodeUrl);
+          if (adminSettings.phone) setAdminPhone(adminSettings.phone);
+          if (adminSettings.email) setAdminEmail(adminSettings.email);
         }
 
         // Load artists from Firestore (real data only — no mock data)
@@ -706,6 +718,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveAdminSettings({ qrCodeUrl: newQrUrl }).catch((e) => console.warn("updateAdminQrCodeUrl Firestore error:", e));
   }, []);
 
+  const updateAdminPhone = useCallback(async (newPhone: string) => {
+    setAdminPhone(newPhone);
+    await AsyncStorage.setItem("rangritii_admin_phone", newPhone);
+    saveAdminSettings({ phone: newPhone }).catch((e) => console.warn("updateAdminPhone Firestore error:", e));
+  }, []);
+
+  const updateAdminEmail = useCallback(async (newEmail: string) => {
+    setAdminEmail(newEmail);
+    await AsyncStorage.setItem("rangritii_admin_email", newEmail);
+    saveAdminSettings({ email: newEmail }).catch((e) => console.warn("updateAdminEmail Firestore error:", e));
+  }, []);
+
   if (!loaded) return null;
 
   return (
@@ -717,6 +741,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updateArtistStatus, toggleUserActiveStatus, registerNewArtist, updateArtistPackages, addCustomer, updateBookingPaymentLink, adminStats,
       adminPasscode, updateAdminPasscode,
       adminUpiId, adminQrCodeUrl, updateAdminUpiId, updateAdminQrCodeUrl,
+      adminPhone, adminEmail, updateAdminPhone, updateAdminEmail,
       globalNotification, triggerNotification,
     }}>
       {children}
