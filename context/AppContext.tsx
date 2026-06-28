@@ -366,17 +366,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Save to Firestore (cloud) so artist and admin can see it
     saveBooking(id, newBooking).catch((e) => console.warn("saveBooking error:", e));
 
-    // Trigger booking request notification to admin
+    // Trigger booking request notification to customer
     setTimeout(() => {
+      const isHindi = language === "hi_IN";
       triggerNotification(
-        "📋 New Booking Request!",
-        `${bookingData.customerName} requested ${bookingData.artistName} for ${bookingData.occasion}. Admin action required.`,
-        "info"
+        isHindi ? "💖 बुकिंग अनुरोध प्राप्त हुआ!" : "💖 Booking Request Received!",
+        isHindi 
+          ? `धन्यवाद! ${bookingData.artistName} के साथ आपका बुकिंग अनुरोध जमा हो गया है।`
+          : `Thank you! Your booking request with ${bookingData.artistName} has been submitted.`,
+        "success"
       );
     }, 500);
 
     return id;
-  }, [commissionPercent, cancellationPolicy, triggerNotification]);
+  }, [commissionPercent, cancellationPolicy, triggerNotification, language]);
 
   const updateBookingStatus = useCallback((bookingId: string, status: Booking["status"], paymentMethod?: Booking["paymentMethod"]) => {
     setBookings((prev) => {
@@ -384,11 +387,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (b.id === bookingId) {
           if (status === "Confirmed") {
             setTimeout(() => {
-              triggerNotification(
-                "📅 Booking Confirmed!",
-                `You have been booked by ${b.customerName} for ${b.occasion} on ${b.date}.`,
-                "success"
-              );
+              const isHindi = language === "hi_IN";
+              const isArtist = userProfile.role === "artist";
+              const isAdmin = userProfile.role === "admin";
+              
+              let title = isHindi ? "📅 बुकिंग की पुष्टि हो गई!" : "📅 Booking Confirmed!";
+              let body = "";
+              
+              if (isArtist) {
+                body = isHindi 
+                  ? `आपको ${b.customerName} द्वारा ${b.occasion} के लिए ${b.date} को बुक किया गया है।`
+                  : `You have been booked by ${b.customerName} for ${b.occasion} on ${b.date}.`;
+              } else if (isAdmin) {
+                body = isHindi
+                  ? `${b.customerName} की ${b.artistName} के साथ बुकिंग की पुष्टि हो गई है।`
+                  : `${b.customerName}'s booking with ${b.artistName} is confirmed.`;
+              } else {
+                // Customer
+                title = isHindi ? "🎉 बुकिंग की पुष्टि हो गई!" : "🎉 Booking Confirmed!";
+                body = isHindi
+                  ? `बुक करने के लिए धन्यवाद! ${b.artistName} के साथ आपका सत्र सुनिश्चित हो गया है।`
+                  : `Thank you for booking! Your session with ${b.artistName} has been confirmed.`;
+              }
+
+              triggerNotification(title, body, "success");
             }, 500);
           }
           return { ...b, status, ...(paymentMethod ? { paymentMethod } : {}) };
@@ -401,7 +423,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updates: any = { status };
     if (paymentMethod) updates.paymentMethod = paymentMethod;
     fsUpdateBooking(bookingId, updates).catch((e) => console.warn("updateBookingStatus Firestore error:", e));
-  }, [triggerNotification]);
+  }, [triggerNotification, language, userProfile.role]);
 
   const updatePaymentStatus = useCallback((bookingId: string, paymentStatus: Booking["paymentStatus"]) => {
     setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, paymentStatus } : b));
