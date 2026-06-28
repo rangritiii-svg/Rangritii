@@ -16,7 +16,7 @@ export default function OnboardingScreen() {
   const colors = useColors();
   const { setUserProfile, language, setLanguage } = useApp();
 
-  const [showLanguageSelect, setShowLanguageSelect] = useState(true);
+  const [showLanguageSelect, setShowLanguageSelect] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;

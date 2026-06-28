@@ -260,17 +260,6 @@ export default function ProfileScreen() {
           )}
 
           <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
-          <TouchableOpacity style={styles.menuItem} onPress={handleToggleLanguage}>
-            <Ionicons name="language-outline" size={20} color={colors.mutedForeground} />
-            <Text style={[styles.menuText, { color: colors.text, flex: 1 }]}>
-              {language === "en_IN" ? "Language Settings" : "भाषा सेटिंग्स"}
-            </Text>
-            <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.gold, marginRight: 6 }}>
-              {language === "en_IN" ? "हिंदी" : "English"}
-            </Text>
-            <Ionicons name="swap-horizontal" size={14} color={colors.gold} />
-          </TouchableOpacity>
-          <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
           <TouchableOpacity style={styles.menuItem} onPress={() => setShowHelpModal(true)}>
             <Ionicons name="help-circle-outline" size={20} color={colors.mutedForeground} />
             <Text style={[styles.menuText, { color: colors.text }]}>Help & Support</Text>
