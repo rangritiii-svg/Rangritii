@@ -65,7 +65,6 @@ export default function ArtistRegisterScreen() {
   const [email, setEmail] = useState("");
   const [experience, setExperience] = useState("");
   const [bio, setBio] = useState("");
-  const [bioHi, setBioHi] = useState(""); // Hindi Bio
 
   // Step 2 — Location
   const [state, setState] = useState("");
@@ -179,7 +178,6 @@ export default function ArtistRegisterScreen() {
       if (phone.length !== 10) { Alert.alert("Required", "Enter a valid 10-digit phone number."); return false; }
       if (!email.trim()) { Alert.alert("Required", "Please enter your email address."); return false; }
       if (!emailVerified) { Alert.alert("Verification Required", "Please verify your email address to continue."); return false; }
-      if (!bioHi.trim()) { Alert.alert("Required", "Please enter your bio in Hindi."); return false; }
     }
     if (step === 2) {
       if (!state.trim() || !city.trim() || !area.trim()) { Alert.alert("Required", "State, city and area are required."); return false; }
@@ -290,7 +288,7 @@ export default function ArtistRegisterScreen() {
       experience: parseInt(experience) || 1,
       verified: false,
       bio: bio.trim() || `Professional Mehndi artist specializing in ${selectedStyles.join(", ")}.`,
-      bioHi: bioHi.trim() || `${selectedStyles.join(", ")} में विशेषज्ञता रखने वाले पेशेवर मेहंदी कलाकार।`,
+      bioHi: bio.trim() ? `पेशेवर मेहंदी कलाकार। ${bio.trim()}` : `${selectedStyles.join(", ")} में विशेषज्ञता रखने वाले पेशेवर मेहंदी कलाकार।`,
       availability: "Available",
       portfolioStyle: "bridal",
       specialization: `${selectedStyles[0] || "General"} Mehndi Specialist`,
@@ -440,21 +438,6 @@ export default function ArtistRegisterScreen() {
               <Text style={[styles.charCount, { color: colors.mutedForeground }]}>{bio.length}/300</Text>
             </View>
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 12 }]}>About You / Bio (Hindi) *</Text>
-            <View style={[styles.textAreaWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.textArea, { color: colors.text }]}
-                placeholder="अपने बारे में लिखें, ग्राहकों को आपकी कला के बारे में बताएं..."
-                placeholderTextColor={colors.mutedForeground}
-                value={bioHi}
-                onChangeText={setBioHi}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-                maxLength={300}
-              />
-              <Text style={[styles.charCount, { color: colors.mutedForeground }]}>{bioHi.length}/300</Text>
-            </View>
           </View>
         )}
 
