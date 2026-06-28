@@ -22,7 +22,7 @@ export default function AdminDashboard() {
     updateArtistStatus, toggleUserActiveStatus, updateBookingPaymentLink,
     commissionPercent, commissionLogs, cancellationPolicy, policyLogs,
     updateCommissionPercent, updateCancellationPolicy, resolveBookingDispute,
-    adminPasscode, updateAdminPasscode, updateBookingStatus,
+    adminPasscode, updateAdminPasscode, updateBookingStatus, updatePaymentStatus,
     adminUpiId, adminQrCodeUrl, updateAdminUpiId, updateAdminQrCodeUrl,
     adminPhone, adminEmail, updateAdminPhone, updateAdminEmail
   } = useApp();
@@ -119,6 +119,8 @@ export default function AdminDashboard() {
 
   const sortedBookings = [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const pendingCommission = bookings.filter(b => b.paymentStatus === "commission_due");
+  const paymentsPendingApproval = bookings.filter(b => b.paymentStatus === "pending_admin_approval");
+  const payoutsDueToArtists = bookings.filter(b => b.paymentStatus === "paid_to_admin" && (b.status === "Confirmed" || b.status === "Completed"));
 
   // Onboarding applications
   const onboardingApplications = artists.filter(a => a.status === "Pending" || a.status === "NeedsDocuments");
@@ -179,6 +181,19 @@ export default function AdminDashboard() {
     setShowPayLinkModal(false);
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
     Alert.alert("Payment Link Saved ✅", "The payment link has been saved and shared with the customer!");
+  };
+
+  const handleConfirmPaymentReceived = (bookingId: string) => {
+    try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
+    updatePaymentStatus(bookingId, "paid_to_admin");
+    updateBookingStatus(bookingId, "Confirmed", "online");
+    Alert.alert("Payment Confirmed ✅", "Customer payment has been verified. The booking is now Confirmed and active!");
+  };
+
+  const handleMarkPaidToArtist = (bookingId: string) => {
+    try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
+    updatePaymentStatus(bookingId, "paid_to_artist");
+    Alert.alert("Payout Marked Paid ✅", "The artist payout share has been marked as fully paid and completed!");
   };
 
   const handleToggleBlockArtist = (id: string, currentStatus: string) => {
@@ -553,8 +568,8 @@ export default function AdminDashboard() {
                     </View>
                     <View style={{ alignItems: "flex-end" }}>
                       <Text style={[styles.bookingAmountLabel, { color: colors.mutedForeground }]}>Payment</Text>
-                      <Text style={[styles.bookingPaymentStatus, { color: b.paymentStatus === "paid" ? "#10B981" : b.paymentMethod === "cash" ? "#C9932F" : "#6B7280" }]}>
-                        {b.paymentStatus === "paid" ? "✅ Online Paid" : b.paymentMethod === "cash" ? "💵 Cash" : "⏳ Pending"}
+                      <Text style={[styles.bookingPaymentStatus, { color: (b.paymentStatus === "paid_to_admin" || b.paymentStatus === "paid_to_artist") ? "#10B981" : b.paymentStatus === "pending_admin_approval" ? "#F59E0B" : b.paymentMethod === "cash" ? "#C9932F" : "#6B7280" }]}>
+                        {(b.paymentStatus === "paid_to_admin" || b.paymentStatus === "paid_to_artist") ? "✅ Online Paid" : b.paymentStatus === "pending_admin_approval" ? "⏳ Pending Admin" : b.paymentMethod === "cash" ? "💵 Cash" : "⏳ Unpaid"}
                       </Text>
                     </View>
                   </View>
@@ -646,7 +661,87 @@ export default function AdminDashboard() {
               </LinearGradient>
             </View>
 
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>💵 Cash Bookings (Commission Due)</Text>
+            {/* Section 1: Customer Payments Pending Verification */}
+            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>⏳ Customer Payments Pending Approval ({paymentsPendingApproval.length})</Text>
+            {paymentsPendingApproval.length === 0 ? (
+              <EmptyCard message="No customer payments waiting for verification." colors={colors} />
+            ) : (
+              paymentsPendingApproval.map(b => {
+                const total = b.price + b.commissionAmount;
+                return (
+                  <View key={b.id} style={[styles.bookingRow, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, padding: 14, borderRadius: 12, marginBottom: 12 }]}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: colors.text }}>{b.customerName}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: "Poppins_400Regular", color: colors.mutedForeground, marginTop: 2 }}>
+                          Artist: {b.artistName} · Occasion: {b.occasion}
+                        </Text>
+                        <Text style={{ fontSize: 11, fontFamily: "Poppins_500Medium", color: colors.text, marginTop: 4 }}>
+                          Date: {b.date} · {b.startTime}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: "flex-end" }}>
+                        <Text style={{ fontSize: 16, fontFamily: "Poppins_700Bold", color: colors.primary }}>₹{total.toLocaleString("en-IN")}</Text>
+                        <Text style={{ fontSize: 10, fontFamily: "Poppins_600SemiBold", color: "#F59E0B", marginTop: 2 }}>Pending Approval</Text>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: "row", gap: 8, marginTop: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }}>
+                      <TouchableOpacity 
+                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, height: 36, borderRadius: 8, backgroundColor: "#10B981" }}
+                        onPress={() => handleConfirmPaymentReceived(b.id)}
+                      >
+                        <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+                        <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: "#fff" }}>Confirm Payment Received</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+
+            {/* Section 2: Artist Payouts Due */}
+            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>💸 Artist Payouts Due ({payoutsDueToArtists.length})</Text>
+            {payoutsDueToArtists.length === 0 ? (
+              <EmptyCard message="No artist payouts due." colors={colors} />
+            ) : (
+              payoutsDueToArtists.map(b => {
+                const total = b.price + b.commissionAmount;
+                const artistShare = b.price; // Artist gets the price of the package, Admin retains commission fee
+                return (
+                  <View key={b.id} style={[styles.bookingRow, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, padding: 14, borderRadius: 12, marginBottom: 12 }]}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontFamily: "Poppins_700Bold", color: colors.text }}>{b.artistName}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: "Poppins_400Regular", color: colors.mutedForeground, marginTop: 2 }}>
+                          Customer: {b.customerName} · Occasion: {b.occasion}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 2 }}>
+                          Total Customer Paid: ₹{total} · Commission Retained: ₹{b.commissionAmount}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: "flex-end" }}>
+                        <Text style={{ fontSize: 16, fontFamily: "Poppins_700Bold", color: "#10B981" }}>₹{artistShare.toLocaleString("en-IN")}</Text>
+                        <Text style={{ fontSize: 10, fontFamily: "Poppins_600SemiBold", color: colors.primary, marginTop: 2 }}>Payout Due</Text>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: "row", gap: 8, marginTop: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }}>
+                      <TouchableOpacity 
+                        style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, height: 36, borderRadius: 8, backgroundColor: colors.primary }}
+                        onPress={() => handleMarkPaidToArtist(b.id)}
+                      >
+                        <Ionicons name="card-outline" size={16} color="#fff" />
+                        <Text style={{ fontSize: 11, fontFamily: "Poppins_700Bold", color: "#fff" }}>Confirm Paid to Artist</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+
+            {/* Section 3: Cash Bookings (Commission Due) */}
+            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>💵 Cash Bookings (Commission Due)</Text>
             {pendingCommission.length === 0 ? (
               <EmptyCard message="No pending commission collections." colors={colors} />
             ) : (
@@ -667,12 +762,14 @@ export default function AdminDashboard() {
               ))
             )}
 
-            <View style={[styles.upiBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={[styles.upiBox, { backgroundColor: colors.secondary, borderColor: colors.border, marginTop: 16 }]}>
               <MaterialCommunityIcons name="qrcode" size={24} color={colors.gold} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.upiBoxTitle, { color: colors.text }]}>Admin Payment Collection</Text>
+                <Text style={[styles.upiBoxTitle, { color: colors.text }]}>Admin Payment Collection Settings</Text>
                 <Text style={[styles.upiBoxId, { color: colors.gold }]}>{adminUpiId}</Text>
-                <Text style={[styles.upiBoxNote, { color: colors.mutedForeground }]}>Share this UPI ID with customers for online bookings. Artists pay platform commission here for cash bookings.</Text>
+                <Text style={[styles.upiBoxNote, { color: colors.mutedForeground }]}>
+                  All customer payments go directly to this UPI ID. You can modify these settings under the Settings tab anytime.
+                </Text>
               </View>
             </View>
           </>

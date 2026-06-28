@@ -96,7 +96,7 @@ export interface Booking {
   price: number;
   status: "Pending" | "Confirmed" | "Completed" | "Cancelled";
   paymentMethod: "online" | "cash" | "pending";
-  paymentStatus: "paid" | "unpaid" | "commission_due";
+  paymentStatus: "unpaid" | "pending_admin_approval" | "paid_to_admin" | "paid_to_artist" | "commission_due";
   commissionAmount: number;
   paymentLink?: string;
   notes: string;

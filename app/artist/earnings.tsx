@@ -339,9 +339,16 @@ export default function ArtistEarningsScreen() {
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>{isHindi ? "भुगतान की स्थिति" : "Payment Status"}</Text>
-                    <Text style={[styles.detailValue, { color: selectedBooking.paymentStatus === "paid" ? "#10B981" : "#EF4444", fontFamily: "Poppins_600SemiBold" }]}>
-                      {selectedBooking.paymentStatus === "paid" 
-                        ? (isHindi ? "सफल" : "Paid") 
+                    <Text style={[styles.detailValue, { 
+                      color: selectedBooking.paymentStatus === "paid_to_artist" ? "#10B981" : selectedBooking.paymentStatus === "paid_to_admin" ? "#F59E0B" : "#EF4444", 
+                      fontFamily: "Poppins_600SemiBold" 
+                    }]}>
+                      {selectedBooking.paymentStatus === "paid_to_artist" 
+                        ? (isHindi ? "भुगतान प्राप्त (Paid)" : "Payout Settled") 
+                        : selectedBooking.paymentStatus === "paid_to_admin"
+                        ? (isHindi ? "एडमिन द्वारा प्राप्त" : "Collected by Admin")
+                        : selectedBooking.paymentStatus === "pending_admin_approval"
+                        ? (isHindi ? "पुष्टि लंबित" : "Verification Pending")
                         : (isHindi ? "लंबित/अवैतनिक" : "Unpaid")}
                     </Text>
                   </View>

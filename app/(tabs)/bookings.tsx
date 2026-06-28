@@ -46,8 +46,8 @@ export default function BookingsScreen() {
 
   const filtered = myBookings.filter(b => {
     if (activeTab === "pending_artist") return b.status === "Pending";
-    if (activeTab === "pending_payment") return b.status === "Confirmed" && b.paymentStatus === "unpaid";
-    if (activeTab === "confirmed") return (b.status === "Confirmed" && b.paymentStatus === "paid") || b.status === "Completed";
+    if (activeTab === "pending_payment") return b.status === "Confirmed" && (b.paymentStatus === "unpaid" || b.paymentStatus === "pending_admin_approval");
+    if (activeTab === "confirmed") return (b.status === "Confirmed" && (b.paymentStatus === "paid_to_admin" || b.paymentStatus === "paid_to_artist")) || b.status === "Completed";
     return true;
   });
 
@@ -364,13 +364,15 @@ function BookingCard({
     ? (booking.status === "Pending" ? "लंबित" : booking.status === "Confirmed" ? "पुष्टि की गई" : booking.status === "Completed" ? "पूर्ण" : "रद्द")
     : booking.status;
 
-  const displayPayment = booking.paymentStatus === "paid" 
-    ? (isHindi ? "✅ भुगतान हुआ" : "✅ Paid") 
-    : booking.paymentMethod === "cash" 
-      ? (isHindi ? "💵 नकद" : "💵 Cash") 
-      : booking.paymentStatus === "commission_due"
-        ? (isHindi ? "⚠️ कमीशन देय" : "⚠️ Fee Due")
-        : (isHindi ? "⏳ लंबित" : "⏳ Pending");
+  const displayPayment = (booking.paymentStatus === "paid_to_admin" || booking.paymentStatus === "paid_to_artist") 
+    ? (isHindi ? "✅ Paid to Admin" : "✅ Paid to Admin") 
+    : booking.paymentStatus === "pending_admin_approval"
+      ? (isHindi ? "⏳ सत्यापन लंबित" : "⏳ Pending Approval")
+      : booking.paymentMethod === "cash" 
+        ? (isHindi ? "💵 नकद" : "💵 Cash") 
+        : booking.paymentStatus === "commission_due"
+          ? (isHindi ? "⚠️ कमीशन देय" : "⚠️ Fee Due")
+          : (isHindi ? "⏳ लंबित" : "⏳ Pending");
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -426,7 +428,7 @@ function BookingCard({
         <View style={{ alignItems: "flex-end" }}>
           <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>{isHindi ? "भुगतान" : "Payment"}</Text>
           <Text style={[styles.paymentMethod, {
-            color: booking.paymentStatus === "paid" ? "#10B981" : booking.paymentMethod === "cash" ? "#C9932F" : "#EF4444"
+            color: (booking.paymentStatus === "paid_to_admin" || booking.paymentStatus === "paid_to_artist") ? "#10B981" : booking.paymentStatus === "pending_admin_approval" ? "#F59E0B" : booking.paymentMethod === "cash" ? "#C9932F" : "#EF4444"
           }]}>
             {displayPayment}
           </Text>
@@ -525,7 +527,7 @@ function BookingCard({
         {!isArtist && (
           <View style={{ flex: 1, gap: 8 }}>
             {/* Pay Now (Customer Confirmed Unpaid) */}
-            {booking.status === "Confirmed" && booking.paymentStatus !== "paid" && booking.paymentMethod !== "cash" && (
+            {booking.status === "Confirmed" && booking.paymentStatus === "unpaid" && booking.paymentMethod !== "cash" && (
               <TouchableOpacity style={[styles.actionBtn, styles.actionBtnFull, { backgroundColor: colors.primary }]} onPress={onPayNow}>
                 <Ionicons name="card-outline" size={16} color="#fff" />
                 <Text style={[styles.actionBtnText, { color: "#fff" }]}>{isHindi ? "भुगतान करें" : "Pay Now"}</Text>

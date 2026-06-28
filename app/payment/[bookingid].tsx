@@ -87,8 +87,8 @@ export default function PaymentScreen() {
 
   const handleConfirmPaid = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    updatePaymentStatus(booking.id, "paid");
-    updateBookingStatus(booking.id, "Confirmed", "online");
+    updatePaymentStatus(booking.id, "pending_admin_approval");
+    updateBookingStatus(booking.id, "Pending", "online");
     setPaid(true);
   };
 
@@ -122,14 +122,12 @@ export default function PaymentScreen() {
             <Ionicons name="checkmark-circle" size={72} color="#059669" />
           </View>
           <Text style={styles.successTitle}>
-            {selectedMethod === "cash" 
-              ? (isHindi ? "बुकिंग के लिए धन्यवाद! 💖" : "Thank You for Booking! 💖") 
-              : (isHindi ? "भुगतान और बुकिंग की पुष्टि! 🎉" : "Payment & Booking Confirmed! 🎉")}
+            {isHindi ? "भुगतान सबमिट किया गया! ⏳" : "Payment Submitted! ⏳"}
           </Text>
           <Text style={styles.successSubtitle}>
-            {selectedMethod === "cash"
-              ? (isHindi ? `सत्र के दिन ${booking.artistName} को ₹${serviceAmount.toLocaleString("en-IN")} नकद भुगतान करें।` : `Please pay ₹${serviceAmount.toLocaleString("en-IN")} cash to ${booking.artistName} on the session day.`)
-              : (isHindi ? `बुकिंग के लिए धन्यवाद! ₹${totalPayable.toLocaleString("en-IN")} रंगरीति को सफलतापूर्वक भुगतान कर दिया गया है।` : `Thank you for booking! ₹${totalPayable.toLocaleString("en-IN")} paid successfully to Rangritii.`)}
+            {isHindi 
+              ? `भुगतान का विवरण सत्यापन के लिए एडमिन के पास भेज दिया गया है। एडमिन द्वारा पुष्टि होने पर बुकिंग सक्रिय हो जाएगी।` 
+              : `Your payment of ₹${totalPayable.toLocaleString("en-IN")} is pending admin verification. Once verified, your booking will be confirmed.`}
           </Text>
           <View style={styles.successDetails}>
             <SuccessRow label={isHindi ? "आर्टिस्ट" : "Artist"} value={booking.artistName} />
