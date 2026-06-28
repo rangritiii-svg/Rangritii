@@ -62,6 +62,8 @@ function RootLayoutNav() {
         <Stack.Screen name="artist/earnings" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="artist/rates" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="artist/portfolio" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="artist/documents" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="artist/bank" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="book/[artistid]" options={{ animation: "slide_from_bottom", presentation: "modal" }} />
         <Stack.Screen name="chat/[artistid]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="payment/[bookingid]" options={{ animation: "slide_from_bottom", presentation: "modal" }} />

@@ -57,6 +57,8 @@ export interface Artist {
   packages: ArtistPackage[]; // added packages
   strikes: number; // added strikes tracking
   portfolioImages?: string[]; // custom portfolio images uploaded by artist
+  idCardPhoto?: string; // Government ID document base64 photo
+  bankDetailsPhoto?: string; // Cancelled Cheque / Bank Passbook base64 photo
 }
 
 export interface Customer {
