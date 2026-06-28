@@ -1,6 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useCallback, useContext, useEffect, useState, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState, useMemo, useRef } from "react";
 import { Language } from "@/constants/locale";
+import {
+  fetchArtists, saveArtist, updateArtist as fsUpdateArtist,
+  fetchCustomers, saveCustomer, updateCustomer as fsUpdateCustomer,
+  saveBooking, updateBooking as fsUpdateBooking,
+  fetchAdminSettings, saveAdminSettings,
+  subscribeToCustomerBookings, subscribeToArtistBookings, subscribeToAllBookings,
+} from "@/firebase/firestoreService";
 
 export interface ArtistPackage {
   id: string;
@@ -144,84 +151,7 @@ export interface AdminStats {
   pendingApprovals: number;
 }
 
-const MOCK_ARTISTS: Omit<Artist, "packages" | "strikes">[] = [
-  {
-    id: "a1", name: "Priya Sharma", city: "Mumbai", state: "Maharashtra", area: "Andheri West",
-    rating: 4.9, reviewCount: 124, styles: ["Bridal", "Arabic"],
-    minPrice: 3000, maxPrice: 15000, hourlyRate: 800, experience: 5, verified: true,
-    bio: "Award-winning bridal mehndi artist with 5+ years of experience. Specializing in intricate bridal designs that tell a story.",
-    bioHi: "5+ वर्षों के अनुभव के साथ पुरस्कार विजेता दुल्हन मेहंदी आर्टिस्ट। जटिल दुल्हन डिज़ाइनों में विशेषज्ञता जो एक कहानी बयां करती है।",
-    availability: "Available", portfolioStyle: "bridal", phone: "+91 9876543210",
-    specialization: "Bridal Mehndi Specialist",
-    latitude: 19.1136, longitude: 72.8697,
-    status: "Approved", isActive: true,
-    reviews: [
-      { id: "r1", userName: "Sneha P.", rating: 5, comment: "Absolutely stunning work! Priya did my bridal mehndi and it was beyond perfect.", date: "Dec 2024", occasion: "Wedding" },
-    ],
-  },
-  {
-    id: "a2", name: "Anjali Patel", city: "Delhi", state: "Delhi", area: "Karol Bagh",
-    rating: 4.8, reviewCount: 89, styles: ["Arabic", "Modern"],
-    minPrice: 2500, maxPrice: 12000, hourlyRate: 650, experience: 4, verified: true,
-    bio: "Contemporary mehndi artist blending Arabic patterns with modern aesthetics.",
-    bioHi: "आधुनिक सौंदर्यशास्त्र के साथ अरबी पैटर्न का मिश्रण करने वाली समकालीन मेहंदी आर्टिस्ट।",
-    availability: "Available", portfolioStyle: "arabic", phone: "+91 9765432109",
-    specialization: "Arabic & Modern Fusion",
-    latitude: 28.6519, longitude: 77.1909,
-    status: "Approved", isActive: true,
-    reviews: [
-      { id: "r4", userName: "Pooja S.", rating: 5, comment: "Anjali's Arabic designs are just wow!", date: "Jan 2025", occasion: "Wedding" },
-    ],
-  },
-  {
-    id: "a3", name: "Meera Joshi", city: "Jaipur", state: "Rajasthan", area: "Vaishali Nagar",
-    rating: 4.7, reviewCount: 156, styles: ["Traditional", "Marwari"],
-    minPrice: 1500, maxPrice: 8000, hourlyRate: 450, experience: 8, verified: true,
-    bio: "Third-generation mehndi artist from Jaipur. Expert in traditional peacock and elephant motifs.",
-    bioHi: "जयपुर की तीसरी पीढ़ी की मेहंदी आर्टिस्ट। पारंपरिक मोर और हाथी रूपांकनों में विशेषज्ञ।",
-    availability: "Available", portfolioStyle: "traditional", phone: "+91 9654321098",
-    specialization: "Traditional Marwari Mehndi",
-    latitude: 26.9124, longitude: 75.7873,
-    status: "Approved", isActive: true,
-    reviews: [
-      { id: "r6", userName: "Deepa N.", rating: 5, comment: "Authentic Marwari patterns. Meera ji is a true artist!", date: "Feb 2025", occasion: "Wedding" },
-    ],
-  },
-  {
-    id: "a4", name: "Fatima Khan", city: "Hyderabad", state: "Telangana", area: "Banjara Hills",
-    rating: 4.9, reviewCount: 203, styles: ["Arabic", "Bridal", "Indo-Western"],
-    minPrice: 3500, maxPrice: 18000, hourlyRate: 900, experience: 6, verified: true,
-    bio: "Hyderabad's top bridal mehndi artist. Booked 6 months in advance for wedding season.",
-    bioHi: "हैदराबाद की शीर्ष दुल्हन मेहंदी आर्टिस्ट। शादी के सीजन के लिए 6 महीने पहले से बुक।",
-    availability: "Busy", portfolioStyle: "arabic", phone: "+91 9543210987",
-    specialization: "Bridal & Arabic Fusion",
-    latitude: 17.4126, longitude: 78.4484,
-    status: "Approved", isActive: true,
-    reviews: [
-      { id: "r8", userName: "Zara B.", rating: 5, comment: "Fatima is a goddess with henna!", date: "Mar 2025", occasion: "Wedding" },
-    ],
-  },
-  {
-    id: "a5", name: "Kavitha Reddy", city: "Bangalore", state: "Karnataka", area: "Koramangala",
-    rating: 4.6, reviewCount: 67, styles: ["Modern", "Minimal", "Indo-Western"],
-    minPrice: 2000, maxPrice: 10000, hourlyRate: 550, experience: 3, verified: false,
-    bio: "Modern mehndi artist specializing in minimalist and contemporary designs.",
-    bioHi: "न्यूनतम और समकालीन डिज़ाइनों में विशेषज्ञता रखने वाली आधुनिक मेहंदी आर्टिस्ट।",
-    availability: "Available", portfolioStyle: "modern", phone: "+91 9432109876",
-    specialization: "Minimal & Modern Designs",
-    latitude: 12.9352, longitude: 77.6245,
-    status: "Approved", isActive: true,
-    reviews: [
-      { id: "r10", userName: "Tara S.", rating: 5, comment: "Love the minimalist style!", date: "Jan 2025", occasion: "Party" },
-    ],
-  },
-];
-
-const MOCK_CUSTOMERS: Customer[] = [
-  { id: "c1", name: "Sneha Patel", phone: "+91 9876543211", state: "Maharashtra", city: "Mumbai", area: "Andheri West", isActive: true, createdAt: new Date(Date.now() - 86400000 * 5).toISOString() },
-  { id: "c2", name: "Ritu Mehta", phone: "+91 9765432112", state: "Delhi", city: "Delhi", area: "Karol Bagh", isActive: true, createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "c3", name: "Kavya Rao", phone: "+91 9654321113", state: "Rajasthan", city: "Jaipur", area: "Vaishali Nagar", isActive: false, createdAt: new Date(Date.now() - 86400000 * 10).toISOString() },
-];
+// ── No mock data — all artists, customers, bookings come from Firebase Firestore ──
 
 const MOCK_ARTIST_REPLIES = [
   "Thank you for reaching out! I'd love to create something beautiful for you.",
@@ -230,6 +160,7 @@ const MOCK_ARTIST_REPLIES = [
   "I'll send you portfolio photos. What style do you prefer?",
   "Thank you! Please book through the app to confirm your slot.",
 ];
+
 
 export const ADMIN_UPI_ID = "rangritii.admin@upi";
 
@@ -300,104 +231,60 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cancellationPolicy, setCancellationPolicy] = useState<CancellationPolicy>(DEFAULT_POLICY);
   const [policyLogs, setPolicyLogs] = useState<PolicyLog[]>([]);
   const [adminPasscode, setAdminPasscode] = useState<string>("000000");
-  
-  // Global simulated notification toast
-  const [globalNotification, setGlobalNotification] = useState<{ visible: boolean; title: string; body: string; type: "info" | "success" | "warning" }>({
-    visible: false,
-    title: "",
-    body: "",
-    type: "info"
-  });
 
+  // Global notification toast
+  const [globalNotification, setGlobalNotification] = useState<{ visible: boolean; title: string; body: string; type: "info" | "success" | "warning" }>({
+    visible: false, title: "", body: "", type: "info"
+  });
   const triggerNotification = useCallback((title: string, body: string, type: "info" | "success" | "warning" = "info") => {
     setGlobalNotification({ visible: true, title, body, type });
-    setTimeout(() => {
-      setGlobalNotification((prev) => ({ ...prev, visible: false }));
-    }, 6000);
+    setTimeout(() => setGlobalNotification((prev) => ({ ...prev, visible: false })), 6000);
   }, []);
-  
+
   const [loaded, setLoaded] = useState(false);
 
+  // ── Load from Firestore + AsyncStorage on startup ──────────────
   useEffect(() => {
     const load = async () => {
       try {
-        const [profileStr, langStr, bookingsStr, favoritesStr, chatStr, artistsStr, customersStr, commPercentStr, commLogsStr, policyStr, policyLogsStr, passcodeStr] = await Promise.all([
+        const [profileStr, langStr, favoritesStr, chatStr, commPercentStr, commLogsStr, policyStr, policyLogsStr, passcodeStr] = await Promise.all([
           AsyncStorage.getItem("rangritii_profile"),
           AsyncStorage.getItem("rangritii_language"),
-          AsyncStorage.getItem("rangritii_bookings"),
           AsyncStorage.getItem("rangritii_favorites"),
           AsyncStorage.getItem("rangritii_chat"),
-          AsyncStorage.getItem("rangritii_artists"),
-          AsyncStorage.getItem("rangritii_customers"),
           AsyncStorage.getItem("rangritii_comm_percent"),
           AsyncStorage.getItem("rangritii_comm_logs"),
           AsyncStorage.getItem("rangritii_policy"),
           AsyncStorage.getItem("rangritii_policy_logs"),
           AsyncStorage.getItem("rangritii_admin_passcode"),
         ]);
-        
+
         if (profileStr) setUserProfileState(JSON.parse(profileStr));
         if (langStr) setLanguageState(langStr as Language);
-        if (bookingsStr) setBookings(JSON.parse(bookingsStr));
         if (favoritesStr) setFavorites(JSON.parse(favoritesStr));
         if (chatStr) setChatMessages(JSON.parse(chatStr));
         if (passcodeStr) setAdminPasscode(passcodeStr);
-        
         if (commPercentStr) setCommissionPercent(parseInt(commPercentStr));
         if (commLogsStr) setCommissionLogs(JSON.parse(commLogsStr));
         if (policyStr) setCancellationPolicy(JSON.parse(policyStr));
         if (policyLogsStr) setPolicyLogs(JSON.parse(policyLogsStr));
 
-        if (artistsStr) {
-          setArtists(JSON.parse(artistsStr));
-        } else {
-          // Initialize mock artists with default packages and strikes
-          const initializedMocks = MOCK_ARTISTS.map(a => ({
-            ...a,
-            status: "Approved" as const,
-            isActive: true,
-            strikes: 0,
-            packages: [
-              {
-                id: `p_${a.id}_1`,
-                nameEn: "Bridal Full Hands",
-                nameHi: "दुल्हन पूरे हाथ",
-                descriptionEn: "Intricate bridal mehndi up to elbows",
-                descriptionHi: "कोहनी तक सुंदर और विस्तृत दुल्हन मेहंदी",
-                price: a.hourlyRate * 4,
-                durationHours: 4
-              },
-              {
-                id: `p_${a.id}_2`,
-                nameEn: "Arabic Minimalist",
-                nameHi: "अरेबिक न्यूनतम",
-                descriptionEn: "Elegant back hand trailing patterns",
-                descriptionHi: "हाथ के पीछे सुंदर अरेबिक डिज़ाइन बेल",
-                price: a.hourlyRate * 2,
-                durationHours: 2
-              },
-              {
-                id: `p_${a.id}_3`,
-                nameEn: "Full Day Package",
-                nameHi: "पूरे दिन का पैकेज",
-                descriptionEn: "Complete day booking for large functions/weddings (up to 8 hours)",
-                descriptionHi: "बड़े कार्यक्रमों/शादियों के लिए पूरे दिन की बुकिंग (8 घंटे तक)",
-                price: a.hourlyRate * 8,
-                durationHours: 8
-              }
-            ]
-          }));
-          setArtists(initializedMocks);
-          await AsyncStorage.setItem("rangritii_artists", JSON.stringify(initializedMocks));
+        // Load admin settings from Firestore (passcode, commission override)
+        const adminSettings = await fetchAdminSettings();
+        if (adminSettings) {
+          if (adminSettings.passcode) setAdminPasscode(adminSettings.passcode);
+          if (adminSettings.commissionPercent) setCommissionPercent(adminSettings.commissionPercent);
         }
 
-        if (customersStr) {
-          setCustomers(JSON.parse(customersStr));
-        } else {
-          setCustomers(MOCK_CUSTOMERS);
-          await AsyncStorage.setItem("rangritii_customers", JSON.stringify(MOCK_CUSTOMERS));
-        }
-      } catch (_e) {}
+        // Load artists from Firestore (real data only — no mock data)
+        const firestoreArtists = await fetchArtists();
+        setArtists(firestoreArtists as Artist[]);
+
+        // Load customers from Firestore
+        const firestoreCustomers = await fetchCustomers();
+        setCustomers(firestoreCustomers as Customer[]);
+
+      } catch (_e) { console.warn("AppContext load error:", _e); }
       setLoaded(true);
     };
     load();
@@ -474,11 +361,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       paymentStatus: "unpaid",
     };
     
-    setBookings((prev) => {
-      const next = [newBooking, ...prev];
-      AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
-      return next;
-    });
+    setBookings((prev) => [newBooking, ...prev]);
+
+    // Save to Firestore (cloud) so artist and admin can see it
+    saveBooking(id, newBooking).catch((e) => console.warn("saveBooking error:", e));
 
     // Trigger booking request notification to admin
     setTimeout(() => {
@@ -497,7 +383,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const next = prev.map((b) => {
         if (b.id === bookingId) {
           if (status === "Confirmed") {
-            // Trigger confirmation notification to artist
             setTimeout(() => {
               triggerNotification(
                 "📅 Booking Confirmed!",
@@ -510,17 +395,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         return b;
       });
-      AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
       return next;
     });
+    // Sync status update to Firestore
+    const updates: any = { status };
+    if (paymentMethod) updates.paymentMethod = paymentMethod;
+    fsUpdateBooking(bookingId, updates).catch((e) => console.warn("updateBookingStatus Firestore error:", e));
   }, [triggerNotification]);
 
   const updatePaymentStatus = useCallback((bookingId: string, paymentStatus: Booking["paymentStatus"]) => {
-    setBookings((prev) => {
-      const next = prev.map((b) => b.id === bookingId ? { ...b, paymentStatus } : b);
-      AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
-      return next;
-    });
+    setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, paymentStatus } : b));
+    fsUpdateBooking(bookingId, { paymentStatus }).catch((e) => console.warn("updatePaymentStatus Firestore error:", e));
   }, []);
 
   const cancelBooking = useCallback((bookingId: string, initiator: "customer" | "artist") => {
@@ -652,34 +537,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const getArtistBookings = useCallback((artistId: string) => bookings.filter((b) => b.artistId === artistId), [bookings]);
 
   const updateArtistStatus = useCallback((artistId: string, status: Artist["status"], missingDocsReason?: string) => {
-    setArtists((prev) => {
-      const next = prev.map((a) =>
-        a.id === artistId 
-          ? { 
-              ...a, 
-              status, 
-              strikes: status === "Approved" ? 0 : a.strikes, 
-              ...(missingDocsReason ? { missingDocsReason } : {}) 
-            } 
-          : a
-      );
-      AsyncStorage.setItem("rangritii_artists", JSON.stringify(next)).catch(() => {});
-      return next;
-    });
+    const updates: any = { status };
+    if (status === "Approved") updates.strikes = 0;
+    if (missingDocsReason) updates.missingDocsReason = missingDocsReason;
+    setArtists((prev) => prev.map((a) =>
+      a.id === artistId ? { ...a, ...updates } : a
+    ));
+    fsUpdateArtist(artistId, updates).catch((e) => console.warn("updateArtistStatus Firestore error:", e));
   }, []);
 
   const toggleUserActiveStatus = useCallback((userId: string, isArtist: boolean) => {
     if (isArtist) {
       setArtists((prev) => {
-        const next = prev.map((a) => a.id === userId ? { ...a, isActive: !a.isActive } : a);
-        AsyncStorage.setItem("rangritii_artists", JSON.stringify(next)).catch(() => {});
-        return next;
+        const updated = prev.map((a) => a.id === userId ? { ...a, isActive: !a.isActive } : a);
+        const artist = updated.find(a => a.id === userId);
+        if (artist) fsUpdateArtist(userId, { isActive: artist.isActive }).catch(() => {});
+        return updated;
       });
     } else {
       setCustomers((prev) => {
-        const next = prev.map((c) => c.id === userId ? { ...c, isActive: !c.isActive } : c);
-        AsyncStorage.setItem("rangritii_customers", JSON.stringify(next)).catch(() => {});
-        return next;
+        const updated = prev.map((c) => c.id === userId ? { ...c, isActive: !c.isActive } : c);
+        const customer = updated.find(c => c.id === userId);
+        if (customer) fsUpdateCustomer(userId, { isActive: customer.isActive }).catch(() => {});
+        return updated;
       });
     }
   }, []);
@@ -736,11 +616,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateArtistPackages = useCallback((artistId: string, updatedPackages: ArtistPackage[]) => {
-    setArtists((prev) => {
-      const next = prev.map(a => a.id === artistId ? { ...a, packages: updatedPackages } : a);
-      AsyncStorage.setItem("rangritii_artists", JSON.stringify(next)).catch(() => {});
-      return next;
-    });
+    setArtists((prev) => prev.map(a => a.id === artistId ? { ...a, packages: updatedPackages } : a));
+    fsUpdateArtist(artistId, { packages: updatedPackages }).catch((e) => console.warn("updateArtistPackages Firestore error:", e));
   }, []);
 
   const addCustomer = useCallback((customerData: Omit<Customer, "id" | "isActive" | "createdAt">) => {
@@ -753,18 +630,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isActive: true,
         createdAt: new Date().toISOString(),
       };
-      const next = [...prev, newCustomer];
-      AsyncStorage.setItem("rangritii_customers", JSON.stringify(next)).catch(() => {});
-      return next;
+      // Save to Firestore so admin can see new customers
+      saveCustomer(id, newCustomer).catch((e) => console.warn("addCustomer Firestore error:", e));
+      return [...prev, newCustomer];
     });
   }, []);
 
   const updateBookingPaymentLink = useCallback((bookingId: string, paymentLink: string) => {
-    setBookings((prev) => {
-      const next = prev.map((b) => b.id === bookingId ? { ...b, paymentLink } : b);
-      AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
-      return next;
-    });
+    setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, paymentLink } : b));
+    fsUpdateBooking(bookingId, { paymentLink }).catch((e) => console.warn("updateBookingPaymentLink Firestore error:", e));
   }, []);
 
   const adminStats: AdminStats = useMemo(() => ({
@@ -782,6 +656,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateAdminPasscode = useCallback(async (newPasscode: string) => {
     setAdminPasscode(newPasscode);
     await AsyncStorage.setItem("rangritii_admin_passcode", newPasscode);
+    // Sync to Firestore so it persists across devices
+    saveAdminSettings({ passcode: newPasscode }).catch((e) => console.warn("updateAdminPasscode Firestore error:", e));
   }, []);
 
   if (!loaded) return null;
