@@ -56,6 +56,7 @@ export interface Artist {
   missingDocsReason?: string;
   packages: ArtistPackage[]; // added packages
   strikes: number; // added strikes tracking
+  portfolioImages?: string[]; // custom portfolio images uploaded by artist
 }
 
 export interface Customer {

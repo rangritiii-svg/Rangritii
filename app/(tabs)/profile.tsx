@@ -227,7 +227,13 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
-              <TouchableOpacity style={styles.menuItem}>
+              <TouchableOpacity 
+                style={styles.menuItem}
+                onPress={() => {
+                  try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); } catch (_e) {}
+                  router.push("/artist/portfolio");
+                }}
+              >
                 <Ionicons name="images-outline" size={20} color={colors.mutedForeground} />
                 <Text style={[styles.menuText, { color: colors.text }]}>My Portfolio</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.border} />

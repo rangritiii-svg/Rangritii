@@ -229,11 +229,14 @@ export default function ArtistDetailScreen() {
         <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{language === "en_IN" ? "Portfolio" : "पोर्टफोलियो"}</Text>
           <View style={styles.galleryGrid}>
-            {PORTFOLIO_THUMBNAILS.map((img, idx) => (
-              <View key={idx} style={styles.galleryImageWrapper}>
-                <Image source={img} style={styles.galleryImage} resizeMode="cover" />
-              </View>
-            ))}
+            {((artist.portfolioImages && artist.portfolioImages.length > 0) ? artist.portfolioImages : PORTFOLIO_THUMBNAILS).map((img, idx) => {
+              const isUri = typeof img === "string";
+              return (
+                <View key={idx} style={styles.galleryImageWrapper}>
+                  <Image source={isUri ? { uri: img } : img} style={styles.galleryImage} resizeMode="cover" />
+                </View>
+              );
+            })}
           </View>
         </View>
 
