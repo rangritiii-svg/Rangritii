@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
-  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert, Platform
+  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert, Platform, Image
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
@@ -29,6 +29,7 @@ export default function AdminDashboard() {
 
   const [tab, setTab] = useState<"overview" | "users" | "applications" | "bookings" | "payments" | "settings">("overview");
   const [usersSubTab, setUsersSubTab] = useState<"customers" | "artists">("customers");
+  const [expandedArtistDocs, setExpandedArtistDocs] = useState<Record<string, boolean>>({});
   
   // Document request modal state
   const [showDocModal, setShowDocModal] = useState(false);
@@ -512,6 +513,48 @@ export default function AdminDashboard() {
                       <Text style={[styles.detailRowValue, { color: colors.text }]} numberOfLines={3}>"{a.bio}"</Text>
                     </View>
                   </View>
+
+                  {/* View Documents Button */}
+                  {(a.idCardPhoto || a.bankDetailsPhoto) ? (
+                    <TouchableOpacity 
+                      style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginVertical: 10, padding: 8, borderRadius: 8, backgroundColor: colors.secondary }}
+                      onPress={() => setExpandedArtistDocs(prev => ({ ...prev, [a.id]: !prev[a.id] }))}
+                    >
+                      <Ionicons name={expandedArtistDocs[a.id] ? "eye-off-outline" : "eye-outline"} size={16} color={colors.primary} />
+                      <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary }}>
+                        {expandedArtistDocs[a.id] ? "Hide Uploaded Documents" : "View Uploaded Documents"}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ marginVertical: 8, padding: 8, borderRadius: 8, backgroundColor: colors.secondary, alignItems: "center" }}>
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground, fontFamily: "Poppins_500Medium" }}>
+                        ⚠️ No verification documents uploaded by artist.
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Documents View Panel */}
+                  {expandedArtistDocs[a.id] && (
+                    <View style={{ padding: 10, borderRadius: 8, backgroundColor: colors.secondary, marginBottom: 10, gap: 10 }}>
+                      {a.idCardPhoto ? (
+                        <View>
+                          <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.text, marginBottom: 4 }}>🪪 Government ID Document:</Text>
+                          <Image source={{ uri: a.idCardPhoto }} style={{ width: "100%", height: 180, borderRadius: 8 }} resizeMode="contain" />
+                        </View>
+                      ) : (
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>No ID photo uploaded.</Text>
+                      )}
+
+                      {a.bankDetailsPhoto ? (
+                        <View>
+                          <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.text, marginBottom: 4, marginTop: 10 }}>🏦 Bank Passbook / Cheque Photo:</Text>
+                          <Image source={{ uri: a.bankDetailsPhoto }} style={{ width: "100%", height: 180, borderRadius: 8 }} resizeMode="contain" />
+                        </View>
+                      ) : (
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>No bank cheque/passbook photo uploaded.</Text>
+                      )}
+                    </View>
+                  )}
 
                   {/* Action buttons */}
                   <View style={styles.appActionsRow}>
