@@ -7,7 +7,7 @@ import {
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert, Platform
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useApp, ADMIN_UPI_ID } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -22,7 +22,8 @@ export default function AdminDashboard() {
     updateArtistStatus, toggleUserActiveStatus, updateBookingPaymentLink,
     commissionPercent, commissionLogs, cancellationPolicy, policyLogs,
     updateCommissionPercent, updateCancellationPolicy, resolveBookingDispute,
-    adminPasscode, updateAdminPasscode, updateBookingStatus
+    adminPasscode, updateAdminPasscode, updateBookingStatus,
+    adminUpiId, adminQrCodeUrl, updateAdminUpiId, updateAdminQrCodeUrl
   } = useApp();
 
   const [tab, setTab] = useState<"overview" | "users" | "applications" | "bookings" | "payments" | "settings">("overview");
@@ -47,6 +48,8 @@ export default function AdminDashboard() {
   const [policyTier3Refund, setPolicyTier3Refund] = useState(cancellationPolicy.tier3RefundPercent.toString());
   const [policyTier3Comp, setPolicyTier3Comp] = useState(cancellationPolicy.tier3ArtistCompPercent.toString());
   const [passcodeInput, setPasscodeInput] = useState(adminPasscode);
+  const [upiInput, setUpiInput] = useState(adminUpiId);
+  const [qrInput, setQrInput] = useState(adminQrCodeUrl);
 
   // Keep settings inputs synchronized with context changes
   useEffect(() => {
@@ -58,7 +61,19 @@ export default function AdminDashboard() {
     setPolicyTier3Refund(cancellationPolicy.tier3RefundPercent.toString());
     setPolicyTier3Comp(cancellationPolicy.tier3ArtistCompPercent.toString());
     setPasscodeInput(adminPasscode);
-  }, [commissionPercent, cancellationPolicy, adminPasscode]);
+    setUpiInput(adminUpiId);
+    setQrInput(adminQrCodeUrl);
+  }, [commissionPercent, cancellationPolicy, adminPasscode, adminUpiId, adminQrCodeUrl]);
+
+  const handleSaveUpiDetails = async () => {
+    if (!upiInput.trim()) {
+      Alert.alert("Invalid Input", "UPI ID cannot be blank.");
+      return;
+    }
+    await updateAdminUpiId(upiInput.trim());
+    await updateAdminQrCodeUrl(qrInput.trim());
+    Alert.alert("Settings Saved ✅", "Admin UPI ID and QR Code URL updated successfully.");
+  };
 
   const handleSavePasscode = () => {
     if (passcodeInput.length !== 6) {
@@ -252,7 +267,7 @@ export default function AdminDashboard() {
           <View style={{ width: 36 }} />
         </View>
         <View style={styles.adminInfo}>
-          <Text style={styles.adminSubtitle}>UPI: {ADMIN_UPI_ID}</Text>
+          <Text style={styles.adminSubtitle}>UPI: {adminUpiId}</Text>
           <Text style={styles.adminSubtitle}>Commission: {commissionPercent}%</Text>
         </View>
 
@@ -637,7 +652,7 @@ export default function AdminDashboard() {
               <MaterialCommunityIcons name="qrcode" size={24} color={colors.gold} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.upiBoxTitle, { color: colors.text }]}>Admin Payment Collection</Text>
-                <Text style={[styles.upiBoxId, { color: colors.gold }]}>{ADMIN_UPI_ID}</Text>
+                <Text style={[styles.upiBoxId, { color: colors.gold }]}>{adminUpiId}</Text>
                 <Text style={[styles.upiBoxNote, { color: colors.mutedForeground }]}>Share this UPI ID with customers for online bookings. Artists pay platform commission here for cash bookings.</Text>
               </View>
             </View>
@@ -668,6 +683,40 @@ export default function AdminDashboard() {
               <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSaveCommission}>
                 <Ionicons name="save-outline" size={16} color="#fff" />
                 <Text style={styles.saveBtnText}>Save Commission Rate</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Admin Payment Collection Settings Card */}
+            <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 16 }]}>
+              <Text style={[styles.settingsCardTitle, { color: colors.text }]}>💳 Admin UPI & QR Code Settings</Text>
+              <Text style={[styles.settingsCardDesc, { color: colors.mutedForeground }]}>
+                Configure the UPI ID and custom QR Code Image URL displayed to customers for completing bookings online.
+              </Text>
+              
+              <Text style={{ color: colors.text, marginTop: 10, fontSize: 13, fontFamily: "Poppins_600SemiBold" }}>UPI ID</Text>
+              <TextInput
+                style={[styles.settingsInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, width: "100%", marginTop: 4, height: 42, paddingHorizontal: 12, borderRadius: 8 }]}
+                value={upiInput}
+                onChangeText={setUpiInput}
+                placeholder="e.g. yourname@upi"
+                autoCapitalize="none"
+              />
+
+              <Text style={{ color: colors.text, marginTop: 12, fontSize: 13, fontFamily: "Poppins_600SemiBold" }}>Custom QR Code Image URL (Optional)</Text>
+              <TextInput
+                style={[styles.settingsInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, width: "100%", marginTop: 4, height: 42, paddingHorizontal: 12, borderRadius: 8 }]}
+                value={qrInput}
+                onChangeText={setQrInput}
+                placeholder="e.g. https://domain.com/qr.png"
+                autoCapitalize="none"
+              />
+              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
+                Leave empty to dynamically generate the QR Code using your UPI ID.
+              </Text>
+
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary, marginTop: 16 }]} onPress={handleSaveUpiDetails}>
+                <Ionicons name="save-outline" size={16} color="#fff" />
+                <Text style={styles.saveBtnText}>Save Payment Details</Text>
               </TouchableOpacity>
             </View>
 

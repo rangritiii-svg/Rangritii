@@ -210,6 +210,10 @@ interface AppContextType {
   adminStats: AdminStats;
   adminPasscode: string;
   updateAdminPasscode: (newPasscode: string) => Promise<void>;
+  adminUpiId: string;
+  adminQrCodeUrl: string;
+  updateAdminUpiId: (newUpi: string) => Promise<void>;
+  updateAdminQrCodeUrl: (newQrUrl: string) => Promise<void>;
   globalNotification: { visible: boolean; title: string; body: string; type: "info" | "success" | "warning" };
   triggerNotification: (title: string, body: string, type?: "info" | "success" | "warning") => void;
 }
@@ -231,6 +235,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cancellationPolicy, setCancellationPolicy] = useState<CancellationPolicy>(DEFAULT_POLICY);
   const [policyLogs, setPolicyLogs] = useState<PolicyLog[]>([]);
   const [adminPasscode, setAdminPasscode] = useState<string>("000000");
+  const [adminUpiId, setAdminUpiId] = useState<string>("rangritii.admin@upi");
+  const [adminQrCodeUrl, setAdminQrCodeUrl] = useState<string>("");
 
   // Global notification toast
   const [globalNotification, setGlobalNotification] = useState<{ visible: boolean; title: string; body: string; type: "info" | "success" | "warning" }>({
@@ -247,7 +253,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const [profileStr, langStr, favoritesStr, chatStr, commPercentStr, commLogsStr, policyStr, policyLogsStr, passcodeStr] = await Promise.all([
+        const [profileStr, langStr, favoritesStr, chatStr, commPercentStr, commLogsStr, policyStr, policyLogsStr, passcodeStr, upiIdStr, qrUrlStr] = await Promise.all([
           AsyncStorage.getItem("rangritii_profile"),
           AsyncStorage.getItem("rangritii_language"),
           AsyncStorage.getItem("rangritii_favorites"),
@@ -257,6 +263,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem("rangritii_policy"),
           AsyncStorage.getItem("rangritii_policy_logs"),
           AsyncStorage.getItem("rangritii_admin_passcode"),
+          AsyncStorage.getItem("rangritii_admin_upi"),
+          AsyncStorage.getItem("rangritii_admin_qr"),
         ]);
 
         if (profileStr) setUserProfileState(JSON.parse(profileStr));
@@ -264,16 +272,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (favoritesStr) setFavorites(JSON.parse(favoritesStr));
         if (chatStr) setChatMessages(JSON.parse(chatStr));
         if (passcodeStr) setAdminPasscode(passcodeStr);
+        if (upiIdStr) setAdminUpiId(upiIdStr);
+        if (qrUrlStr) setAdminQrCodeUrl(qrUrlStr);
         if (commPercentStr) setCommissionPercent(parseInt(commPercentStr));
         if (commLogsStr) setCommissionLogs(JSON.parse(commLogsStr));
         if (policyStr) setCancellationPolicy(JSON.parse(policyStr));
         if (policyLogsStr) setPolicyLogs(JSON.parse(policyLogsStr));
 
-        // Load admin settings from Firestore (passcode, commission override)
+        // Load admin settings from Firestore (passcode, commission override, UPI ID, QR code)
         const adminSettings = await fetchAdminSettings();
         if (adminSettings) {
           if (adminSettings.passcode) setAdminPasscode(adminSettings.passcode);
           if (adminSettings.commissionPercent) setCommissionPercent(adminSettings.commissionPercent);
+          if (adminSettings.upiId) setAdminUpiId(adminSettings.upiId);
+          if (adminSettings.qrCodeUrl) setAdminQrCodeUrl(adminSettings.qrCodeUrl);
         }
 
         // Load artists from Firestore (real data only — no mock data)
@@ -682,6 +694,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveAdminSettings({ passcode: newPasscode }).catch((e) => console.warn("updateAdminPasscode Firestore error:", e));
   }, []);
 
+  const updateAdminUpiId = useCallback(async (newUpi: string) => {
+    setAdminUpiId(newUpi);
+    await AsyncStorage.setItem("rangritii_admin_upi", newUpi);
+    saveAdminSettings({ upiId: newUpi }).catch((e) => console.warn("updateAdminUpiId Firestore error:", e));
+  }, []);
+
+  const updateAdminQrCodeUrl = useCallback(async (newQrUrl: string) => {
+    setAdminQrCodeUrl(newQrUrl);
+    await AsyncStorage.setItem("rangritii_admin_qr", newQrUrl);
+    saveAdminSettings({ qrCodeUrl: newQrUrl }).catch((e) => console.warn("updateAdminQrCodeUrl Firestore error:", e));
+  }, []);
+
   if (!loaded) return null;
 
   return (
@@ -691,7 +715,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       toggleFavorite, addBooking, updateBookingStatus, updatePaymentStatus, cancelBooking, raiseBookingDispute, resolveBookingDispute,
       sendMessage, getArtistById, getBookingById, getArtistBookings,
       updateArtistStatus, toggleUserActiveStatus, registerNewArtist, updateArtistPackages, addCustomer, updateBookingPaymentLink, adminStats,
-      adminPasscode, updateAdminPasscode, globalNotification, triggerNotification,
+      adminPasscode, updateAdminPasscode,
+      adminUpiId, adminQrCodeUrl, updateAdminUpiId, updateAdminQrCodeUrl,
+      globalNotification, triggerNotification,
     }}>
       {children}
     </AppContext.Provider>

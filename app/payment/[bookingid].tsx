@@ -7,7 +7,7 @@ import {
   Alert, Image, Clipboard, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useApp, ADMIN_UPI_ID } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { getTranslation } from "@/constants/locale";
 
@@ -15,7 +15,7 @@ export default function PaymentScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { bookingid } = useLocalSearchParams<{ bookingid: string }>();
-  const { getBookingById, updateBookingStatus, updatePaymentStatus, getArtistById, language } = useApp();
+  const { getBookingById, updateBookingStatus, updatePaymentStatus, getArtistById, language, adminUpiId, adminQrCodeUrl } = useApp();
   const [selectedMethod, setSelectedMethod] = useState<"online" | "cash" | null>("online");
   const [paid, setPaid] = useState(false);
   const isHindi = language === "hi_IN";
@@ -35,10 +35,10 @@ export default function PaymentScreen() {
   const commPercent = booking.commissionPercentApplied;
 
   // Resolve link: either custom admin link or fallback default UPI link
-  const payUrl = booking.paymentLink || `upi://pay?pa=${ADMIN_UPI_ID}&pn=Rangritii&am=${totalPayable}&cu=INR&tn=Booking_${booking.id.slice(0, 8)}`;
+  const payUrl = booking.paymentLink || `upi://pay?pa=${adminUpiId}&pn=Rangritii&am=${totalPayable}&cu=INR&tn=Booking_${booking.id.slice(0, 8)}`;
   
-  // Dynamic QR Code API URL
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payUrl)}`;
+  // Dynamic QR Code API URL or Custom QR Code URL uploaded by admin
+  const qrCodeUrl = adminQrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payUrl)}`;
 
   const handleOnlinePay = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -62,8 +62,8 @@ export default function PaymentScreen() {
           Alert.alert(
             isHindi ? "UPI के माध्यम से भुगतान करें" : "Pay via UPI",
             isHindi 
-              ? `UPI आईडी पर ₹${totalPayable.toLocaleString("en-IN")} ट्रांसफर करें:\n\nUPI आईडी: ${ADMIN_UPI_ID}\nनाम: Rangritii Admin\n\nविवरण (Ref): ${booking.id.slice(0, 8)}`
-              : `Transfer ₹${totalPayable.toLocaleString("en-IN")} to:\n\nUPI ID: ${ADMIN_UPI_ID}\nName: Rangritii Admin\n\nUse Ref: ${booking.id.slice(0, 8)}`,
+              ? `UPI आईडी पर ₹${totalPayable.toLocaleString("en-IN")} ट्रांसफर करें:\n\nUPI आईडी: ${adminUpiId}\nनाम: Rangritii Admin\n\nविवरण (Ref): ${booking.id.slice(0, 8)}`
+              : `Transfer ₹${totalPayable.toLocaleString("en-IN")} to:\n\nUPI ID: ${adminUpiId}\nName: Rangritii Admin\n\nUse Ref: ${booking.id.slice(0, 8)}`,
             [
               { text: isHindi ? "भुगतान की पुष्टि करें" : "Mark as Paid", onPress: handleConfirmPaid },
               { text: isHindi ? "रद्द करें" : "Cancel", style: "cancel" },
@@ -74,13 +74,13 @@ export default function PaymentScreen() {
     } catch {
       Alert.alert(
         isHindi ? "लिंक खोलने में त्रुटि" : "Error Opening Link", 
-        isHindi ? `कृपया ₹${totalPayable} का भुगतान इस UPI ID पर करें: ${ADMIN_UPI_ID}` : `Please complete payment of ₹${totalPayable} to:\nUPI ID: ${ADMIN_UPI_ID}`
+        isHindi ? `कृपया ₹${totalPayable} का भुगतान इस UPI ID पर करें: ${adminUpiId}` : `Please complete payment of ₹${totalPayable} to:\nUPI ID: ${adminUpiId}`
       );
     }
   };
 
   const copyUpiId = () => {
-    Clipboard.setString(ADMIN_UPI_ID);
+    Clipboard.setString(adminUpiId);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     Alert.alert(isHindi ? "कॉपी किया गया!" : "Copied!", isHindi ? "UPI आईडी क्लिपबोर्ड पर कॉपी हो गई है।" : "UPI ID has been copied to your clipboard.");
   };
@@ -226,7 +226,7 @@ export default function PaymentScreen() {
             <View style={styles.upiDetailsContainer}>
               <Text style={[styles.upiDetailsLabel, { color: colors.mutedForeground }]}>{isHindi ? "एडमिन यूपीआई आईडी" : "Admin UPI ID"}</Text>
               <View style={styles.upiIdRow}>
-                <Text style={[styles.upiIdText, { color: colors.text }]}>{ADMIN_UPI_ID}</Text>
+                <Text style={[styles.upiIdText, { color: colors.text }]}>{adminUpiId}</Text>
                 <TouchableOpacity style={styles.copyBtn} onPress={copyUpiId}>
                   <Ionicons name="copy-outline" size={16} color={colors.primary} />
                   <Text style={[styles.copyBtnText, { color: colors.primary }]}>{isHindi ? "कॉपी" : "Copy"}</Text>
