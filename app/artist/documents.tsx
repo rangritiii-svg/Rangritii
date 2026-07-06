@@ -26,8 +26,8 @@ export default function ArtistDocumentsScreen() {
     return artists.find(a => a.phone === userProfile.phone);
   }, [artists, userProfile.phone]);
 
-  const [idType, setIdType] = useState(currentArtist?.specialization ? "Aadhaar Card" : "Aadhaar Card"); // dummy initial
-  const [idNumber, setIdNumber] = useState("");
+  const [idType, setIdType] = useState(currentArtist?.idType || "Aadhaar Card");
+  const [idNumber, setIdNumber] = useState(currentArtist?.idNumber || "");
   const [idCardPhoto, setIdCardPhoto] = useState(currentArtist?.idCardPhoto || "");
 
   if (!currentArtist) {
@@ -78,9 +78,11 @@ export default function ArtistDocumentsScreen() {
     try {
       const { updateArtist } = require("@/firebase/firestoreService");
       
-      // Update local context & sync to Firestore
+      // Update local context & sync to Firestore — persist the ID type & number, not just the photo
       await updateArtist(currentArtist.id, {
-        idCardPhoto: idCardPhoto
+        idType: idType,
+        idNumber: idNumber.trim().toUpperCase(),
+        idCardPhoto: idCardPhoto,
       });
 
       // Show alert & exit

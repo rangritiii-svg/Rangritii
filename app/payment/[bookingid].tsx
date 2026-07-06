@@ -136,7 +136,7 @@ export default function PaymentScreen() {
             <SuccessRow label={isHindi ? "भुगतान राशि" : "Amount Paid"} value={`₹${selectedMethod === "cash" ? 0 : totalPayable.toLocaleString("en-IN")}`} />
             {selectedMethod === "cash" && <SuccessRow label={isHindi ? "आर्टिस्ट को नकद" : "Cash to Artist"} value={`₹${serviceAmount.toLocaleString("en-IN")}`} />}
           </View>
-          <TouchableOpacity style={styles.successBtn} onPress={() => { router.dismiss(); router.push("/(tabs)/bookings"); }}>
+          <TouchableOpacity style={styles.successBtn} onPress={() => { if (router.canDismiss()) router.dismiss(); router.push("/(tabs)/bookings"); }}>
             <Text style={styles.successBtnText}>{getTranslation(language, "view_my_bookings")}</Text>
           </TouchableOpacity>
         </LinearGradient>

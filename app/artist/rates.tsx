@@ -14,7 +14,7 @@ import { getTranslation } from "@/constants/locale";
 export default function ArtistRatesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { userProfile, artists, updateArtistPackages, updateArtistStatus, language } = useApp();
+  const { userProfile, artists, updateArtistPackages, language } = useApp();
   const isHindi = language === "hi_IN";
 
   // Find current artist
@@ -111,13 +111,11 @@ export default function ArtistRatesScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
     try {
-      // Update packages list & hourly rate on the artist document
+      // Update packages in local context (this also syncs packages to Firestore)…
       updateArtistPackages(currentArtist.id, packages);
-      
-      // Update hourly rate inside artist list
-      updateArtistStatus(currentArtist.id, currentArtist.status); // Keep status, but update local fields in DB
-      
-      // Save other fields to database via the direct update function
+
+      // …and persist the hourly rate in one write. The live artists subscription
+      // refreshes context, so the previous updateArtistStatus() hack is no longer needed.
       const { updateArtist } = require("@/firebase/firestoreService");
       await updateArtist(currentArtist.id, {
         hourlyRate: parsedHourly,

@@ -24,9 +24,11 @@ export default function ArtistBankScreen() {
     return artists.find(a => a.phone === userProfile.phone);
   }, [artists, userProfile.phone]);
 
-  const [accountNumber, setAccountNumber] = useState("");
-  const [ifscCode, setIfscCode] = useState("");
+  const [accountNumber, setAccountNumber] = useState(currentArtist?.bankAccountNumber || "");
+  const [ifscCode, setIfscCode] = useState(currentArtist?.bankIfsc || "");
   const [bankDetailsPhoto, setBankDetailsPhoto] = useState(currentArtist?.bankDetailsPhoto || "");
+  const [upiId, setUpiId] = useState(currentArtist?.upiId || "");
+  const [upiQrPhoto, setUpiQrPhoto] = useState(currentArtist?.upiQrPhoto || "");
 
   if (!currentArtist) {
     return (
@@ -60,17 +62,47 @@ export default function ArtistBankScreen() {
     }
   };
 
+  const handlePickQrPhoto = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "We need library permissions to upload your payment QR code.");
+      return;
+    }
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.6,
+        base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets[0].base64) {
+        setUpiQrPhoto(`data:image/jpeg;base64,${result.assets[0].base64}`);
+      }
+    } catch (e) {
+      console.warn("QR picker error:", e);
+    }
+  };
+
   const handleSaveBankDetails = async () => {
-    if (!accountNumber.trim()) {
-      Alert.alert("Error", "Please enter your bank account number.");
+    const bankComplete = !!(accountNumber.trim() && ifscCode.trim() && bankDetailsPhoto);
+    const bankPartial = !!(accountNumber.trim() || ifscCode.trim() || bankDetailsPhoto);
+    const hasUpi = !!upiId.trim();
+
+    // Allow saving with EITHER complete bank details OR a UPI ID (QR optional).
+    if (!bankComplete && !hasUpi) {
+      Alert.alert(
+        "Add a payout method",
+        "Please add your bank details (account number, IFSC and passbook/cheque photo) OR your UPI ID so you can receive payments."
+      );
       return;
     }
-    if (!ifscCode.trim()) {
-      Alert.alert("Error", "Please enter your bank IFSC code.");
-      return;
-    }
-    if (!bankDetailsPhoto) {
-      Alert.alert("Error", "Please upload a photo of your passbook or cancelled cheque.");
+    // If bank was partially filled, ask to complete it (keeps records consistent).
+    if (bankPartial && !bankComplete) {
+      Alert.alert(
+        "Complete your bank details",
+        "Please fill the account number, IFSC and upload the passbook/cheque photo — or clear those fields and use only UPI."
+      );
       return;
     }
 
@@ -80,9 +112,13 @@ export default function ArtistBankScreen() {
     try {
       const { updateArtist } = require("@/firebase/firestoreService");
       
-      // Update local context & sync to Firestore
+      // Update local context & sync to Firestore — persist ALL entered fields
       await updateArtist(currentArtist.id, {
-        bankDetailsPhoto: bankDetailsPhoto
+        bankAccountNumber: accountNumber.trim(),
+        bankIfsc: ifscCode.trim().toUpperCase(),
+        bankDetailsPhoto: bankDetailsPhoto,
+        upiId: upiId.trim(),
+        upiQrPhoto: upiQrPhoto,
       });
 
       // Show alert & exit
@@ -171,8 +207,51 @@ export default function ArtistBankScreen() {
           )}
         </View>
 
-        <TouchableOpacity 
-          style={[styles.saveBtn, { backgroundColor: colors.primary }]} 
+        {/* UPI Payment Details Card */}
+        <Text style={[styles.title, { color: colors.text, marginTop: 24 }]}>{isHindi ? "UPI भुगतान विवरण" : "UPI Payment Details"}</Text>
+        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+          {isHindi
+            ? "अपनी UPI आईडी और भुगतान QR कोड जोड़ें ताकि व्यवस्थापक आपको सीधे आपकी कमाई का भुगतान कर सके।"
+            : "Add your UPI ID and payment QR code so the admin can pay your earnings directly to you."}
+        </Text>
+
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.text }]}>{isHindi ? "UPI आईडी" : "UPI ID"}</Text>
+          <TextInput
+            style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary }]}
+            value={upiId}
+            onChangeText={setUpiId}
+            placeholder="e.g. yourname@upi"
+            placeholderTextColor={colors.mutedForeground}
+            autoCapitalize="none"
+          />
+
+          <Text style={[styles.label, { color: colors.text, marginTop: 20 }]}>{isHindi ? "भुगतान QR कोड" : "Payment QR Code"}</Text>
+          {upiQrPhoto ? (
+            <View style={{ alignItems: "center", marginVertical: 8 }}>
+              <Image source={{ uri: upiQrPhoto }} style={styles.previewImage} resizeMode="contain" />
+              <TouchableOpacity
+                style={styles.removeBtn}
+                onPress={() => setUpiQrPhoto("")}
+              >
+                <Ionicons name="trash-outline" size={14} color="#dc2626" />
+                <Text style={styles.removeBtnText}>Remove & Reupload</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.uploadBox, { borderColor: colors.border }]}
+              onPress={handlePickQrPhoto}
+            >
+              <Ionicons name="qr-code-outline" size={28} color={colors.gold} />
+              <Text style={[styles.uploadTitle, { color: colors.text }]}>Upload Your Payment QR</Text>
+              <Text style={styles.uploadSubtitle}>Tap to open phone library storage</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.saveBtn, { backgroundColor: colors.primary }]}
           onPress={handleSaveBankDetails}
           disabled={saving}
         >

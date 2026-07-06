@@ -6,8 +6,11 @@ import {
   fetchCustomers, saveCustomer, updateCustomer as fsUpdateCustomer,
   saveBooking, updateBooking as fsUpdateBooking,
   fetchAdminSettings, saveAdminSettings,
+  subscribeToArtists,
   subscribeToCustomerBookings, subscribeToArtistBookings, subscribeToAllBookings,
+  sendChatMessage, conversationId,
 } from "@/firebase/firestoreService";
+import { parseBookingDateTime } from "@/utils/dateUtils";
 
 export interface ArtistPackage {
   id: string;
@@ -59,6 +62,12 @@ export interface Artist {
   portfolioImages?: string[]; // custom portfolio images uploaded by artist
   idCardPhoto?: string; // Government ID document base64 photo
   bankDetailsPhoto?: string; // Cancelled Cheque / Bank Passbook base64 photo
+  idType?: string; // Government ID type (Aadhaar, PAN, etc.)
+  idNumber?: string; // Government ID number
+  bankAccountNumber?: string; // Payout bank account number
+  bankIfsc?: string; // Payout bank IFSC code
+  upiId?: string; // Artist's own UPI ID (used by admin to pay the artist)
+  upiQrPhoto?: string; // Artist's own payment QR image (base64 data URI)
 }
 
 export interface Customer {
@@ -154,16 +163,7 @@ export interface AdminStats {
   pendingApprovals: number;
 }
 
-// ── No mock data — all artists, customers, bookings come from Firebase Firestore ──
-
-const MOCK_ARTIST_REPLIES = [
-  "Thank you for reaching out! I'd love to create something beautiful for you.",
-  "Of course! I'm available on that date. Let me know the occasion.",
-  "My rates start from ₹2,500 depending on the design complexity.",
-  "I'll send you portfolio photos. What style do you prefer?",
-  "Thank you! Please book through the app to confirm your slot.",
-];
-
+// ── No mock data — all artists, customers, bookings & chats come from Firebase Firestore ──
 
 export const ADMIN_UPI_ID = "rangritii.admin@upi";
 
@@ -317,6 +317,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     load();
   }, []);
 
+  // ── Real-time artists subscription (keeps admin approvals & new artists in sync) ──
+  useEffect(() => {
+    if (!loaded) return;
+    const unsub = subscribeToArtists((list) => setArtists(list as Artist[]));
+    return () => { try { unsub(); } catch { /* noop */ } };
+  }, [loaded]);
+
+  // Resolve the logged-in artist's own id (needed to scope their booking listener)
+  const myArtistId = useMemo(() => {
+    if (userProfile.role !== "artist") return null;
+    return artists.find((a) => a.phone === userProfile.phone)?.id ?? null;
+  }, [userProfile.role, userProfile.phone, artists]);
+
+  // ── Real-time bookings subscription, scoped by role ──
+  useEffect(() => {
+    if (!loaded) return;
+    let unsub: undefined | (() => void);
+    const role = userProfile.role;
+    if (role === "admin") {
+      unsub = subscribeToAllBookings((list) => setBookings(list as Booking[]));
+    } else if (role === "customer" && userProfile.phone) {
+      unsub = subscribeToCustomerBookings(userProfile.phone, (list) => setBookings(list as Booking[]));
+    } else if (role === "artist" && myArtistId) {
+      unsub = subscribeToArtistBookings(myArtistId, (list) => setBookings(list as Booking[]));
+    }
+    return () => { if (unsub) { try { unsub(); } catch { /* noop */ } } };
+  }, [loaded, userProfile.role, userProfile.phone, myArtistId]);
+
   const setUserProfile = useCallback(async (partial: Partial<UserProfile>) => {
     setUserProfileState((prev) => {
       const next = { ...prev, ...partial };
@@ -466,12 +494,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         let artistComp = 0;
         
         if (initiator === "customer") {
-          // Calculate cancellation policy windows
-          const bookingDate = new Date(b.date + " " + b.startTime.replace(" PM", " PM").replace(" AM", " AM"));
-          const now = new Date();
-          const diffMs = bookingDate.getTime() - now.getTime();
-          const diffHours = diffMs / (1000 * 60 * 60);
-          
+          // Calculate cancellation policy windows (robust date parsing — see utils/dateUtils)
+          const bookingDate = parseBookingDateTime(b.date, b.startTime);
+          const diffHours = bookingDate ? (bookingDate.getTime() - Date.now()) / (1000 * 60 * 60) : Number.POSITIVE_INFINITY;
+
           const policy = b.policyApplied;
           if (diffHours >= policy.tier1Hours) {
             // Tier 1: 100% refund, 0 compensation to artist
@@ -496,9 +522,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const nextArtists = prevArtists.map(a => {
               if (a.id !== b.artistId) return a;
               const nextStrikes = (a.strikes || 0) + 1;
-              return { ...a, strikes: nextStrikes, status: nextStrikes >= 3 ? ("Blocked" as const) : a.status };
+              const nextStatus = nextStrikes >= 3 ? ("Blocked" as const) : a.status;
+              // Persist strike + possible auto-block to Firestore
+              fsUpdateArtist(a.id, { strikes: nextStrikes, status: nextStatus }).catch((e) => console.warn("strike sync error:", e));
+              return { ...a, strikes: nextStrikes, status: nextStatus };
             });
-            AsyncStorage.setItem("rangritii_artists", JSON.stringify(nextArtists)).catch(() => {});
             return nextArtists;
           });
         }
@@ -506,31 +534,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Net payout amount
         const netPayout = b.status === "Completed" ? (b.price - b.commissionAmount) : artistComp;
 
-        return {
-          ...b,
+        const cancelUpdates = {
           status: "Cancelled" as const,
           cancellationInitiator: initiator,
           cancellationRefundAmount: refund,
           cancellationArtistComp: artistComp,
           payoutAmount: netPayout,
-          paymentStatus: initiator === "customer" && refund < b.price ? ("commission_due" as const) : ("unpaid" as const),
+          paymentStatus: (initiator === "customer" && refund < b.price ? "commission_due" : "unpaid") as Booking["paymentStatus"],
         };
+        // Persist cancellation to Firestore so the other party & admin see it
+        fsUpdateBooking(b.id, cancelUpdates).catch((e) => console.warn("cancelBooking sync error:", e));
+
+        return { ...b, ...cancelUpdates };
       });
-      AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
       return next;
     });
   }, []);
 
   const raiseBookingDispute = useCallback((bookingId: string, reason: string) => {
-    setBookings((prev) => {
-      const next = prev.map((b) =>
+    fsUpdateBooking(bookingId, { disputeReason: reason, disputeStatus: "Open" }).catch((e) => console.warn("raiseDispute sync error:", e));
+    setBookings((prev) =>
+      prev.map((b) =>
         b.id === bookingId
           ? { ...b, disputeReason: reason, disputeStatus: "Open" as const }
           : b
-      );
-      AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
-      return next;
-    });
+      )
+    );
   }, []);
 
   const resolveBookingDispute = useCallback((bookingId: string, refundCustomer: boolean) => {
@@ -545,41 +574,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           payStatus = "unpaid" as const;
         }
         
-        return {
-          ...b,
+        const resolveUpdates = {
           disputeStatus: "Resolved" as const,
           disputeRefundAmount: refundAmt,
-          status: refundCustomer ? ("Cancelled" as const) : b.status,
+          status: (refundCustomer ? "Cancelled" : b.status) as Booking["status"],
           paymentStatus: payStatus,
         };
+        fsUpdateBooking(b.id, resolveUpdates).catch((e) => console.warn("resolveDispute sync error:", e));
+        return { ...b, ...resolveUpdates };
       });
-      AsyncStorage.setItem("rangritii_bookings", JSON.stringify(next)).catch(() => {});
       return next;
     });
   }, []);
 
+  // Real chat: persist the message to Firestore (see chat screen for the live subscription).
+  // The previous implementation faked a random "artist" auto-reply, which is removed.
   const sendMessage = useCallback((artistId: string, text: string) => {
-    const userMsg: ChatMessage = { id: Date.now().toString(), text, senderId: "user", timestamp: new Date().toISOString() };
-    setChatMessages((prev) => {
-      const withUser = [...(prev[artistId] ?? []), userMsg];
-      const artistReply: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        text: MOCK_ARTIST_REPLIES[Math.floor(Math.random() * MOCK_ARTIST_REPLIES.length)],
-        senderId: "artist",
-        timestamp: new Date(Date.now() + 2000).toISOString(),
-      };
-      setTimeout(() => {
-        setChatMessages((prev2) => {
-          const next = { ...prev2, [artistId]: [...(prev2[artistId] ?? []), artistReply] };
-          AsyncStorage.setItem("rangritii_chat", JSON.stringify(next)).catch(() => {});
-          return next;
-        });
-      }, 1500);
-      const next = { ...prev, [artistId]: withUser };
-      AsyncStorage.setItem("rangritii_chat", JSON.stringify(next)).catch(() => {});
-      return next;
-    });
-  }, []);
+    const convId = conversationId(userProfile.phone, artistId);
+    sendChatMessage(convId, {
+      text,
+      senderId: "user",
+      timestamp: new Date().toISOString(),
+    }).catch((e) => console.warn("sendMessage Firestore error:", e));
+  }, [userProfile.phone]);
 
   const getArtistById = useCallback((id: string) => artists.find((a) => a.id === id), [artists]);
   const getBookingById = useCallback((id: string) => bookings.find((b) => b.id === id), [bookings]);
@@ -656,11 +673,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       ]
     };
-    setArtists((prev) => {
-      const next = [...prev, newArtist];
-      AsyncStorage.setItem("rangritii_artists", JSON.stringify(next)).catch(() => {});
-      return next;
-    });
+    // Persist to Firestore so the artist reaches the admin approval queue and is
+    // discoverable by customers on other devices (was previously local-only).
+    saveArtist(id, newArtist).catch((e) => console.warn("registerNewArtist Firestore error:", e));
+    setArtists((prev) => [...prev, newArtist]);
     return id;
   }, []);
 

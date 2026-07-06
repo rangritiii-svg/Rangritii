@@ -130,11 +130,11 @@ export default function BookArtistScreen() {
           {
             text: getTranslation(language, "view_my_bookings"),
             onPress: () => {
-              router.dismiss();
+              if (router.canDismiss()) router.dismiss();
               router.push("/(tabs)/bookings");
             },
           },
-          { text: isHindi ? "बंद करें" : "Close", style: "cancel", onPress: () => router.dismiss() },
+          { text: isHindi ? "बंद करें" : "Close", style: "cancel", onPress: () => { if (router.canDismiss()) router.dismiss(); else router.back(); } },
         ]
       );
     }, 1000);
@@ -151,7 +151,7 @@ export default function BookArtistScreen() {
       {/* Header */}
       <LinearGradient colors={["#C9932F", "#A87525"]} style={[styles.header, { paddingTop: Math.max(insets.top + 8, 44) }]}>
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.closeBtn} onPress={() => router.dismiss()}>
+          <TouchableOpacity style={styles.closeBtn} onPress={() => { if (router.canDismiss()) router.dismiss(); else router.back(); }}>
             <Ionicons name="close" size={22} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{getTranslation(language, "book_title")} - {artist.name}</Text>

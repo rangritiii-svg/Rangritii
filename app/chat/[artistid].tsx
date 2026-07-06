@@ -1,28 +1,37 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useApp } from "@/context/AppContext";
+import { useApp, ChatMessage } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { conversationId, subscribeToChat } from "@/firebase/firestoreService";
 
 export default function ChatScreen() {
   const { artistid } = useLocalSearchParams<{ artistid: string }>();
   const artistId = artistid;
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getArtistById, chatMessages, sendMessage } = useApp();
+  const { getArtistById, sendMessage, userProfile } = useApp();
 
   const [inputVal, setInputVal] = useState("");
+  const [chatList, setChatList] = useState<ChatMessage[]>([]);
   const artist = getArtistById(artistid as string);
 
-  // Retrieve chat history, sorted newest first for the inverted FlatList
+  // Live subscription to this conversation's messages in Firestore
+  useEffect(() => {
+    if (!artistId) return;
+    const convId = conversationId(userProfile.phone, artistId as string);
+    const unsub = subscribeToChat(convId, (msgs) => setChatList(msgs as ChatMessage[]));
+    return () => { try { unsub(); } catch { /* noop */ } };
+  }, [artistId, userProfile.phone]);
+
+  // Sort newest first for the inverted FlatList
   const messages = useMemo(() => {
-    const chatList = chatMessages[artistid as string] ?? [];
     return [...chatList].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-  }, [chatMessages, artistId]);
+  }, [chatList]);
 
   if (!artist) {
     return (

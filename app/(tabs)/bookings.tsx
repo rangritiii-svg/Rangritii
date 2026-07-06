@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp, Booking } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { getTranslation } from "@/constants/locale";
+import { parseBookingDateTime } from "@/utils/dateUtils";
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: "#F59E0B",
@@ -39,10 +40,12 @@ export default function BookingsScreen() {
 
   const isArtist = userProfile.role === "artist";
 
-  // For demo: artist sees all bookings; customer sees their own
+  // Scope bookings to the signed-in user. The booking listener in AppContext already
+  // filters server-side (artists by artistId, customers by phone). For customers we also
+  // filter defensively here so no user ever sees another customer's details.
   const myBookings = isArtist
-    ? bookings // artist sees all as incoming requests
-    : bookings.filter(b => b.customerName === (userProfile.name || "Customer") || true); // customer sees all for demo
+    ? bookings
+    : bookings.filter(b => b.customerPhone === userProfile.phone);
 
   const filtered = myBookings.filter(b => {
     if (activeTab === "pending_artist") return b.status === "Pending";
@@ -135,11 +138,9 @@ export default function BookingsScreen() {
       return;
     }
 
-    // Confirmed booking cancellation refund preview
-    const bookingDate = new Date(booking.date + " " + booking.startTime.replace(" PM", " PM").replace(" AM", " AM"));
-    const now = new Date();
-    const diffMs = bookingDate.getTime() - now.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
+    // Confirmed booking cancellation refund preview (robust date parsing — see utils/dateUtils)
+    const bookingDate = parseBookingDateTime(booking.date, booking.startTime);
+    const diffHours = bookingDate ? (bookingDate.getTime() - Date.now()) / (1000 * 60 * 60) : Number.POSITIVE_INFINITY;
     const policy = booking.policyApplied;
     
     let refund = booking.price;

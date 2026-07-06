@@ -1,5 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
@@ -78,7 +79,29 @@ export default function AdminDashboard() {
     }
     await updateAdminUpiId(upiInput.trim());
     await updateAdminQrCodeUrl(qrInput.trim());
-    Alert.alert("Settings Saved ✅", "Admin UPI ID and QR Code URL updated successfully.");
+    Alert.alert("Settings Saved ✅", "Admin UPI ID and QR Code updated successfully.");
+  };
+
+  const handlePickAdminQr = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "We need library permissions to upload your payment QR code.");
+      return;
+    }
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.6,
+        base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets[0].base64) {
+        setQrInput(`data:image/jpeg;base64,${result.assets[0].base64}`);
+      }
+    } catch (e) {
+      console.warn("Admin QR picker error:", e);
+    }
   };
 
   const handleSaveContactDetails = async () => {
@@ -751,6 +774,7 @@ export default function AdminDashboard() {
               payoutsDueToArtists.map(b => {
                 const total = b.price + b.commissionAmount;
                 const artistShare = b.price; // Artist gets the price of the package, Admin retains commission fee
+                const payoutArtist = artists.find(a => a.id === b.artistId);
                 return (
                   <View key={b.id} style={[styles.bookingRow, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, padding: 14, borderRadius: 12, marginBottom: 12 }]}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -767,6 +791,30 @@ export default function AdminDashboard() {
                         <Text style={{ fontSize: 16, fontFamily: "Poppins_700Bold", color: "#10B981" }}>₹{artistShare.toLocaleString("en-IN")}</Text>
                         <Text style={{ fontSize: 10, fontFamily: "Poppins_600SemiBold", color: colors.primary, marginTop: 2 }}>Payout Due</Text>
                       </View>
+                    </View>
+
+                    {/* Artist's payment details so admin can pay them */}
+                    <View style={{ marginTop: 10, backgroundColor: colors.secondary, borderRadius: 10, padding: 10 }}>
+                      <Text style={{ fontSize: 10, fontFamily: "Poppins_700Bold", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 }}>Pay this artist via</Text>
+                      {payoutArtist?.upiId ? (
+                        <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: colors.gold, marginTop: 4 }}>UPI: {payoutArtist.upiId}</Text>
+                      ) : null}
+                      {payoutArtist?.bankAccountNumber ? (
+                        <Text style={{ fontSize: 11, fontFamily: "Poppins_500Medium", color: colors.text, marginTop: 2 }}>
+                          A/C: {payoutArtist.bankAccountNumber}{payoutArtist.bankIfsc ? ` · IFSC: ${payoutArtist.bankIfsc}` : ""}
+                        </Text>
+                      ) : null}
+                      {payoutArtist?.upiQrPhoto ? (
+                        <View style={{ alignItems: "center", marginTop: 8 }}>
+                          <Image source={{ uri: payoutArtist.upiQrPhoto }} style={{ width: 150, height: 150, borderRadius: 10, backgroundColor: "#fff" }} resizeMode="contain" />
+                          <Text style={{ fontSize: 9, color: colors.mutedForeground, marginTop: 4 }}>Artist's payment QR</Text>
+                        </View>
+                      ) : null}
+                      {!payoutArtist?.upiId && !payoutArtist?.bankAccountNumber && !payoutArtist?.upiQrPhoto ? (
+                        <Text style={{ fontSize: 11, fontFamily: "Poppins_400Regular", color: colors.mutedForeground, marginTop: 4, fontStyle: "italic" }}>
+                          This artist hasn't added payout details yet.
+                        </Text>
+                      ) : null}
                     </View>
 
                     <View style={{ flexDirection: "row", gap: 8, marginTop: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }}>
@@ -861,17 +909,42 @@ export default function AdminDashboard() {
                 autoCapitalize="none"
               />
 
-              <Text style={{ color: colors.text, marginTop: 12, fontSize: 13, fontFamily: "Poppins_600SemiBold" }}>Custom QR Code Image URL (Optional)</Text>
-              <TextInput
-                style={[styles.settingsInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, width: "100%", marginTop: 4, height: 42, paddingHorizontal: 12, borderRadius: 8 }]}
-                value={qrInput}
-                onChangeText={setQrInput}
-                placeholder="e.g. https://domain.com/qr.png"
-                autoCapitalize="none"
-              />
-              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
-                Leave empty to dynamically generate the QR Code using your UPI ID.
-              </Text>
+              <Text style={{ color: colors.text, marginTop: 12, fontSize: 13, fontFamily: "Poppins_600SemiBold" }}>Payment QR Code (Optional)</Text>
+
+              {qrInput.startsWith("data:image") ? (
+                <View style={{ alignItems: "center", marginTop: 8 }}>
+                  <Image source={{ uri: qrInput }} style={{ width: 180, height: 180, borderRadius: 12, backgroundColor: "#fff" }} resizeMode="contain" />
+                  <TouchableOpacity
+                    style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, backgroundColor: "rgba(220,38,38,0.1)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+                    onPress={() => setQrInput("")}
+                  >
+                    <Ionicons name="trash-outline" size={14} color="#dc2626" />
+                    <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: "#dc2626" }}>Remove QR</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, paddingVertical: 16, marginTop: 8 }}
+                    onPress={handlePickAdminQr}
+                  >
+                    <Ionicons name="qr-code-outline" size={22} color={colors.gold} />
+                    <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: colors.text }}>Upload QR Image from Phone</Text>
+                  </TouchableOpacity>
+
+                  <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 12, fontFamily: "Poppins_500Medium" }}>…or paste a QR image URL</Text>
+                  <TextInput
+                    style={[styles.settingsInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, width: "100%", marginTop: 4, height: 42, paddingHorizontal: 12, borderRadius: 8 }]}
+                    value={qrInput}
+                    onChangeText={setQrInput}
+                    placeholder="e.g. https://domain.com/qr.png"
+                    autoCapitalize="none"
+                  />
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
+                    Leave empty to dynamically generate the QR Code using your UPI ID.
+                  </Text>
+                </>
+              )}
 
               <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary, marginTop: 16 }]} onPress={handleSaveUpiDetails}>
                 <Ionicons name="save-outline" size={16} color="#fff" />
