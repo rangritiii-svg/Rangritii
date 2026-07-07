@@ -5,13 +5,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Alert, ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView,
+  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, FlatList
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
-import { sendEmailVerification } from "@/utils/verificationService";
 import app from "@/firebase/config";
 import { sendPhoneOtp, verifyPhoneOtp } from "@/firebase/authService";
 import type { ConfirmationResult } from "firebase/auth";
@@ -42,11 +41,7 @@ export default function CustomerLoginScreen() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Email verification states (Sign Up only)
-  const [email, setEmail] = useState("");
-  const [emailOtp, setEmailOtp] = useState("");
-  const [generatedEmailOtp, setGeneratedEmailOtp] = useState("");
-  const [emailPreviewUrl, setEmailPreviewUrl] = useState("");
+
 
   // Dropdown Modal states
   const [stateModalVisible, setStateModalVisible] = useState(false);
@@ -71,7 +66,6 @@ export default function CustomerLoginScreen() {
   const handleSendOtp = async () => {
     if (!isLogin && !name.trim()) { Alert.alert("Required", "Please enter your full name."); return; }
     if (phone.length !== 10) { Alert.alert("Invalid Number", "Please enter a valid 10-digit mobile number."); return; }
-    if (!isLogin && !email.trim()) { Alert.alert("Required", "Please enter your email address."); return; }
     if (!isLogin && !state) { Alert.alert("Required", "Please select your state."); return; }
     if (!isLogin && !city) { Alert.alert("Required", "Please select your city."); return; }
 
@@ -94,24 +88,7 @@ export default function CustomerLoginScreen() {
     }
 
     try {
-      // 1. Send email OTP (Sign Up only)
-      if (!isLogin) {
-        const emailCode = Math.floor(1000 + Math.random() * 9000).toString();
-        setGeneratedEmailOtp(emailCode);
-        const res = await sendEmailVerification(email.trim(), emailCode, language);
-        if (!res.success) {
-          setLoading(false);
-          Alert.alert("Verification Email Failed", res.error || "Could not send email OTP.");
-          return;
-        }
-        if (res.isSimulated) {
-          Alert.alert("Email Server Offline", `Simulated email OTP: ${emailCode}`);
-        }
-        setEmailPreviewUrl(res.previewUrl || "");
-        setEmailOtp("");
-      }
-
-      // 2. Send phone OTP via Firebase
+      // Send phone OTP via Firebase
       const result = await sendPhoneOtp(`+91${phone}`, recaptchaVerifier.current);
       setConfirmationResult(result);
       setOtpSent(true);
@@ -134,12 +111,6 @@ export default function CustomerLoginScreen() {
   const handleVerify = async () => {
     if (otp.length < 6) { Alert.alert("Invalid OTP", "Please enter the complete 6-digit SMS OTP."); return; }
     if (!confirmationResult) { Alert.alert("Error", "Please request an OTP first."); return; }
-
-    // Verify email OTP for Sign Up
-    if (!isLogin) {
-      if (emailOtp.length < 4) { Alert.alert("Invalid Code", "Enter the 4-digit Email verification code."); return; }
-      if (emailOtp !== generatedEmailOtp) { Alert.alert("Wrong Code", "The email verification code is incorrect. Check your inbox."); return; }
-    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setLoading(true);
@@ -234,12 +205,6 @@ export default function CustomerLoginScreen() {
               <TextInput style={[styles.input, { color: colors.text }]} placeholder="Your full name" placeholderTextColor={colors.mutedForeground} value={name} onChangeText={setName} autoCapitalize="words" />
             </View>
 
-            <Text style={[styles.label, { color: colors.text }]}>Email Address *</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="mail-outline" size={18} color={colors.mutedForeground} />
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="yourname@domain.com" placeholderTextColor={colors.mutedForeground} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-            </View>
-
             <Text style={[styles.label, { color: colors.text }]}>State *</Text>
             <TouchableOpacity style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setStateModalVisible(true)}>
               <Ionicons name="map-outline" size={18} color={colors.mutedForeground} />
@@ -308,35 +273,6 @@ export default function CustomerLoginScreen() {
                 autoFocus
               />
             </View>
-
-            {/* Email OTP — Sign Up only */}
-            {!isLogin && (
-              <>
-                <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
-                  {language === "hi_IN" ? "ईमेल सत्यापन कोड" : "Email Verification Code"}
-                </Text>
-                <Text style={[styles.otpHint, { color: colors.mutedForeground }]}>
-                  {language === "hi_IN" ? `कोड ${email} पर भेजा गया है` : `Verification code sent to ${email}`}
-                </Text>
-                <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <Ionicons name="mail-outline" size={18} color={colors.mutedForeground} />
-                  <TextInput
-                    style={[styles.input, { color: colors.text, letterSpacing: 6, fontSize: 20 }]}
-                    placeholder="• • • •"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={emailOtp}
-                    onChangeText={setEmailOtp}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                  />
-                </View>
-                {emailPreviewUrl ? (
-                  <TouchableOpacity style={{ marginTop: 10, padding: 12, backgroundColor: "#FFF8F0", borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, alignItems: "center" }} onPress={() => Linking.openURL(emailPreviewUrl)}>
-                    <Text style={{ fontSize: 12, color: colors.primary, fontFamily: "Poppins_600SemiBold" }}>✉️ Tap to Open Test Email Inbox</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </>
-            )}
           </>
         )}
 

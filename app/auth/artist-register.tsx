@@ -6,12 +6,11 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Linking, Modal, FlatList
+  StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Modal, FlatList
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
-import { sendEmailVerification } from "@/utils/verificationService";
 
 const INDIAN_STATES_CITIES: Record<string, string[]> = {
   "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
@@ -47,13 +46,7 @@ export default function ArtistRegisterScreen() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Email verification states
-  const [emailOtp, setEmailOtp] = useState("");
-  const [generatedEmailOtp, setGeneratedEmailOtp] = useState("");
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
-  const [emailPreviewUrl, setEmailPreviewUrl] = useState("");
-  const [sendingEmail, setSendingEmail] = useState(false);
+
 
   // Dropdown Modal states
   const [stateModalVisible, setStateModalVisible] = useState(false);
@@ -191,7 +184,6 @@ export default function ArtistRegisterScreen() {
       if (!fullName.trim()) { Alert.alert("Required", "Please enter your full name."); return false; }
       if (phone.length !== 10) { Alert.alert("Required", "Enter a valid 10-digit phone number."); return false; }
       if (!email.trim()) { Alert.alert("Required", "Please enter your email address."); return false; }
-      if (!emailVerified) { Alert.alert("Verification Required", "Please verify your email address to continue."); return false; }
     }
     if (step === 2) {
       if (!state.trim() || !city.trim() || !area.trim()) { Alert.alert("Required", "State, city and area are required."); return false; }
@@ -221,54 +213,7 @@ export default function ArtistRegisterScreen() {
     return true;
   };
 
-  const handleSendEmailOtp = async () => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email.trim())) {
-      Alert.alert("Invalid Email", "Please enter a valid email address.");
-      return;
-    }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setSendingEmail(true);
-
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedEmailOtp(code);
-
-    const res = await sendEmailVerification(email.trim(), code, language);
-    setSendingEmail(false);
-
-    if (res.success) {
-      setEmailOtpSent(true);
-      setEmailOtp("");
-      if (res.isSimulated) {
-        Alert.alert(
-          "Express Server Offline",
-          `We couldn't connect to the backend server. The email OTP has been simulated. Your code is: ${code}`,
-          [{ text: "OK" }]
-        );
-      } else {
-        Alert.alert("Code Sent", "A 4-digit verification code has been sent to your email address.");
-      }
-      if (res.previewUrl) {
-        setEmailPreviewUrl(res.previewUrl);
-      } else {
-        setEmailPreviewUrl("");
-      }
-    } else {
-      Alert.alert("Error", res.error);
-    }
-  };
-
-  const handleVerifyEmailOtp = () => {
-    if (emailOtp === generatedEmailOtp) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      setEmailVerified(true);
-      setEmailOtpSent(false);
-      Alert.alert("Verified!", "Your email address has been successfully verified.");
-    } else {
-      Alert.alert("Incorrect Code", "The code you entered is incorrect. Please check your inbox or click the Ethereal mail preview link.");
-    }
-  };
 
   const handleNext = () => {
     if (!validateStep()) return;
@@ -390,52 +335,8 @@ export default function ArtistRegisterScreen() {
             </Field>
 
             <Field label="Email Address *" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="yourname@domain.com" placeholderTextColor={colors.mutedForeground} value={email} onChangeText={(val) => { setEmail(val); setEmailVerified(false); }} keyboardType="email-address" autoCapitalize="none" editable={!emailVerified} />
-              {emailVerified ? (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="checkmark-circle" size={18} color="#2e7d32" />
-                  <Text style={{ fontSize: 12, color: "#2e7d32", fontFamily: "Poppins_600SemiBold" }}>Verified</Text>
-                </View>
-              ) : emailOtpSent ? (
-                <TouchableOpacity onPress={() => { setEmailOtpSent(false); setEmailVerified(false); }}>
-                  <Text style={{ fontSize: 12, color: colors.gold, fontFamily: "Poppins_600SemiBold" }}>Change</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity onPress={handleSendEmailOtp} disabled={sendingEmail}>
-                  <Text style={{ fontSize: 12, color: colors.gold, fontFamily: "Poppins_600SemiBold" }}>{sendingEmail ? "Sending..." : "Verify"}</Text>
-                </TouchableOpacity>
-              )}
+              <TextInput style={[styles.input, { color: colors.text }]} placeholder="yourname@domain.com" placeholderTextColor={colors.mutedForeground} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
             </Field>
-
-            {emailOtpSent && !emailVerified && (
-              <View style={{ marginTop: 4, marginBottom: 12, padding: 12, backgroundColor: colors.secondary, borderRadius: 12, borderWidth: 1, borderColor: colors.border, gap: 8 }}>
-                <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.text }}>Enter Verification Code</Text>
-                <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-                  <TextInput style={{ flex: 1, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 14, fontFamily: "Poppins_400Regular", color: colors.text }} placeholder="4-digit code" keyboardType="number-pad" maxLength={4} value={emailOtp} onChangeText={setEmailOtp} />
-                  <TouchableOpacity style={{ backgroundColor: colors.gold, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 }} onPress={handleVerifyEmailOtp}>
-                    <Text style={{ color: "#fff", fontFamily: "Poppins_600SemiBold", fontSize: 12 }}>Verify Code</Text>
-                  </TouchableOpacity>
-                </View>
-                {emailPreviewUrl ? (
-                  <TouchableOpacity 
-                    style={{ 
-                      marginTop: 4, 
-                      padding: 10, 
-                      backgroundColor: "#FFF8F0", 
-                      borderWidth: 1, 
-                      borderColor: colors.gold, 
-                      borderRadius: 8,
-                      alignItems: "center" 
-                    }} 
-                    onPress={() => Linking.openURL(emailPreviewUrl)}
-                  >
-                    <Text style={{ fontSize: 11, color: colors.gold, fontFamily: "Poppins_600SemiBold" }}>
-                      ✉️ Tap to Open Test Email Inbox
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            )}
 
             <Field label="Years of Experience *" colors={colors}>
               <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. 5" placeholderTextColor={colors.mutedForeground} value={experience} onChangeText={setExperience} keyboardType="number-pad" maxLength={2} />
