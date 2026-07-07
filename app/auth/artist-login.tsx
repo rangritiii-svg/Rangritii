@@ -1,15 +1,19 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet, Text, TextInput, TouchableOpacity, View
+  Alert, KeyboardAvoidingView, Platform, ScrollView,
+  StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import app from "@/firebase/config";
+import { sendPhoneOtp, verifyPhoneOtp } from "@/firebase/authService";
+import type { ConfirmationResult } from "firebase/auth";
 
 export default function ArtistLoginScreen() {
   const colors = useColors();
@@ -20,108 +24,99 @@ export default function ArtistLoginScreen() {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // OTP System States
-  const [generatedOtp, setGeneratedOtp] = useState("");
-  const [smsVisible, setSmsVisible] = useState(false);
   const [timer, setTimer] = useState(0);
-  const translateY = useRef(new Animated.Value(-150)).current;
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  // Countdown timer effect
+  // reCAPTCHA verifier ref — required by Firebase Phone Auth on React Native
+  const recaptchaVerifier = useRef<any>(null);
+
+  // Countdown timer for Resend OTP
   useEffect(() => {
     let interval: any;
     if (timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
+      interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     }
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (phone.length !== 10) {
       Alert.alert("Invalid Number", "Please enter a valid 10-digit mobile number.");
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setLoading(true);
-
-    setTimeout(() => {
-      const code = Math.floor(1000 + Math.random() * 9000).toString();
-      setGeneratedOtp(code);
-      setLoading(false);
+    try {
+      const fullPhone = `+91${phone}`;
+      const result = await sendPhoneOtp(fullPhone, recaptchaVerifier.current);
+      setConfirmationResult(result);
       setOtpSent(true);
       setTimer(30);
       setOtp("");
-
-      // Show SMS notification with animation
-      setSmsVisible(true);
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 40,
-        friction: 7
-      }).start();
-
-      // Auto hide SMS after 8 seconds
-      setTimeout(() => {
-        Animated.timing(translateY, {
-          toValue: -150,
-          duration: 300,
-          useNativeDriver: true
-        }).start(() => setSmsVisible(false));
-      }, 8000);
-    }, 1200);
-  };
-
-  const handleSmsPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    setOtp(generatedOtp);
-    // Slide up SMS
-    Animated.timing(translateY, {
-      toValue: -150,
-      duration: 250,
-      useNativeDriver: true
-    }).start(() => setSmsVisible(false));
+      setLoading(false);
+      Alert.alert(
+        "OTP Sent ✅",
+        `A 6-digit verification code has been sent to +91 ${phone} via SMS.`
+      );
+    } catch (err: any) {
+      setLoading(false);
+      console.error("sendPhoneOtp error:", err);
+      Alert.alert(
+        "Failed to Send OTP",
+        err?.message?.includes("auth/invalid-phone-number")
+          ? "The phone number you entered is invalid. Please check and try again."
+          : err?.message?.includes("auth/too-many-requests")
+          ? "Too many attempts. Please wait a few minutes before trying again."
+          : "Could not send OTP. Please check your internet connection and try again."
+      );
+    }
   };
 
   const handleVerify = async () => {
-    if (otp.length < 4) {
-      Alert.alert("Invalid OTP", "Please enter the 4-digit OTP.");
+    if (otp.length < 6) {
+      Alert.alert("Invalid OTP", "Please enter the complete 6-digit OTP.");
       return;
     }
-    if (otp !== generatedOtp) {
-      Alert.alert("Invalid OTP", "The OTP you entered is incorrect. Tap the notification banner to copy.");
+    if (!confirmationResult) {
+      Alert.alert("Error", "Please request an OTP first.");
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setLoading(true);
+    try {
+      await verifyPhoneOtp(confirmationResult, otp);
 
-    const cleanPhone = `+91 ${phone}`;
-    const matchedArtist = artists.find((a) => a.phone === cleanPhone);
+      const cleanPhone = `+91 ${phone}`;
+      const matchedArtist = artists.find((a) => a.phone === cleanPhone);
 
-    if (matchedArtist) {
-      // Login existing artist
-      await setUserProfile({
-        role: "artist",
-        name: matchedArtist.name,
-        phone: cleanPhone,
-        city: matchedArtist.city,
-        area: matchedArtist.area,
-      });
-      setTimeout(() => {
+      if (matchedArtist) {
+        await setUserProfile({
+          role: "artist",
+          name: matchedArtist.name,
+          phone: cleanPhone,
+          city: matchedArtist.city,
+          area: matchedArtist.area,
+        });
         setLoading(false);
         router.replace("/(tabs)");
-      }, 600);
-    } else {
-      // Redirect to registration for new artists
-      setTimeout(() => {
+      } else {
         setLoading(false);
         router.push({
           pathname: "/auth/artist-register",
           params: { phone },
         });
-      }, 600);
+      }
+    } catch (err: any) {
+      setLoading(false);
+      console.error("verifyPhoneOtp error:", err);
+      Alert.alert(
+        "Verification Failed",
+        err?.message?.includes("auth/invalid-verification-code")
+          ? "The OTP you entered is incorrect. Please check the SMS and try again."
+          : err?.message?.includes("auth/code-expired")
+          ? "This OTP has expired. Please tap 'Resend OTP' to get a new one."
+          : "Verification failed. Please try again."
+      );
     }
   };
 
@@ -130,32 +125,12 @@ export default function ArtistLoginScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {/* Dynamic Simulated SMS Notification */}
-      {smsVisible && (
-        <Animated.View style={[styles.smsToastContainer, { transform: [{ translateY }], top: Math.max(insets.top + 10, 20) }]}>
-          <TouchableOpacity style={[styles.smsToastContent, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleSmsPress} activeOpacity={0.95}>
-            <View style={styles.smsHeader}>
-              <View style={[styles.smsIconBg, { backgroundColor: colors.gold }]}>
-                <Ionicons name="chatbubble" size={12} color="#fff" />
-              </View>
-              <Text style={[styles.smsTitle, { color: colors.mutedForeground }]}>
-                {language === "hi_IN" ? "संदेश • अभी" : "MESSAGES • now"}
-              </Text>
-            </View>
-            <Text style={[styles.smsSender, { color: colors.text }]}>Rangritii Artist Secure Auth</Text>
-            <Text style={[styles.smsText, { color: colors.text }]}>
-              {language === "hi_IN"
-                ? `रंगरीति आर्टिस्ट लॉगिन कोड: ${generatedOtp} है। ऑटो-फिल करने के लिए यहाँ दबाएं।`
-                : `Your Rangritii artist verification code is ${generatedOtp}. Tap here to auto-fill.`}
-            </Text>
-            <View style={styles.smsTapHint}>
-              <Text style={[styles.smsTapHintText, { color: colors.gold }]}>
-                {language === "hi_IN" ? "⚡ ऑटो-फिल करने के लिए स्पर्श करें" : "⚡ Tap to auto-fill automatically"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+      {/* Firebase reCAPTCHA — invisible, required for Phone Auth on React Native */}
+      <FirebaseRecaptchaVerifierModal
+        ref={recaptchaVerifier}
+        firebaseConfig={app.options}
+        attemptInvisibleVerification={true}
+      />
 
       {/* Header */}
       <LinearGradient colors={["#C9932F", "#A87525"]} style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}>
@@ -167,7 +142,7 @@ export default function ArtistLoginScreen() {
             <MaterialCommunityIcons name="flower" size={28} color="#C9932F" />
           </View>
           <Text style={styles.headerTitle}>Mehndi Artist Login</Text>
-          <Text style={styles.headerSubtitle}>Grow your business with Rangritii</Text>
+          <Text style={styles.headerSubtitle}>Grow your business with RangRiti</Text>
         </View>
       </LinearGradient>
 
@@ -180,7 +155,7 @@ export default function ArtistLoginScreen() {
           </Text>
         </View>
 
-        {/* Phone */}
+        {/* Phone Input */}
         <Text style={[styles.label, { color: colors.text }]}>Registered Mobile Number *</Text>
         <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.countryCode, { color: colors.text }]}>🇮🇳 +91</Text>
@@ -195,51 +170,55 @@ export default function ArtistLoginScreen() {
             editable={!otpSent}
           />
           {otpSent && (
-            <TouchableOpacity onPress={() => setOtpSent(false)}>
+            <TouchableOpacity onPress={() => { setOtpSent(false); setConfirmationResult(null); }}>
               <Text style={[styles.changeLink, { color: colors.gold }]}>Change</Text>
             </TouchableOpacity>
           )}
         </View>
 
+        {/* OTP Input — shown after SMS is sent */}
         {otpSent && (
           <>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
-              <Text style={[styles.label, { color: colors.text, marginTop: 0 }]}>Enter OTP</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
+              <Text style={[styles.label, { color: colors.text, marginTop: 0 }]}>
+                {language === "hi_IN" ? "OTP दर्ज करें" : "Enter OTP"}
+              </Text>
               {timer > 0 ? (
                 <Text style={{ fontSize: 12, color: colors.gold, fontFamily: "Poppins_600SemiBold" }}>
                   {language === "hi_IN" ? `${timer}s में पुनः भेजें` : `Resend in ${timer}s`}
                 </Text>
               ) : (
-                <TouchableOpacity onPress={handleSendOtp}>
+                <TouchableOpacity onPress={handleSendOtp} disabled={loading}>
                   <Text style={{ fontSize: 12, color: colors.gold, fontFamily: "Poppins_700Bold" }}>
-                    {language === "hi_IN" ? "ओटीपी पुनः भेजें" : "Resend OTP"}
+                    {language === "hi_IN" ? "OTP पुनः भेजें" : "Resend OTP"}
                   </Text>
                 </TouchableOpacity>
               )}
             </View>
-            <Text style={[styles.otpHint, { color: colors.mutedForeground, marginBottom: 6 }]}>
-              {language === "hi_IN" ? `ओटीपी +91 ${phone} पर भेज दिया गया है` : `OTP has been sent to +91 ${phone}`}
+
+            <Text style={[styles.otpHint, { color: colors.mutedForeground }]}>
+              {language === "hi_IN"
+                ? `6-अंकीय OTP +91 ${phone} पर भेज दिया गया है`
+                : `A 6-digit OTP has been sent to +91 ${phone}`}
             </Text>
+
             <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name="shield-checkmark-outline" size={18} color={colors.mutedForeground} />
               <TextInput
-                style={[styles.input, { color: colors.text }]}
-                placeholder="4-digit OTP"
+                style={[styles.input, { color: colors.text, letterSpacing: 6, fontSize: 20 }]}
+                placeholder="• • • • • •"
                 placeholderTextColor={colors.mutedForeground}
                 value={otp}
                 onChangeText={setOtp}
                 keyboardType="number-pad"
-                maxLength={4}
+                maxLength={6}
+                autoFocus
               />
             </View>
-            <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4, fontStyle: "italic" }}>
-              {language === "hi_IN" 
-                ? "💡 परीक्षण के लिए: स्क्रीन के शीर्ष पर आए संदेश अधिसूचना पर टैप करें।" 
-                : "💡 For testing: Tap the SMS notification toast at the top of the screen to auto-fill."}
-            </Text>
           </>
         )}
 
+        {/* Action Button */}
         {!otpSent ? (
           <TouchableOpacity
             style={[styles.primaryBtn, { backgroundColor: colors.gold }]}
@@ -247,9 +226,10 @@ export default function ArtistLoginScreen() {
             activeOpacity={0.85}
             disabled={loading}
           >
-            <Text style={[styles.primaryBtnText, { color: "#fff" }]}>
-              {loading ? "Sending OTP..." : "Send OTP"}
-            </Text>
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={[styles.primaryBtnText, { color: "#fff" }]}>Send OTP via SMS</Text>
+            }
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -258,16 +238,19 @@ export default function ArtistLoginScreen() {
             activeOpacity={0.85}
             disabled={loading}
           >
-            <Ionicons name="checkmark-circle" size={20} color="#fff" />
-            <Text style={[styles.primaryBtnText, { color: "#fff" }]}>
-              {loading ? "Verifying..." : "Verify & Continue"}
-            </Text>
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <>
+                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={[styles.primaryBtnText, { color: "#fff" }]}>Verify & Continue</Text>
+                </>
+            }
           </TouchableOpacity>
         )}
 
         {/* New Artist CTA */}
         <View style={[styles.newArtistBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.newArtistTitle, { color: colors.text }]}>New to Rangritii?</Text>
+          <Text style={[styles.newArtistTitle, { color: colors.text }]}>New to RangRiti?</Text>
           <Text style={[styles.newArtistDesc, { color: colors.mutedForeground }]}>
             Create your artist profile and start getting bookings today. Registration takes only 5 minutes.
           </Text>
@@ -282,7 +265,7 @@ export default function ArtistLoginScreen() {
 
         {/* Benefits */}
         <View style={[styles.featureBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          <Text style={[styles.featureTitle, { color: colors.text }]}>Why join Rangritii?</Text>
+          <Text style={[styles.featureTitle, { color: colors.text }]}>Why join RangRiti?</Text>
           {[
             "Get discovered by thousands of customers",
             "Receive bookings 24/7 — even while you sleep",
@@ -309,63 +292,6 @@ export default function ArtistLoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  smsToastContainer: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    zIndex: 9999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  smsToastContent: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-  },
-  smsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
-  smsIconBg: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  smsTitle: {
-    fontSize: 10,
-    fontFamily: "Poppins_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  smsSender: {
-    fontSize: 13,
-    fontFamily: "Poppins_700Bold",
-    marginBottom: 2,
-  },
-  smsText: {
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
-    lineHeight: 18,
-    marginBottom: 6,
-  },
-  smsTapHint: {
-    borderTopWidth: 0.5,
-    borderTopColor: "rgba(0,0,0,0.06)",
-    paddingTop: 6,
-    marginTop: 2,
-  },
-  smsTapHintText: {
-    fontSize: 10,
-    fontFamily: "Poppins_600SemiBold",
-    textAlign: "right",
-  },
   container: { flex: 1 },
   header: { paddingBottom: 28, paddingHorizontal: 20 },
   backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 16 },
@@ -381,7 +307,7 @@ const styles = StyleSheet.create({
   countryCode: { fontSize: 14, fontFamily: "Poppins_500Medium" },
   input: { flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular" },
   changeLink: { fontSize: 12, fontFamily: "Poppins_600SemiBold" },
-  otpHint: { fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 6 },
+  otpHint: { fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 6, marginTop: 4 },
   primaryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 16, marginTop: 20, marginBottom: 8 },
   primaryBtnText: { fontSize: 16, fontFamily: "Poppins_700Bold" },
   newArtistBox: { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 12, gap: 8 },

@@ -1,15 +1,20 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
-import { Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet, Text, TextInput, TouchableOpacity, View, Linking, Modal, FlatList
+import {
+  Alert, ActivityIndicator, KeyboardAvoidingView, Linking, Platform, ScrollView,
+  StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, FlatList
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { sendEmailVerification } from "@/utils/verificationService";
+import app from "@/firebase/config";
+import { sendPhoneOtp, verifyPhoneOtp } from "@/firebase/authService";
+import type { ConfirmationResult } from "firebase/auth";
 
 const INDIAN_STATES_CITIES: Record<string, string[]> = {
   "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
@@ -37,7 +42,7 @@ export default function CustomerLoginScreen() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Email verification states
+  // Email verification states (Sign Up only)
   const [email, setEmail] = useState("");
   const [emailOtp, setEmailOtp] = useState("");
   const [generatedEmailOtp, setGeneratedEmailOtp] = useState("");
@@ -47,24 +52,23 @@ export default function CustomerLoginScreen() {
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
 
-  // OTP System States
-  const [generatedOtp, setGeneratedOtp] = useState("");
-  const [smsVisible, setSmsVisible] = useState(false);
+  // Firebase Phone Auth
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [timer, setTimer] = useState(0);
-  const translateY = useRef(new Animated.Value(-150)).current;
 
-  // Countdown timer effect
+  // reCAPTCHA verifier ref
+  const recaptchaVerifier = useRef<any>(null);
+
+  // Countdown timer for resend
   useEffect(() => {
     let interval: any;
     if (timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
+      interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     }
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (!isLogin && !name.trim()) { Alert.alert("Required", "Please enter your full name."); return; }
     if (phone.length !== 10) { Alert.alert("Invalid Number", "Please enter a valid 10-digit mobile number."); return; }
     if (!isLogin && !email.trim()) { Alert.alert("Required", "Please enter your email address."); return; }
@@ -82,167 +86,119 @@ export default function CustomerLoginScreen() {
       if (!registered) {
         Alert.alert(
           "Not Registered",
-          "This phone number is not registered as a customer. Please switch to the 'Sign Up' tab first to create an account."
+          "This phone number is not registered. Please switch to 'Sign Up' to create an account."
         );
         setLoading(false);
         return;
       }
     }
 
-    setTimeout(async () => {
-      // 1. Generate SMS Code
-      const smsCode = Math.floor(1000 + Math.random() * 9000).toString();
-      setGeneratedOtp(smsCode);
-
-      // 2. Generate Email Code (if in Sign Up mode)
-      let emailCode = "";
+    try {
+      // 1. Send email OTP (Sign Up only)
       if (!isLogin) {
-        emailCode = Math.floor(1000 + Math.random() * 9000).toString();
+        const emailCode = Math.floor(1000 + Math.random() * 9000).toString();
         setGeneratedEmailOtp(emailCode);
-        
         const res = await sendEmailVerification(email.trim(), emailCode, language);
         if (!res.success) {
           setLoading(false);
-          Alert.alert("Verification Email Failed", res.error);
+          Alert.alert("Verification Email Failed", res.error || "Could not send email OTP.");
           return;
         }
-
-        // Handle fallback simulated OTP
         if (res.isSimulated) {
-          Alert.alert(
-            "Express Server Offline",
-            `We couldn't connect to the backend server. The email OTP has been simulated. Your code is: ${emailCode}`,
-            [{ text: "OK" }]
-          );
+          Alert.alert("Email Server Offline", `Simulated email OTP: ${emailCode}`);
         }
-
-        if (res.previewUrl) {
-          setEmailPreviewUrl(res.previewUrl);
-        } else {
-          setEmailPreviewUrl("");
-        }
+        setEmailPreviewUrl(res.previewUrl || "");
+        setEmailOtp("");
       }
 
-      setLoading(false);
+      // 2. Send phone OTP via Firebase
+      const result = await sendPhoneOtp(`+91${phone}`, recaptchaVerifier.current);
+      setConfirmationResult(result);
       setOtpSent(true);
       setTimer(30);
       setOtp("");
-      setEmailOtp("");
-
-      // Show SMS notification with animation
-      setSmsVisible(true);
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 40,
-        friction: 7
-      }).start();
-
-      // Auto hide SMS after 8 seconds
-      setTimeout(() => {
-        Animated.timing(translateY, {
-          toValue: -150,
-          duration: 300,
-          useNativeDriver: true
-        }).start(() => setSmsVisible(false));
-      }, 8000);
-    }, 1200);
-  };
-
-  const handleSmsPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    setOtp(generatedOtp);
-    // Slide up SMS
-    Animated.timing(translateY, {
-      toValue: -150,
-      duration: 250,
-      useNativeDriver: true
-    }).start(() => setSmsVisible(false));
+      setLoading(false);
+      Alert.alert("OTP Sent ✅", `A 6-digit code has been sent to +91 ${phone} via SMS.`);
+    } catch (err: any) {
+      setLoading(false);
+      console.error("sendPhoneOtp error:", err);
+      Alert.alert(
+        "Failed to Send OTP",
+        err?.message?.includes("auth/too-many-requests")
+          ? "Too many attempts. Please wait a few minutes and try again."
+          : "Could not send OTP. Please check your connection and try again."
+      );
+    }
   };
 
   const handleVerify = async () => {
-    if (otp.length < 4) { Alert.alert("Invalid OTP", "Enter the 4-digit SMS OTP."); return; }
-    if (otp !== generatedOtp) { Alert.alert("Invalid OTP", "The SMS OTP you entered is incorrect. Tap the notification banner to copy."); return; }
-    
-    // Check email OTP if registering
+    if (otp.length < 6) { Alert.alert("Invalid OTP", "Please enter the complete 6-digit SMS OTP."); return; }
+    if (!confirmationResult) { Alert.alert("Error", "Please request an OTP first."); return; }
+
+    // Verify email OTP for Sign Up
     if (!isLogin) {
       if (emailOtp.length < 4) { Alert.alert("Invalid Code", "Enter the 4-digit Email verification code."); return; }
-      if (emailOtp !== generatedEmailOtp) { Alert.alert("Invalid Code", "The Email verification code you entered is incorrect. Please check your inbox."); return; }
+      if (emailOtp !== generatedEmailOtp) { Alert.alert("Wrong Code", "The email verification code is incorrect. Check your inbox."); return; }
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setLoading(true);
 
-    const userPhone = `+91 ${phone}`;
-    let userName = name.trim();
-    let userCity = city.trim();
-    let userState = state.trim();
-    let userArea = area.trim();
+    try {
+      // Verify Firebase phone OTP
+      await verifyPhoneOtp(confirmationResult, otp);
 
-    if (isLogin) {
-      const existingCustomer = customers.find(c => c.phone === userPhone);
-      if (existingCustomer) {
-        userName = existingCustomer.name;
-        userCity = existingCustomer.city;
-        userState = existingCustomer.state;
-        userArea = existingCustomer.area;
-      } else {
-        userName = "Customer";
-        userCity = "India";
-        userState = "";
-        userArea = "";
+      const userPhone = `+91 ${phone}`;
+      let userName = name.trim();
+      let userCity = city.trim();
+      let userState = state.trim();
+      let userArea = area.trim();
+
+      if (isLogin) {
+        const existingCustomer = customers.find(c => c.phone === userPhone);
+        if (existingCustomer) {
+          userName = existingCustomer.name;
+          userCity = existingCustomer.city;
+          userState = existingCustomer.state;
+          userArea = existingCustomer.area;
+        } else {
+          userName = "Customer";
+          userCity = "India";
+          userState = "";
+          userArea = "";
+        }
       }
-    }
 
-    if (!isLogin) {
-      addCustomer({
-        name: userName,
-        phone: userPhone,
-        state: userState,
-        city: userCity,
-        area: userArea
-      });
-    }
+      if (!isLogin) {
+        addCustomer({ name: userName, phone: userPhone, state: userState, city: userCity, area: userArea });
+      }
 
-    await setUserProfile({
-      role: "customer",
-      name: userName,
-      phone: userPhone,
-      state: userState,
-      city: userCity,
-      area: userArea,
-    });
-    setTimeout(() => { setLoading(false); router.replace("/(tabs)"); }, 600);
+      await setUserProfile({ role: "customer", name: userName, phone: userPhone, state: userState, city: userCity, area: userArea });
+      setLoading(false);
+      router.replace("/(tabs)");
+    } catch (err: any) {
+      setLoading(false);
+      console.error("verifyPhoneOtp error:", err);
+      Alert.alert(
+        "Verification Failed",
+        err?.message?.includes("auth/invalid-verification-code")
+          ? "The OTP is incorrect. Please check the SMS and try again."
+          : err?.message?.includes("auth/code-expired")
+          ? "OTP expired. Tap 'Resend OTP' to get a new one."
+          : "Verification failed. Please try again."
+      );
+    }
   };
 
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      {/* Dynamic Simulated SMS Notification */}
-      {smsVisible && (
-        <Animated.View style={[styles.smsToastContainer, { transform: [{ translateY }], top: Math.max(insets.top + 10, 20) }]}>
-          <TouchableOpacity style={[styles.smsToastContent, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleSmsPress} activeOpacity={0.95}>
-            <View style={styles.smsHeader}>
-              <View style={[styles.smsIconBg, { backgroundColor: colors.primary }]}>
-                <Ionicons name="chatbubble" size={12} color="#fff" />
-              </View>
-              <Text style={[styles.smsTitle, { color: colors.mutedForeground }]}>
-                {language === "hi_IN" ? "संदेश • अभी" : "MESSAGES • now"}
-              </Text>
-            </View>
-            <Text style={[styles.smsSender, { color: colors.text }]}>Rangritii Security</Text>
-            <Text style={[styles.smsText, { color: colors.text }]}>
-              {language === "hi_IN"
-                ? `रंगरीति के लिए आपका ओटीपी कोड ${generatedOtp} है। ऑटो-फिल करने के लिए यहाँ दबाएं।`
-                : `Your Rangritii verification code is ${generatedOtp}. Tap here to auto-fill.`}
-            </Text>
-            <View style={styles.smsTapHint}>
-              <Text style={[styles.smsTapHintText, { color: colors.primary }]}>
-                {language === "hi_IN" ? "⚡ ऑटो-फिल करने के लिए स्पर्श करें" : "⚡ Tap to auto-fill automatically"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+
+      {/* Firebase reCAPTCHA — invisible, required for Phone Auth */}
+      <FirebaseRecaptchaVerifierModal
+        ref={recaptchaVerifier}
+        firebaseConfig={app.options}
+        attemptInvisibleVerification={true}
+      />
 
       {/* Header */}
       <LinearGradient colors={["#F9AABF", "#E8849E"]} style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}>
@@ -259,17 +215,17 @@ export default function CustomerLoginScreen() {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
-        {/* Toggle */}
+        {/* Login / Sign Up toggle */}
         <View style={[styles.toggleRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          <TouchableOpacity style={[styles.toggleBtn, isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(true); setOtpSent(false); }}>
+          <TouchableOpacity style={[styles.toggleBtn, isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(true); setOtpSent(false); setConfirmationResult(null); }}>
             <Text style={[styles.toggleText, { color: isLogin ? colors.primaryForeground : colors.mutedForeground }]}>Login</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.toggleBtn, !isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(false); setOtpSent(false); }}>
+          <TouchableOpacity style={[styles.toggleBtn, !isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(false); setOtpSent(false); setConfirmationResult(null); }}>
             <Text style={[styles.toggleText, { color: !isLogin ? colors.primaryForeground : colors.mutedForeground }]}>Sign Up</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Sign Up Fields */}
+        {/* Sign Up extra fields */}
         {!isLogin && (
           <>
             <Text style={[styles.label, { color: colors.text }]}>Full Name *</Text>
@@ -287,27 +243,14 @@ export default function CustomerLoginScreen() {
             <Text style={[styles.label, { color: colors.text }]}>State *</Text>
             <TouchableOpacity style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setStateModalVisible(true)}>
               <Ionicons name="map-outline" size={18} color={colors.mutedForeground} />
-              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: state ? colors.text : colors.mutedForeground }}>
-                {state || "Select State"}
-              </Text>
+              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: state ? colors.text : colors.mutedForeground }}>{state || "Select State"}</Text>
               <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
             </TouchableOpacity>
 
             <Text style={[styles.label, { color: colors.text }]}>City *</Text>
-            <TouchableOpacity 
-              style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border, opacity: state ? 1 : 0.6 }]} 
-              onPress={() => {
-                if (!state) {
-                  Alert.alert("Select State First", "Please select a state to view available cities.");
-                  return;
-                }
-                setCityModalVisible(true);
-              }}
-            >
+            <TouchableOpacity style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border, opacity: state ? 1 : 0.6 }]} onPress={() => { if (!state) { Alert.alert("Select State First", "Please select a state to view cities."); return; } setCityModalVisible(true); }}>
               <Ionicons name="business-outline" size={18} color={colors.mutedForeground} />
-              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: city ? colors.text : colors.mutedForeground }}>
-                {city || "Select City"}
-              </Text>
+              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: city ? colors.text : colors.mutedForeground }}>{city || "Select City"}</Text>
               <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
             </TouchableOpacity>
 
@@ -319,99 +262,107 @@ export default function CustomerLoginScreen() {
           </>
         )}
 
-        {/* Mobile */}
+        {/* Mobile Number */}
         <Text style={[styles.label, { color: colors.text }]}>Mobile Number *</Text>
         <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.countryCode, { color: colors.text }]}>🇮🇳 +91</Text>
           <TextInput style={[styles.input, { color: colors.text }]} placeholder="10-digit mobile number" placeholderTextColor={colors.mutedForeground} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} editable={!otpSent} />
-          {otpSent && <TouchableOpacity onPress={() => setOtpSent(false)}><Text style={[styles.changeLink, { color: colors.primary }]}>Change</Text></TouchableOpacity>}
+          {otpSent && (
+            <TouchableOpacity onPress={() => { setOtpSent(false); setConfirmationResult(null); }}>
+              <Text style={[styles.changeLink, { color: colors.primary }]}>Change</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* OTP */}
+        {/* OTP fields — shown after send */}
         {otpSent && (
           <>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
-              <Text style={[styles.label, { color: colors.text, marginTop: 0 }]}>SMS OTP Verification</Text>
+            {/* Phone OTP */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
+              <Text style={[styles.label, { color: colors.text, marginTop: 0 }]}>SMS OTP</Text>
               {timer > 0 ? (
                 <Text style={{ fontSize: 12, color: colors.primary, fontFamily: "Poppins_600SemiBold" }}>
                   {language === "hi_IN" ? `${timer}s में पुनः भेजें` : `Resend in ${timer}s`}
                 </Text>
               ) : (
-                <TouchableOpacity onPress={handleSendOtp}>
+                <TouchableOpacity onPress={handleSendOtp} disabled={loading}>
                   <Text style={{ fontSize: 12, color: colors.primary, fontFamily: "Poppins_700Bold" }}>
-                    {language === "hi_IN" ? "ओटीपी पुनः भेजें" : "Resend OTP"}
+                    {language === "hi_IN" ? "OTP पुनः भेजें" : "Resend OTP"}
                   </Text>
                 </TouchableOpacity>
               )}
             </View>
-            <Text style={[styles.otpHint, { color: colors.mutedForeground, marginBottom: 6 }]}>
-              {language === "hi_IN" ? `ओटीपी +91 ${phone} पर भेज दिया गया है` : `OTP has been sent to +91 ${phone}`}
+            <Text style={[styles.otpHint, { color: colors.mutedForeground }]}>
+              {language === "hi_IN" ? `6-अंकीय OTP +91 ${phone} पर भेज दिया गया है` : `A 6-digit OTP was sent to +91 ${phone}`}
             </Text>
             <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name="shield-checkmark-outline" size={18} color={colors.mutedForeground} />
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="Enter 4-digit SMS OTP" placeholderTextColor={colors.mutedForeground} value={otp} onChangeText={setOtp} keyboardType="number-pad" maxLength={4} />
+              <TextInput
+                style={[styles.input, { color: colors.text, letterSpacing: 6, fontSize: 20 }]}
+                placeholder="• • • • • •"
+                placeholderTextColor={colors.mutedForeground}
+                value={otp}
+                onChangeText={setOtp}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
             </View>
-            <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4, fontStyle: "italic" }}>
-              {language === "hi_IN" 
-                ? "💡 परीक्षण के लिए: स्क्रीन के शीर्ष पर आए संदेश अधिसूचना पर टैप करें।" 
-                : "💡 For testing: Tap the SMS notification toast at the top of the screen to auto-fill."}
-            </Text>
 
-            {/* Email OTP Field (Sign Up Only) */}
+            {/* Email OTP — Sign Up only */}
             {!isLogin && (
               <>
                 <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>
                   {language === "hi_IN" ? "ईमेल सत्यापन कोड" : "Email Verification Code"}
                 </Text>
-                <Text style={[styles.otpHint, { color: colors.mutedForeground, marginBottom: 6 }]}>
-                  {language === "hi_IN" ? `सत्यापन कोड ${email} पर भेजा गया है` : `Verification code has been sent to ${email}`}
+                <Text style={[styles.otpHint, { color: colors.mutedForeground }]}>
+                  {language === "hi_IN" ? `कोड ${email} पर भेजा गया है` : `Verification code sent to ${email}`}
                 </Text>
                 <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <Ionicons name="mail-outline" size={18} color={colors.mutedForeground} />
-                  <TextInput style={[styles.input, { color: colors.text }]} placeholder="Enter 4-digit Email code" placeholderTextColor={colors.mutedForeground} value={emailOtp} onChangeText={setEmailOtp} keyboardType="number-pad" maxLength={4} />
+                  <TextInput
+                    style={[styles.input, { color: colors.text, letterSpacing: 6, fontSize: 20 }]}
+                    placeholder="• • • •"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={emailOtp}
+                    onChangeText={setEmailOtp}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
                 </View>
-
-                {/* Ethereal Inbox Preview Helper (Real-time Developer Assistant) */}
                 {emailPreviewUrl ? (
-                  <TouchableOpacity 
-                    style={{ 
-                      marginTop: 10, 
-                      padding: 12, 
-                      backgroundColor: "#FFF8F0", 
-                      borderWidth: 1.5, 
-                      borderColor: colors.primary, 
-                      borderRadius: 10,
-                      alignItems: "center" 
-                    }} 
-                    onPress={() => Linking.openURL(emailPreviewUrl)}
-                  >
-                    <Text style={{ fontSize: 12, color: colors.primary, fontFamily: "Poppins_600SemiBold" }}>
-                      {language === "hi_IN" ? "✉️ परीक्षण ईमेल देखने के लिए यहाँ टैप करें" : "✉️ Tap to Open Test Email Inbox"}
-                    </Text>
+                  <TouchableOpacity style={{ marginTop: 10, padding: 12, backgroundColor: "#FFF8F0", borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, alignItems: "center" }} onPress={() => Linking.openURL(emailPreviewUrl)}>
+                    <Text style={{ fontSize: 12, color: colors.primary, fontFamily: "Poppins_600SemiBold" }}>✉️ Tap to Open Test Email Inbox</Text>
                   </TouchableOpacity>
-                ) : (
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 4, fontStyle: "italic" }}>
-                    {language === "hi_IN" ? "💡 वास्तविक ईमेल डिलीवरी सक्षम करने के लिए constants/verificationConfig.ts में क्रेडेंशियल्स दर्ज करें।" : "💡 To receive email directly, configure SMTP details in constants/verificationConfig.ts"}
-                  </Text>
-                )}
+                ) : null}
               </>
             )}
           </>
         )}
 
-        {/* Button */}
+        {/* Action Button */}
         {!otpSent ? (
           <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: colors.primary }]} onPress={handleSendOtp} disabled={loading} activeOpacity={0.85}>
-            <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>{loading ? "Sending Code..." : "Send Verification Code"}</Text>
+            {loading
+              ? <ActivityIndicator color={colors.primaryForeground} />
+              : <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Send Verification Code</Text>
+            }
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: colors.primary }]} onPress={handleVerify} disabled={loading} activeOpacity={0.85}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.primaryForeground} />
-            <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>{loading ? "Verifying..." : "Verify & Complete Signup"}</Text>
+            {loading
+              ? <ActivityIndicator color={colors.primaryForeground} />
+              : <>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.primaryForeground} />
+                  <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>
+                    {isLogin ? "Verify & Login" : "Verify & Complete Signup"}
+                  </Text>
+                </>
+            }
           </TouchableOpacity>
         )}
 
-        {/* What you'll see */}
+        {/* Benefits */}
         <View style={[styles.featureBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
           <Text style={[styles.featureTitle, { color: colors.text }]}>🗺️ After Login You Can:</Text>
           {[
@@ -430,7 +381,8 @@ export default function CustomerLoginScreen() {
 
         <TouchableOpacity style={styles.switchRole} onPress={() => router.replace("/auth/artist-login")}>
           <Text style={[styles.switchRoleText, { color: colors.mutedForeground }]}>
-            Are you a Mehndi Artist? <Text style={{ color: colors.gold, fontFamily: "Poppins_600SemiBold" }}>Artist Login →</Text>
+            Are you a Mehndi Artist?{" "}
+            <Text style={{ color: colors.gold, fontFamily: "Poppins_600SemiBold" }}>Artist Login →</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -441,22 +393,13 @@ export default function CustomerLoginScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Select State</Text>
-              <TouchableOpacity onPress={() => setStateModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setStateModalVisible(false)}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
             </View>
             <FlatList
               data={Object.keys(INDIAN_STATES_CITIES)}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
-                  onPress={() => {
-                    setState(item);
-                    setCity("");
-                    setStateModalVisible(false);
-                  }}
-                >
+                <TouchableOpacity style={[styles.modalItem, { borderBottomColor: colors.border }]} onPress={() => { setState(item); setCity(""); setStateModalVisible(false); }}>
                   <Text style={[styles.modalItemText, { color: colors.text }, state === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
                   {state === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
                 </TouchableOpacity>
@@ -472,21 +415,13 @@ export default function CustomerLoginScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Select City</Text>
-              <TouchableOpacity onPress={() => setCityModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCityModalVisible(false)}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
             </View>
             <FlatList
               data={state ? INDIAN_STATES_CITIES[state] : []}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
-                  onPress={() => {
-                    setCity(item);
-                    setCityModalVisible(false);
-                  }}
-                >
+                <TouchableOpacity style={[styles.modalItem, { borderBottomColor: colors.border }]} onPress={() => { setCity(item); setCityModalVisible(false); }}>
                   <Text style={[styles.modalItemText, { color: colors.text }, city === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
                   {city === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
                 </TouchableOpacity>
@@ -500,63 +435,6 @@ export default function CustomerLoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  smsToastContainer: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    zIndex: 9999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  smsToastContent: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-  },
-  smsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
-  smsIconBg: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  smsTitle: {
-    fontSize: 10,
-    fontFamily: "Poppins_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  smsSender: {
-    fontSize: 13,
-    fontFamily: "Poppins_700Bold",
-    marginBottom: 2,
-  },
-  smsText: {
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
-    lineHeight: 18,
-    marginBottom: 6,
-  },
-  smsTapHint: {
-    borderTopWidth: 0.5,
-    borderTopColor: "rgba(0,0,0,0.06)",
-    paddingTop: 6,
-    marginTop: 2,
-  },
-  smsTapHintText: {
-    fontSize: 10,
-    fontFamily: "Poppins_600SemiBold",
-    textAlign: "right",
-  },
   container: { flex: 1 },
   header: { paddingBottom: 28, paddingHorizontal: 20 },
   backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 16 },
@@ -573,7 +451,7 @@ const styles = StyleSheet.create({
   countryCode: { fontSize: 14, fontFamily: "Poppins_500Medium" },
   input: { flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular" },
   changeLink: { fontSize: 12, fontFamily: "Poppins_600SemiBold" },
-  otpHint: { fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 6 },
+  otpHint: { fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 6, marginTop: 4 },
   primaryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 16, marginTop: 20, marginBottom: 8 },
   primaryBtnText: { fontSize: 16, fontFamily: "Poppins_700Bold" },
   featureBox: { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 24, gap: 8 },
@@ -582,43 +460,10 @@ const styles = StyleSheet.create({
   featureText: { fontSize: 13, fontFamily: "Poppins_400Regular" },
   switchRole: { alignItems: "center", paddingVertical: 16 },
   switchRoleText: { fontSize: 13, fontFamily: "Poppins_400Regular", textAlign: "center" },
-  
-  // Custom Modal Styles for Bottom Sheet picker
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    maxHeight: "65%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.05)",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: "Poppins_700Bold",
-  },
-  modalItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-  },
-  modalItemText: {
-    fontSize: 14,
-    fontFamily: "Poppins_400Regular",
-  },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, maxHeight: "65%" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)" },
+  modalTitle: { fontSize: 18, fontFamily: "Poppins_700Bold" },
+  modalItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16, borderBottomWidth: 0.5 },
+  modalItemText: { fontSize: 14, fontFamily: "Poppins_400Regular" },
 });
