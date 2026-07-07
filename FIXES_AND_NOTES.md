@@ -1,4 +1,4 @@
-# Rangritii — Fixes Applied & Remaining Setup
+# RangRiti — Fixes Applied & Remaining Setup
 
 _Last updated: 6 July 2026_
 

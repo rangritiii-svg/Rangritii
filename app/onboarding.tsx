@@ -82,7 +82,7 @@ export default function OnboardingScreen() {
           <View style={styles.logoContainer}>
             <MaterialCommunityIcons name="flower" size={42} color="#C9932F" />
           </View>
-          <Text style={styles.appName}>Rangritii</Text>
+          <Text style={styles.appName}>RangRiti</Text>
           <Text style={styles.tagline}>{t("app_tagline")}</Text>
           <View style={styles.imageContainer}>
             <Image source={require("@/assets/images/hero_banner.png")} style={styles.heroImage} resizeMode="cover" />

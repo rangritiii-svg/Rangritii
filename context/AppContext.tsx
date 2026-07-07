@@ -206,7 +206,7 @@ interface AppContextType {
   getArtistBookings: (artistId: string) => Booking[];
   updateArtistStatus: (artistId: string, status: Artist["status"], missingDocsReason?: string) => void;
   toggleUserActiveStatus: (userId: string, isArtist: boolean) => void;
-  registerNewArtist: (artist: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes">) => string;
+  registerNewArtist: (artist: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes">) => Promise<string>;
   updateArtistPackages: (artistId: string, packages: ArtistPackage[]) => void;
   addCustomer: (customer: Omit<Customer, "id" | "isActive" | "createdAt">) => void;
   updateBookingPaymentLink: (bookingId: string, paymentLink: string) => void;
@@ -630,7 +630,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const registerNewArtist = useCallback((artistData: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes">) => {
+  const registerNewArtist = useCallback(async (artistData: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes">): Promise<string> => {
     const id = "a" + (Date.now() + Math.round(Math.random() * 1000)).toString().substring(8);
     const newArtist: Artist = {
       ...artistData,
@@ -658,7 +658,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           nameEn: "Arabic Minimalist",
           nameHi: "अरेबिक न्यूनतम",
           descriptionEn: "Elegant back hand trailing patterns",
-          descriptionHi: "हाथ के पीछे सुंदर अरेबिक डिज़ाइन बेल",
+          descriptionHi: "हाथ के पीछे सुंदर अरेबिक डिज़ाइन बेल",
           price: artistData.hourlyRate * 2,
           durationHours: 2
         },
@@ -673,9 +673,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       ]
     };
-    // Persist to Firestore so the artist reaches the admin approval queue and is
-    // discoverable by customers on other devices (was previously local-only).
-    saveArtist(id, newArtist).catch((e) => console.warn("registerNewArtist Firestore error:", e));
+
+    // ── Firestore document size guard ─────────────────────────────────────────
+    // Firestore has a hard 1MB per-document limit. Base64-encoded photos can
+    // easily push a document over this limit and cause a silent write failure.
+    // We strip the large binary fields before saving to Firestore; the admin
+    // will see a flag indicating the artist submitted documents, and the full
+    // images remain in the in-memory state for the current session.
+    const firestoreDoc: any = {
+      ...newArtist,
+      // Replace large base64 data URIs with compact placeholder flags
+      portfolioImages: (newArtist.portfolioImages ?? []).map((_, i) => `[portfolio_image_${i + 1}]`),
+      idCardPhoto: newArtist.idCardPhoto ? "[id_card_uploaded]" : "",
+      bankDetailsPhoto: newArtist.bankDetailsPhoto ? "[bank_doc_uploaded]" : "",
+    };
+
+    // Persist to Firestore so the artist reaches the admin approval queue
+    // and is discoverable by customers on other devices.
+    await saveArtist(id, firestoreDoc);
+
+    // Keep full in-memory record (with images) for the current session
     setArtists((prev) => [...prev, newArtist]);
     return id;
   }, []);

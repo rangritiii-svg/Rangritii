@@ -87,12 +87,18 @@ export default function ArtistRegisterScreen() {
   // Step 5 — Verification
   const [idType, setIdType] = useState("");
   const [idNumber, setIdNumber] = useState("");
-  const [panNumber, setPanNumber] = useState("");
-  const [bankAccount, setBankAccount] = useState("");
-  const [ifsc, setIfsc] = useState("");
+  const [upiId, setUpiId] = useState("");
   const [regIdCardImage, setRegIdCardImage] = useState("");
-  const [regBankChequeImage, setRegBankChequeImage] = useState("");
+  const [regUpiQrImage, setRegUpiQrImage] = useState("");
   const [agreed, setAgreed] = useState(false);
+
+  // Image action modal — shown after a photo is picked
+  // pendingField: which field the pending image belongs to
+  type ImageField = "portfolio" | "idCard" | "upiQr";
+  const [imageActionVisible, setImageActionVisible] = useState(false);
+  const [pendingImageUri, setPendingImageUri] = useState("");
+  const [pendingField, setPendingField] = useState<ImageField>("portfolio");
+  const [pendingPortfolioIdx, setPendingPortfolioIdx] = useState<number | null>(null);
 
   const toggleStyle = (style: string) => {
     Haptics.selectionAsync().catch(() => {});
@@ -105,70 +111,78 @@ export default function ArtistRegisterScreen() {
     // Staging array setup
   };
 
-  const handlePickPortfolioPhoto = async () => {
+  // Generic image launcher — opens gallery then shows the action modal
+  const launchImagePicker = async (field: ImageField, replaceIdx?: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "We need library permissions to upload portfolio photos.");
+      Alert.alert("Permission Required", "Please allow library access to upload photos.");
       return;
     }
     try {
-      let result = await ImagePicker.launchImageLibraryAsync({
+      // allowsEditing lets the user do a basic crop inline before confirming
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.5,
+        allowsEditing: field !== "portfolio", // crop inline for ID / QR
+        quality: 0.6,
         base64: true,
       });
-      if (!result.canceled && result.assets && result.assets[0].base64) {
+      if (!result.canceled && result.assets?.[0]?.base64) {
         const dataUrl = `data:image/jpeg;base64,${result.assets[0].base64}`;
-        setRegPortfolioImages(prev => [...prev, dataUrl]);
+        setPendingImageUri(dataUrl);
+        setPendingField(field);
+        setPendingPortfolioIdx(replaceIdx ?? null);
+        setImageActionVisible(true);
       }
     } catch (e) {
       console.warn("Picker error:", e);
     }
   };
 
-  const handlePickIdCardPhoto = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "We need library permissions to upload your ID card.");
-      return;
-    }
-    try {
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.5,
-        base64: true,
+  const handlePickPortfolioPhoto = (replaceIdx?: number) => launchImagePicker("portfolio", replaceIdx);
+  const handlePickIdCardPhoto = () => launchImagePicker("idCard");
+  const handlePickUpiQrPhoto = () => launchImagePicker("upiQr");
+
+  // Called when the user taps "Save" in the image action modal
+  const commitPendingImage = () => {
+    if (pendingField === "portfolio") {
+      setRegPortfolioImages(prev => {
+        if (pendingPortfolioIdx !== null) {
+          // Replace existing slot
+          const next = [...prev];
+          next[pendingPortfolioIdx] = pendingImageUri;
+          return next;
+        }
+        return [...prev, pendingImageUri];
       });
-      if (!result.canceled && result.assets && result.assets[0].base64) {
-        setRegIdCardImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
-      }
-    } catch (e) {
-      console.warn("Picker error:", e);
+    } else if (pendingField === "idCard") {
+      setRegIdCardImage(pendingImageUri);
+    } else if (pendingField === "upiQr") {
+      setRegUpiQrImage(pendingImageUri);
     }
+    setImageActionVisible(false);
+    setPendingImageUri("");
   };
 
-  const handlePickBankChequePhoto = async () => {
+  // "Crop" — re-opens picker with editing forced on
+  const reopenWithCrop = async () => {
+    setImageActionVisible(false);
+    await new Promise(r => setTimeout(r, 300)); // let modal close first
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "We need library permissions to upload your bank document.");
-      return;
-    }
     try {
-      let result = await ImagePicker.launchImageLibraryAsync({
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.5,
+        quality: 0.6,
         base64: true,
       });
-      if (!result.canceled && result.assets && result.assets[0].base64) {
-        setRegBankChequeImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
+      if (!result.canceled && result.assets?.[0]?.base64) {
+        const dataUrl = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setPendingImageUri(dataUrl);
+        setImageActionVisible(true);
       }
     } catch (e) {
-      console.warn("Picker error:", e);
+      console.warn("Crop picker error:", e);
     }
   };
 
@@ -198,12 +212,8 @@ export default function ArtistRegisterScreen() {
         Alert.alert("ID Document Required", "Please upload a photo of your Government ID document.");
         return false;
       }
-      if (!bankAccount.trim() || !ifsc.trim()) {
-        Alert.alert("Required", "Please enter your bank account number and IFSC code.");
-        return false;
-      }
-      if (!regBankChequeImage) {
-        Alert.alert("Bank Document Required", "Please upload a photo of your cancelled cheque or passbook.");
+      if (!upiId.trim()) {
+        Alert.alert("Required", "Please enter your UPI ID to receive payments.");
         return false;
       }
       if (!agreed) { Alert.alert("Terms Required", "Please agree to the Terms & Conditions."); return false; }
@@ -275,44 +285,53 @@ export default function ArtistRegisterScreen() {
     const userCity = city.trim();
     const userArea = area.trim();
 
-    registerNewArtist({
-      name: fullName.trim(),
-      phone: userPhone,
-      city: userCity,
-      state: state.trim(),
-      area: userArea,
-      styles: selectedStyles,
-      minPrice: parseInt(minCharge) || 1000,
-      maxPrice: parseInt(bridalRate) || 5000,
-      hourlyRate: parseInt(hourlyRate) || 500,
-      experience: parseInt(experience) || 1,
-      verified: false,
-      bio: bio.trim() || `Professional Mehndi artist specializing in ${selectedStyles.join(", ")}.`,
-      bioHi: bio.trim() ? `पेशेवर मेहंदी कलाकार। ${bio.trim()}` : `${selectedStyles.join(", ")} में विशेषज्ञता रखने वाले पेशेवर मेहंदी कलाकार।`,
-      availability: "Available",
-      portfolioStyle: "bridal",
-      specialization: `${selectedStyles[0] || "General"} Mehndi Specialist`,
-      portfolioImages: regPortfolioImages,
-      idCardPhoto: regIdCardImage,
-      bankDetailsPhoto: regBankChequeImage
-    });
+    try {
+      await registerNewArtist({
+        name: fullName.trim(),
+        phone: userPhone,
+        city: userCity,
+        state: state.trim(),
+        area: userArea,
+        styles: selectedStyles,
+        minPrice: parseInt(minCharge) || 1000,
+        maxPrice: parseInt(bridalRate) || 5000,
+        hourlyRate: parseInt(hourlyRate) || 500,
+        experience: parseInt(experience) || 1,
+        verified: false,
+        bio: bio.trim() || `Professional Mehndi artist specializing in ${selectedStyles.join(", ")}.`,
+        bioHi: bio.trim() ? `पेशेवर मेहंदी कलाकार। ${bio.trim()}` : `${selectedStyles.join(", ")} में विशेषज्ञता रखने वाले पेशेवर मेहंदी कलाकार।`,
+        availability: "Available",
+        portfolioStyle: "bridal",
+        specialization: `${selectedStyles[0] || "General"} Mehndi Specialist`,
+        portfolioImages: regPortfolioImages,
+        idCardPhoto: regIdCardImage,
+        upiId: upiId.trim(),
+        upiQrPhoto: regUpiQrImage,
+      });
 
-    await setUserProfile({
-      role: "artist",
-      name: fullName.trim(),
-      city: userCity,
-      phone: userPhone,
-      area: userArea,
-    });
+      await setUserProfile({
+        role: "artist",
+        name: fullName.trim(),
+        city: userCity,
+        phone: userPhone,
+        area: userArea,
+      });
 
-    setTimeout(() => {
       setLoading(false);
       Alert.alert(
         "🎉 Registration Submitted!",
         "Your artist profile is under review. We'll verify your details within 24 hours.",
         [{ text: "Got it!", onPress: () => router.replace("/(tabs)") }]
       );
-    }, 1500);
+    } catch (err) {
+      setLoading(false);
+      console.error("Artist registration failed:", err);
+      Alert.alert(
+        "Registration Failed",
+        "We couldn't save your registration. Please check your internet connection and try again.",
+        [{ text: "Retry", onPress: handleSubmit }, { text: "Cancel", style: "cancel" }]
+      );
+    }
   };
 
   const progressPct = ((step - 1) / (STEPS.length - 1)) * 100;
@@ -568,24 +587,34 @@ export default function ArtistRegisterScreen() {
             <Text style={[styles.stepHeading, { color: colors.text }]}>📸 Previous Work Photos</Text>
             <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>Showcase your best Mehndi designs to attract customers</Text>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.uploadHint, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-              onPress={handlePickPortfolioPhoto}
+              onPress={() => handlePickPortfolioPhoto()}
             >
               <Ionicons name="cloud-upload-outline" size={32} color={colors.gold} />
               <Text style={[styles.uploadHintTitle, { color: colors.text }]}>Upload Portfolio Photos</Text>
               <Text style={[styles.uploadHintDesc, { color: colors.mutedForeground }]}>
-                Tap here to open your phone storage and select work photos.
+                Tap here to open your phone gallery and select work photos.
               </Text>
             </TouchableOpacity>
 
             <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>Uploaded Work Photos ({regPortfolioImages.length})</Text>
-            
+
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
               {regPortfolioImages.map((img, idx) => (
                 <View key={idx} style={{ width: 100, height: 100, borderRadius: 8, overflow: "hidden", position: "relative" }}>
                   <Image source={{ uri: img }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
-                  <TouchableOpacity 
+                  {/* Tap photo to replace it */}
+                  <TouchableOpacity
+                    style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "transparent" }}
+                    onPress={() => handlePickPortfolioPhoto(idx)}
+                  />
+                  {/* Edit badge */}
+                  <View style={{ position: "absolute", bottom: 4, left: 4, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 9, color: "#fff", fontFamily: "Poppins_600SemiBold" }}>✎ Edit</Text>
+                  </View>
+                  {/* Remove button */}
+                  <TouchableOpacity
                     style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 11, backgroundColor: "rgba(220,38,38,0.85)", justifyContent: "center", alignItems: "center" }}
                     onPress={() => setRegPortfolioImages(prev => prev.filter((_, i) => i !== idx))}
                   >
@@ -594,9 +623,10 @@ export default function ArtistRegisterScreen() {
                 </View>
               ))}
 
-              <TouchableOpacity 
+              {/* Add new photo tile */}
+              <TouchableOpacity
                 style={{ width: 100, height: 100, borderRadius: 8, borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, justifyContent: "center", alignItems: "center", backgroundColor: colors.card }}
-                onPress={handlePickPortfolioPhoto}
+                onPress={() => handlePickPortfolioPhoto()}
               >
                 <Ionicons name="add" size={24} color={colors.gold} />
                 <Text style={{ fontSize: 10, fontFamily: "Poppins_600SemiBold", color: colors.gold, marginTop: 2 }}>Add Photo</Text>
@@ -606,7 +636,7 @@ export default function ArtistRegisterScreen() {
             <View style={[styles.infoBox, { backgroundColor: colors.secondary, borderColor: colors.border, marginTop: 20 }]}>
               <Ionicons name="bulb-outline" size={18} color={colors.gold} />
               <Text style={[styles.infoBoxText, { color: colors.text }]}>
-                Tip: Artists with 5+ portfolio photos get 3× more bookings. Upload clear, well-lit photos of your best work.
+                Tip: Artists with 5+ portfolio photos get 3× more bookings. Tap any photo to replace it.
               </Text>
             </View>
           </View>
@@ -659,37 +689,58 @@ export default function ArtistRegisterScreen() {
             )}
 
             <View style={[styles.pricingCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 12 }]}>
-              <Text style={[styles.pricingCardTitle, { color: colors.text }]}>🏦 Bank Details (for Payments)</Text>
-              <Text style={[styles.bankNote, { color: colors.mutedForeground }]}>Required to receive booking payments from customers.</Text>
+              <Text style={[styles.pricingCardTitle, { color: colors.text }]}>💸 UPI Payment Details</Text>
+              <Text style={[styles.bankNote, { color: colors.mutedForeground }]}>Required to receive booking payments directly to your UPI account.</Text>
 
-              <Field label="Bank Account Number" colors={colors}>
-                <TextInput style={[styles.input, { color: colors.text }]} placeholder="Account number" placeholderTextColor={colors.mutedForeground} value={bankAccount} onChangeText={setBankAccount} keyboardType="number-pad" secureTextEntry />
+              {/* UPI ID input */}
+              <Field label="Your UPI ID *" colors={colors}>
+                <Ionicons name="at-outline" size={18} color={colors.mutedForeground} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="e.g. yourname@upi or 9876543210@paytm"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={upiId}
+                  onChangeText={setUpiId}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
               </Field>
 
-              <Field label="IFSC Code" colors={colors}>
-                <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. IFSC0001234" placeholderTextColor={colors.mutedForeground} value={ifsc} onChangeText={setIfsc} autoCapitalize="characters" />
-              </Field>
-
-              <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>Passbook / Cancelled Cheque Photo *</Text>
-              {regBankChequeImage ? (
+              {/* UPI QR Code upload */}
+              <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>UPI QR Code Photo (Optional)</Text>
+              <Text style={{ fontSize: 11, fontFamily: "Poppins_400Regular", color: colors.mutedForeground, marginBottom: 8 }}>
+                Upload a screenshot of your UPI QR so customers can pay you directly.
+              </Text>
+              {regUpiQrImage ? (
                 <View style={{ alignItems: "center", marginVertical: 8 }}>
-                  <Image source={{ uri: regBankChequeImage }} style={{ width: "100%", height: 160, borderRadius: 12 }} resizeMode="cover" />
-                  <TouchableOpacity 
-                    style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, backgroundColor: "rgba(220,38,38,0.1)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
-                    onPress={() => setRegBankChequeImage("")}
-                  >
-                    <Ionicons name="trash-outline" size={14} color="#dc2626" />
-                    <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: "#dc2626" }}>Remove Bank Document</Text>
-                  </TouchableOpacity>
+                  <View style={{ width: 180, height: 180, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: colors.border }}>
+                    <Image source={{ uri: regUpiQrImage }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
+                  </View>
+                  <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+                    <TouchableOpacity
+                      style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.secondary, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}
+                      onPress={handlePickUpiQrPhoto}
+                    >
+                      <Ionicons name="refresh-outline" size={14} color={colors.gold} />
+                      <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.gold }}>Replace QR</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 }}
+                      onPress={() => setRegUpiQrImage("")}
+                    >
+                      <Ionicons name="trash-outline" size={14} color="#dc2626" />
+                      <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: "#dc2626" }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ) : (
-                <TouchableOpacity 
-                  style={{ borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, padding: 16, borderRadius: 12, alignItems: "center", backgroundColor: colors.secondary, marginTop: 4 }}
-                  onPress={handlePickBankChequePhoto}
+                <TouchableOpacity
+                  style={{ borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, padding: 20, borderRadius: 16, alignItems: "center", backgroundColor: colors.secondary, marginTop: 4, gap: 6 }}
+                  onPress={handlePickUpiQrPhoto}
                 >
-                  <Ionicons name="cloud-upload-outline" size={24} color={colors.gold} />
-                  <Text style={{ fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.text, marginTop: 4 }}>Upload Cancelled Cheque / Passbook Copy</Text>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 2 }}>Tap to open phone library storage</Text>
+                  <MaterialCommunityIcons name="qrcode-scan" size={32} color={colors.gold} />
+                  <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: colors.text }}>Upload UPI QR Code</Text>
+                  <Text style={{ fontSize: 10, color: colors.mutedForeground, textAlign: "center" }}>Tap to select a QR code screenshot from your gallery</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -703,6 +754,7 @@ export default function ArtistRegisterScreen() {
               <SummaryRow label="Styles" value={selectedStyles.length > 0 ? selectedStyles.join(", ") : "—"} colors={colors} />
               <SummaryRow label="Hourly Rate" value={hourlyRate ? `₹${hourlyRate}/hr` : "—"} colors={colors} />
               <SummaryRow label="ID Type" value={idType || "—"} colors={colors} />
+              <SummaryRow label="UPI ID" value={upiId || "—"} colors={colors} />
             </View>
 
             {/* Terms */}
@@ -810,7 +862,89 @@ export default function ArtistRegisterScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ── Image Action Modal ─────────────────────────────────────────── */}
+      {/* Shown after any photo is picked. Lets the user Save, Crop, or pick another. */}
+      <Modal
+        visible={imageActionVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => { setImageActionVisible(false); setPendingImageUri(""); }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.imageActionSheet, { backgroundColor: colors.card }]}>
+            {/* Handle pill */}
+            <View style={styles.sheetHandle} />
+
+            <Text style={[styles.imageActionTitle, { color: colors.text }]}>
+              {pendingField === "portfolio" ? "📷 Portfolio Photo" :
+               pendingField === "idCard"   ? "🪪 ID Document Photo" :
+                                             "📱 UPI QR Code Photo"}
+            </Text>
+            <Text style={[styles.imageActionSubtitle, { color: colors.mutedForeground }]}>
+              Preview your selected photo below, then choose an action.
+            </Text>
+
+            {/* Image Preview */}
+            {pendingImageUri ? (
+              <View style={styles.imagePreviewWrapper}>
+                <Image
+                  source={{ uri: pendingImageUri }}
+                  style={styles.imagePreview}
+                  resizeMode={pendingField === "upiQr" ? "contain" : "cover"}
+                />
+              </View>
+            ) : null}
+
+            {/* Action buttons */}
+            <View style={styles.imageActionBtnsCol}>
+              {/* Save */}
+              <TouchableOpacity
+                style={[styles.imageActionBtn, { backgroundColor: colors.gold }]}
+                onPress={commitPendingImage}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                <Text style={[styles.imageActionBtnText, { color: "#fff" }]}>Save Photo</Text>
+              </TouchableOpacity>
+
+              {/* Crop */}
+              <TouchableOpacity
+                style={[styles.imageActionBtn, { backgroundColor: colors.secondary, borderWidth: 1.5, borderColor: colors.border }]}
+                onPress={reopenWithCrop}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="crop-outline" size={20} color={colors.text} />
+                <Text style={[styles.imageActionBtnText, { color: colors.text }]}>Crop / Adjust</Text>
+              </TouchableOpacity>
+
+              {/* Select another */}
+              <TouchableOpacity
+                style={[styles.imageActionBtn, { backgroundColor: colors.secondary, borderWidth: 1.5, borderColor: colors.border }]}
+                onPress={() => {
+                  setImageActionVisible(false);
+                  setPendingImageUri("");
+                  setTimeout(() => launchImagePicker(pendingField, pendingPortfolioIdx ?? undefined), 300);
+                }}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="images-outline" size={20} color={colors.text} />
+                <Text style={[styles.imageActionBtnText, { color: colors.text }]}>Select Another Photo</Text>
+              </TouchableOpacity>
+
+              {/* Cancel */}
+              <TouchableOpacity
+                style={{ marginTop: 4, alignItems: "center", paddingVertical: 10 }}
+                onPress={() => { setImageActionVisible(false); setPendingImageUri(""); }}
+              >
+                <Text style={{ fontSize: 13, fontFamily: "Poppins_500Medium", color: colors.mutedForeground }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
+
   );
 }
 
@@ -954,5 +1088,63 @@ const styles = StyleSheet.create({
   modalItemText: {
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
+  },
+
+  // ── Image Action Bottom-Sheet ─────────────────────────────────────
+  imageActionSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 36,
+    alignItems: "stretch",
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    alignSelf: "center",
+    marginBottom: 18,
+  },
+  imageActionTitle: {
+    fontSize: 17,
+    fontFamily: "Poppins_700Bold",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  imageActionSubtitle: {
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  imagePreviewWrapper: {
+    width: "100%",
+    height: 200,
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 18,
+    backgroundColor: "#000",
+  },
+  imagePreview: {
+    width: "100%",
+    height: "100%",
+  },
+  imageActionBtnsCol: {
+    gap: 10,
+  },
+  imageActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  imageActionBtnText: {
+    fontSize: 14,
+    fontFamily: "Poppins_600SemiBold",
   },
 });

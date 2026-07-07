@@ -34,7 +34,7 @@ export async function fetchArtists(): Promise<any[]> {
 }
 export async function saveArtist(artistId: string, data: any): Promise<void> {
   try { await setDoc(doc(db, ARTISTS_COL, artistId), { ...data, updatedAt: serverTimestamp() }); }
-  catch (e) { console.warn("saveArtist", e); }
+  catch (e) { console.warn("saveArtist", e); throw e; }
 }
 export async function updateArtist(artistId: string, updates: any): Promise<void> {
   try { await updateDoc(doc(db, ARTISTS_COL, artistId), { ...updates, updatedAt: serverTimestamp() }); }
