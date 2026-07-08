@@ -24,12 +24,20 @@ apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
 
 subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty("android")) {
-            project.android {
+    def configureProject = { p ->
+        if (p.hasProperty("android")) {
+            p.android {
                 compileSdkVersion = rootProject.ext.compileSdkVersion
                 buildToolsVersion = rootProject.ext.buildToolsVersion
             }
+        }
+    }
+
+    if (project.state.executed) {
+        configureProject(project)
+    } else {
+        project.afterEvaluate {
+            configureProject(project)
         }
     }
 }
