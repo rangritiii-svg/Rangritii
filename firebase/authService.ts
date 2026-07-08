@@ -2,8 +2,9 @@
  * authService.ts
  * Firebase Phone Authentication helpers for RangRiti.
  *
- * Uses the Firebase JS SDK v9+ modular API with expo-firebase-recaptcha
- * for the reCAPTCHA verifier required on React Native / Expo.
+ * Uses the Firebase JS SDK v9+ modular API.
+ * On React Native / Expo, signInWithPhoneNumber does NOT require a
+ * RecaptchaVerifier — passing undefined is correct for the native client.
  */
 
 import { signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
@@ -12,14 +13,14 @@ import { auth } from "./config";
 /**
  * Sends a real OTP SMS to the given phone number via Firebase Phone Auth.
  * @param phoneNumber  Full E.164 number, e.g. "+919876543210"
- * @param recaptchaVerifier  ApplicationVerifier from expo-firebase-recaptcha
  * @returns ConfirmationResult — call .confirm(code) to verify the OTP
  */
 export async function sendPhoneOtp(
-  phoneNumber: string,
-  recaptchaVerifier: any
+  phoneNumber: string
 ): Promise<ConfirmationResult> {
-  return signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+  // On React Native (non-web) Firebase does not require a RecaptchaVerifier.
+  // Passing undefined is intentional and correct.
+  return signInWithPhoneNumber(auth, phoneNumber);
 }
 
 /**

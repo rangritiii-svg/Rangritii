@@ -1,9 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert, KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator
@@ -11,7 +10,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
-import app from "@/firebase/config";
 import { sendPhoneOtp, verifyPhoneOtp } from "@/firebase/authService";
 import type { ConfirmationResult } from "firebase/auth";
 
@@ -26,9 +24,6 @@ export default function ArtistLoginScreen() {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-
-  // reCAPTCHA verifier ref — required by Firebase Phone Auth on React Native
-  const recaptchaVerifier = useRef<any>(null);
 
   // Countdown timer for Resend OTP
   useEffect(() => {
@@ -48,7 +43,7 @@ export default function ArtistLoginScreen() {
     setLoading(true);
     try {
       const fullPhone = `+91${phone}`;
-      const result = await sendPhoneOtp(fullPhone, recaptchaVerifier.current);
+      const result = await sendPhoneOtp(fullPhone);
       setConfirmationResult(result);
       setOtpSent(true);
       setTimer(30);
@@ -125,13 +120,6 @@ export default function ArtistLoginScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {/* Firebase reCAPTCHA — invisible, required for Phone Auth on React Native */}
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={app.options}
-        attemptInvisibleVerification={true}
-      />
-
       {/* Header */}
       <LinearGradient colors={["#C9932F", "#A87525"]} style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
