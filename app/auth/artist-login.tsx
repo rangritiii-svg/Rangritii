@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { sendPhoneOtp, verifyPhoneOtp } from "@/firebase/authService";
-import type { ConfirmationResult } from "firebase/auth";
+import type { NativeConfirmationResult } from "@/firebase/authService";
 
 export default function ArtistLoginScreen() {
   const colors = useColors();
@@ -23,7 +23,7 @@ export default function ArtistLoginScreen() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [confirmationResult, setConfirmationResult] = useState<NativeConfirmationResult | null>(null);
 
   // Countdown timer for Resend OTP
   useEffect(() => {

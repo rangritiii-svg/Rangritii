@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { sendPhoneOtp, verifyPhoneOtp } from "@/firebase/authService";
-import type { ConfirmationResult } from "firebase/auth";
+import type { NativeConfirmationResult } from "@/firebase/authService";
 
 const INDIAN_STATES_CITIES: Record<string, string[]> = {
   "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
@@ -46,7 +46,7 @@ export default function CustomerLoginScreen() {
   const [cityModalVisible, setCityModalVisible] = useState(false);
 
   // Firebase Phone Auth
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [confirmationResult, setConfirmationResult] = useState<NativeConfirmationResult | null>(null);
   const [timer, setTimer] = useState(0);
 
   // Countdown timer for resend
