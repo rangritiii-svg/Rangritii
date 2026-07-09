@@ -96,9 +96,7 @@ export default function CustomerLoginScreen() {
       console.error("sendPhoneOtp error:", err);
       Alert.alert(
         "Failed to Send OTP",
-        err?.message?.includes("auth/too-many-requests")
-          ? "Too many attempts. Please wait a few minutes and try again."
-          : "Could not send OTP. Please check your connection and try again."
+        `Firebase Error: ${err?.code || "Unknown Code"}\nMessage: ${err?.message || "Please check connection and try again."}`
       );
     }
   };
@@ -147,11 +145,7 @@ export default function CustomerLoginScreen() {
       console.error("verifyPhoneOtp error:", err);
       Alert.alert(
         "Verification Failed",
-        err?.message?.includes("auth/invalid-verification-code")
-          ? "The OTP is incorrect. Please check the SMS and try again."
-          : err?.message?.includes("auth/code-expired")
-          ? "OTP expired. Tap 'Resend OTP' to get a new one."
-          : "Verification failed. Please try again."
+        `Firebase Error: ${err?.code || "Unknown Code"}\nMessage: ${err?.message || "Please check connection and try again."}`
       );
     }
   };

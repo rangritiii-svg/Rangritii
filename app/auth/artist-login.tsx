@@ -58,11 +58,7 @@ export default function ArtistLoginScreen() {
       console.error("sendPhoneOtp error:", err);
       Alert.alert(
         "Failed to Send OTP",
-        err?.message?.includes("auth/invalid-phone-number")
-          ? "The phone number you entered is invalid. Please check and try again."
-          : err?.message?.includes("auth/too-many-requests")
-          ? "Too many attempts. Please wait a few minutes before trying again."
-          : "Could not send OTP. Please check your internet connection and try again."
+        `Firebase Error: ${err?.code || "Unknown Code"}\nMessage: ${err?.message || "Please check connection and try again."}`
       );
     }
   };
