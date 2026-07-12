@@ -8,7 +8,7 @@ import {
   TextInput, TouchableOpacity, View, Animated
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapView, { Marker } from "react-native-maps";
+import ProximityMap from "@/components/ProximityMap";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
@@ -237,47 +237,17 @@ export default function DiscoverScreen() {
       {/* ─── MAP VIEW ─── */}
       {viewMode === "map" && (
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          {/* Real Native MapView */}
+          {/* Real Native MapView (or Web Grid Mockup) */}
           <View style={[styles.mapContainer, { height: MAP_H, backgroundColor: "#E8F4F8" }]}>
             {userCoords && (
-              <MapView
-                style={StyleSheet.absoluteFillObject}
-                initialRegion={{
-                  latitude: userCoords.latitude,
-                  longitude: userCoords.longitude,
-                  latitudeDelta: 0.09,
-                  longitudeDelta: 0.09,
-                }}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-              >
-                {nearbyArtists.map(artist => {
-                  if (artist.latitude == null || artist.longitude == null) return null;
-                  const isSelected = selectedArtistId === artist.id;
-                  const pinColor = CITY_COLORS[artist.city] || "#F9AABF";
-
-                  return (
-                    <Marker
-                      key={artist.id}
-                      coordinate={{
-                        latitude: artist.latitude,
-                        longitude: artist.longitude,
-                      }}
-                      onPress={() => handlePinPress(artist.id)}
-                    >
-                      <View style={{ alignItems: "center" }}>
-                        <View style={[styles.pinBubble, isSelected && styles.pinBubbleSelected, { backgroundColor: isSelected ? "#F9AABF" : pinColor }]}>
-                          <MaterialCommunityIcons name="flower" size={isSelected ? 14 : 11} color="#fff" />
-                        </View>
-                        <View style={[styles.pinTail, { borderTopColor: isSelected ? "#F9AABF" : pinColor }]} />
-                        {artist.availability === "Busy" && (
-                          <View style={styles.busyDot} />
-                        )}
-                      </View>
-                    </Marker>
-                  );
-                })}
-              </MapView>
+              <ProximityMap
+                userCoords={userCoords}
+                nearbyArtists={nearbyArtists}
+                selectedArtistId={selectedArtistId}
+                handlePinPress={handlePinPress}
+                cityColors={CITY_COLORS}
+                styles={styles}
+              />
             )}
 
             {/* Map Label */}
