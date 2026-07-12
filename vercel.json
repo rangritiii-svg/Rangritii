@@ -1,16 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "npx expo export -p web",
-  "outputDirectory": "dist",
-  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
+      "source": "/(.*)",
+      "destination": "/api/index.js"
     }
   ]
 }
