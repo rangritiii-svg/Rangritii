@@ -20,6 +20,7 @@ interface ArtistCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   horizontal?: boolean;
+  distance?: number;
 }
 
 export function ArtistCard({
@@ -28,6 +29,7 @@ export function ArtistCard({
   isFavorite = false,
   onToggleFavorite,
   horizontal = false,
+  distance,
 }: ArtistCardProps) {
   const colors = useColors();
   const scale = useRef(new Animated.Value(1)).current;
@@ -130,8 +132,9 @@ export function ArtistCard({
 
             <View style={styles.locationRow}>
               <Ionicons name="location-outline" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.location, { color: colors.mutedForeground }]}>
+              <Text style={[styles.location, { color: colors.mutedForeground }]} numberOfLines={1}>
                 {artist.city}, {artist.state}
+                {distance != null && ` • ${distance.toFixed(1)} km away`}
               </Text>
             </View>
 
@@ -225,7 +228,8 @@ export function ArtistCard({
           <View style={styles.locVertical}>
             <Ionicons name="location-outline" size={11} color={colors.mutedForeground} />
             <Text style={[styles.locTextVertical, { color: colors.mutedForeground }]} numberOfLines={1}>
-              {artist.city} • {artist.experience} Yrs Exp
+              {artist.city}
+              {distance != null ? ` • ${distance.toFixed(1)} km` : ` • ${artist.experience} Yrs Exp`}
             </Text>
           </View>
 

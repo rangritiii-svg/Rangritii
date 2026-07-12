@@ -2,15 +2,17 @@ import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Dimensions, ScrollView, StyleSheet, Text,
   TextInput, TouchableOpacity, View, Animated
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import MapView, { Marker } from "react-native-maps";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { getCurrentCoordinates, getDistanceKm } from "@/utils/permissions";
 
 const { width, height } = Dimensions.get("window");
 
@@ -67,6 +69,47 @@ export default function DiscoverScreen() {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null);
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      if (userProfile.latitude != null && userProfile.longitude != null) {
+        setUserCoords({
+          latitude: userProfile.latitude,
+          longitude: userProfile.longitude,
+        });
+        return;
+      }
+
+      setLoadingLocation(true);
+      const coords = await getCurrentCoordinates(language === "hi_IN");
+      if (coords) {
+        setUserCoords({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        });
+      } else {
+        const cityLower = (userProfile.city || "").toLowerCase();
+        if (cityLower.includes("jaipur")) {
+          setUserCoords({ latitude: 26.9124, longitude: 75.7873 });
+        } else if (cityLower.includes("mumbai")) {
+          setUserCoords({ latitude: 19.0760, longitude: 72.8777 });
+        } else if (cityLower.includes("delhi")) {
+          setUserCoords({ latitude: 28.6139, longitude: 77.2090 });
+        } else if (cityLower.includes("bangalore") || cityLower.includes("bengaluru")) {
+          setUserCoords({ latitude: 12.9716, longitude: 77.5946 });
+        } else if (cityLower.includes("hyderabad")) {
+          setUserCoords({ latitude: 17.3850, longitude: 78.4867 });
+        } else {
+          setUserCoords({ latitude: 26.9124, longitude: 75.7873 });
+        }
+      }
+      setLoadingLocation(false);
+    };
+
+    fetchLocation();
+  }, [userProfile.latitude, userProfile.longitude, userProfile.city]);
 
   const filtered = useMemo(() => {
     return artists.filter(a => {
@@ -78,13 +121,32 @@ export default function DiscoverScreen() {
   }, [artists, selectedFilter, searchQuery]);
 
   const nearbyArtists = useMemo(() => {
-    if (!userProfile.city) return filtered;
-    const sameCity = filtered.filter(a => a.city.toLowerCase() === userProfile.city.toLowerCase());
-    const otherCity = filtered.filter(a => a.city.toLowerCase() !== userProfile.city.toLowerCase());
-    return [...sameCity, ...otherCity];
-  }, [filtered, userProfile.city]);
+    if (!userCoords) {
+      return filtered.map(a => ({ ...a, distance: undefined }));
+    }
 
-  const selectedArtist = selectedArtistId ? artists.find(a => a.id === selectedArtistId) : null;
+    const withDistance = filtered.map(a => {
+      let distance: number | undefined = undefined;
+      if (a.latitude != null && a.longitude != null) {
+        distance = getDistanceKm(
+          userCoords.latitude,
+          userCoords.longitude,
+          a.latitude,
+          a.longitude
+        );
+      }
+      return { ...a, distance };
+    });
+
+    return withDistance.sort((a, b) => {
+      if (a.distance == null && b.distance == null) return 0;
+      if (a.distance == null) return 1;
+      if (b.distance == null) return -1;
+      return a.distance - b.distance;
+    });
+  }, [filtered, userCoords]);
+
+  const selectedArtist = selectedArtistId ? nearbyArtists.find(a => a.id === selectedArtistId) : null;
 
   const handlePinPress = (artistId: string) => {
     Haptics.selectionAsync().catch(() => {});
@@ -175,60 +237,56 @@ export default function DiscoverScreen() {
       {/* ─── MAP VIEW ─── */}
       {viewMode === "map" && (
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          {/* India Map Background */}
+          {/* Real Native MapView */}
           <View style={[styles.mapContainer, { height: MAP_H, backgroundColor: "#E8F4F8" }]}>
-            {/* Map background gradient */}
-            <LinearGradient
-              colors={["#D4EAF7", "#B8DFF5", "#C5E8C5"]}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            />
+            {userCoords && (
+              <MapView
+                style={StyleSheet.absoluteFillObject}
+                initialRegion={{
+                  latitude: userCoords.latitude,
+                  longitude: userCoords.longitude,
+                  latitudeDelta: 0.09,
+                  longitudeDelta: 0.09,
+                }}
+                showsUserLocation={true}
+                showsMyLocationButton={true}
+              >
+                {nearbyArtists.map(artist => {
+                  if (artist.latitude == null || artist.longitude == null) return null;
+                  const isSelected = selectedArtistId === artist.id;
+                  const pinColor = CITY_COLORS[artist.city] || "#F9AABF";
 
-            {/* Decorative grid lines */}
-            {[0.2, 0.4, 0.6, 0.8].map(p => (
-              <View key={`h${p}`} style={[styles.gridLineH, { top: `${p * 100}%` as any }]} />
-            ))}
-            {[0.2, 0.4, 0.6, 0.8].map(p => (
-              <View key={`v${p}`} style={[styles.gridLineV, { left: `${p * 100}%` as any }]} />
-            ))}
+                  return (
+                    <Marker
+                      key={artist.id}
+                      coordinate={{
+                        latitude: artist.latitude,
+                        longitude: artist.longitude,
+                      }}
+                      onPress={() => handlePinPress(artist.id)}
+                    >
+                      <View style={{ alignItems: "center" }}>
+                        <View style={[styles.pinBubble, isSelected && styles.pinBubbleSelected, { backgroundColor: isSelected ? "#F9AABF" : pinColor }]}>
+                          <MaterialCommunityIcons name="flower" size={isSelected ? 14 : 11} color="#fff" />
+                        </View>
+                        <View style={[styles.pinTail, { borderTopColor: isSelected ? "#F9AABF" : pinColor }]} />
+                        {artist.availability === "Busy" && (
+                          <View style={styles.busyDot} />
+                        )}
+                      </View>
+                    </Marker>
+                  );
+                })}
+              </MapView>
+            )}
 
             {/* Map Label */}
             <View style={styles.mapLabel}>
               <Ionicons name="map" size={12} color="#5B8DB8" />
-              <Text style={styles.mapLabelText}>India · {nearbyArtists.length} Artists</Text>
+              <Text style={styles.mapLabelText}>
+                {userProfile.city || "Nearby"} · {nearbyArtists.length} Artists
+              </Text>
             </View>
-
-            {/* Artist Pins */}
-            {nearbyArtists.map(artist => {
-              const pos = PIN_POSITIONS[artist.id];
-              if (!pos) return null;
-              const pinColor = CITY_COLORS[artist.city] || "#F9AABF";
-              const isSelected = selectedArtistId === artist.id;
-              const isInFiltered = filtered.some(a => a.id === artist.id);
-              if (!isInFiltered) return null;
-
-              return (
-                <TouchableOpacity
-                  key={artist.id}
-                  style={[styles.mapPin, { left: pos.x * (width - 32), top: pos.y * MAP_H - 36, zIndex: isSelected ? 10 : 1 }]}
-                  onPress={() => handlePinPress(artist.id)}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.pinBubble, isSelected && styles.pinBubbleSelected, { backgroundColor: isSelected ? "#F9AABF" : pinColor }]}>
-                    <MaterialCommunityIcons name="flower" size={isSelected ? 14 : 11} color="#fff" />
-                  </View>
-                  <View style={[styles.pinTail, { borderTopColor: isSelected ? "#F9AABF" : pinColor }]} />
-                  {isSelected && (
-                    <View style={[styles.pinLabel, { backgroundColor: "#fff" }]}>
-                      <Text style={styles.pinLabelText} numberOfLines={1}>{artist.name}</Text>
-                    </View>
-                  )}
-                  {artist.availability === "Busy" && (
-                    <View style={styles.busyDot} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
           </View>
 
           {/* Selected Artist Card */}
@@ -255,7 +313,10 @@ export default function DiscoverScreen() {
                 <Text style={[styles.selectedCardSpec, { color: colors.mutedForeground }]} numberOfLines={1}>{selectedArtist.specialization}</Text>
                 <View style={styles.selectedCardMeta}>
                   <Ionicons name="location-outline" size={11} color={colors.mutedForeground} />
-                  <Text style={[styles.selectedCardMetaText, { color: colors.mutedForeground }]}>{selectedArtist.area}, {selectedArtist.city}</Text>
+                  <Text style={[styles.selectedCardMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>
+                    {selectedArtist.area}, {selectedArtist.city}
+                    {selectedArtist.distance != null && ` • ${selectedArtist.distance.toFixed(1)} km`}
+                  </Text>
                   <View style={styles.dot} />
                   <Text style={[styles.selectedCardMetaText, { color: colors.gold }]}>₹{selectedArtist.hourlyRate}/hr</Text>
                 </View>
@@ -281,6 +342,7 @@ export default function DiscoverScreen() {
                 key={artist.id}
                 artist={artist}
                 horizontal
+                distance={artist.distance}
                 isFavorite={favorites.includes(artist.id)}
                 onToggleFavorite={() => toggleFavorite(artist.id)}
                 onPress={() => router.push(`/artist/${artist.id}`)}
@@ -304,6 +366,7 @@ export default function DiscoverScreen() {
               key={artist.id}
               artist={artist}
               horizontal
+              distance={artist.distance}
               isFavorite={favorites.includes(artist.id)}
               onToggleFavorite={() => toggleFavorite(artist.id)}
               onPress={() => router.push(`/artist/${artist.id}`)}
