@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { ensureMediaLibraryPermission } from "@/utils/permissions";
 
 const ID_TYPES = ["Aadhaar Card", "PAN Card", "Voter ID", "Driving Licence", "Passport"];
 
@@ -42,11 +43,8 @@ export default function ArtistDocumentsScreen() {
 
   const handlePickIdCardPhoto = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "We need library permissions to upload your ID card.");
-      return;
-    }
+    const granted = await ensureMediaLibraryPermission(isHindi);
+    if (!granted) return;
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,

@@ -1,6 +1,82 @@
 # RangRiti — Fixes Applied & Remaining Setup
 
-_Last updated: 6 July 2026_
+_Last updated: 11 July 2026_
+
+---
+
+## 🆕 11 July 2026 — OTP reliability, Rajasthan districts, geo-tagging & permissions
+
+### 1. SMS OTP now works reliably on Vercel (critical bug fixed)
+The backend stored OTPs in an **in-memory `Map`**. Vercel serverless functions are
+stateless, so the instance that handled `/api/otp/send` was often not the one that
+handled `/api/otp/verify` — real OTPs failed randomly. It is now a **stateless signed
+token** (HMAC): the server sends the code by SMS and returns a signed token binding
+`phone + code + expiry`; verification recomputes the HMAC. No database required.
+_(`api/index.js`, `firebase/authService.ts`)_
+
+- **Action:** In the Vercel dashboard add env var `OTP_SECRET` = _(any long random string)_
+  and redeploy. Also add `FAST2SMS_API_KEY` for real SMS (without it, the API stays in
+  free **simulation mode** and shows the code on-screen). Test number `9999999999` still
+  accepts `123456`.
+- **Cost:** Fast2SMS "OTP route" is DLT-exempt and among the cheapest for India
+  (~₹0.20–0.30 per SMS, no monthly fee). Alternatives if needed: MSG91, Twilio (free trial).
+
+### 2. All 41 Rajasthan districts added
+The state/city lists (previously 6 Rajasthan cities, duplicated in two files) are now in
+one shared file listing **all 41 official Rajasthan districts (2025)**.
+_(`constants/locations.ts`, used by `customer-login.tsx` & `artist-register.tsx`)_
+
+### 3. Geo-tagged location for artists & customers
+- Artist registration → **Location** step has a "Capture Current Location (GPS)" button that
+  records the artist's real latitude/longitude (previously fake random coordinates).
+  _(`app/auth/artist-register.tsx`, `utils/permissions.ts`, `context/AppContext.tsx`)_
+- Customer **Sign Up** has an optional "Capture Current Location (GPS)" button; the
+  coordinates are saved on the customer record and the signed-in profile (groundwork for
+  "artists near me"). _(`app/auth/customer-login.tsx`)_
+- Artists can re-tag anytime: Profile → **"Update My Location (GPS)"** captures fresh GPS
+  coordinates and saves them to their artist profile in Firestore.
+  _(`app/(tabs)/profile.tsx`)_
+
+### 4. Runtime permissions (ask first, then proceed)
+A shared helper requests the right permission **before** opening the gallery / camera / GPS,
+and guides the user to Settings if it was permanently denied. Applied to every image upload
+(portfolio, ID, bank, UPI QR, admin QR) and to location.
+_(`utils/permissions.ts`; `app.json` permission strings; `AndroidManifest.xml`)_
+
+- **Action:** `expo-location` is a new native module — rebuild the dev client / APK
+  (`npx expo run:android` or an EAS build) so the native code is included.
+
+### 5. The Website 🌐 (same model, same live database)
+The app now exports as a full static website (Expo web) and deploys to the **same Vercel
+project** as the API — one deployment serves both. The website has every feature of the
+app (browse artists, OTP login, booking, artist dashboard, admin) backed by the same
+Firestore data in real time.
+
+**Web-specific fixes made:**
+- `Alert.alert` is a silent no-op on react-native-web — every confirmation/validation
+  dialog (including "Registration submitted → Got it!" which navigates home) did nothing
+  on web. Patched with a browser-native alert/confirm shim. _(`utils/webAlert.ts`)_
+- Deep links to `/auth/...` bounced back to onboarding because the root layout redirected
+  every logged-out visitor unconditionally. Auth pages are now reachable by URL.
+  _(`app/_layout.tsx`)_
+- Added SEO/social meta tags (title, description, WhatsApp/OG preview image) via the
+  custom HTML shell. _(`app/+html.tsx`, `public/og-image.png`)_
+- `app.json` → `web.output: "static"`; `vercel.json` now builds the site
+  (`npx expo export -p web` → `dist/`) and routes `/api/*` to the Express serverless
+  function, everything else to the static site (with SPA fallback).
+
+**To deploy (from the project folder):**
+```
+npx vercel --prod
+```
+This single deploy publishes the website AND the updated OTP API together (important:
+the new signed-OTP client requires the new API — they ship in the same deployment, so
+nothing can get out of sync). Then set the env vars `OTP_SECRET` and `FAST2SMS_API_KEY`
+in the Vercel dashboard if not already done.
+
+**Local preview:** `npx expo export -p web && npx serve dist -l 4173` → http://localhost:4173
+
+---
 
 This document explains what was corrected in the app, and the few items that need a
 decision or an external account before the app is fully production-ready.
@@ -58,38 +134,19 @@ These were real defects that broke core flows. All are now corrected in the code
 
 ## ⚠️ Needs your decision / an external account
 
-### 1. Login OTP is not real yet (security)
-Today the "SMS OTP" is generated **on the phone** and shown on screen, so anyone can log in
-as any number. This is fine for a demo but **not safe for real users**.
+### 1. Login OTP is now custom-built via Fast2SMS
+Instead of Firebase Phone Auth (which requires a paid subscription), the app now routes OTP requests to your own Vercel backend API using **Fast2SMS**.
 
-It was intentionally left in place for now because removing it without a real SMS provider
-would lock users out. Real phone verification cannot run in this Expo *managed* app without
-one of the two setups below — both need steps only you can do (Firebase console access and a
-native build), so they could not be completed or tested from here.
+- **Endpoints:** `/api/otp/send` and `/api/otp/verify` are added to the Vercel API.
+- **Client Service:** `firebase/authService.ts` calls these backend endpoints.
+- **Test Bypass:** Standard testing number `+91 99999 99999` (or raw `9999999999`) bypasses the SMS provider and always accepts `123456`.
 
-**Recommended: Firebase Phone Authentication** (you already use Firebase).
-
-Option A — Native build with `@react-native-firebase/auth` (most reliable for a real app):
-1. In the [Firebase console](https://console.firebase.google.com) → Authentication →
-   Sign-in method → enable **Phone**.
-2. Add your app's **SHA-1 / SHA-256** fingerprints (Android) under Project Settings.
-3. Install: `npx expo install @react-native-firebase/app @react-native-firebase/auth`
-4. Switch to an EAS **development build** (this cannot run in Expo Go).
-5. Replace the fake OTP in `app/auth/customer-login.tsx` and `app/auth/artist-login.tsx`:
-   ```ts
-   import auth from "@react-native-firebase/auth";
-   // send code:
-   const confirmation = await auth().signInWithPhoneNumber("+91" + phone);
-   // verify code:
-   await confirmation.confirm(otp);
-   ```
-
-Option B — Stay in Expo Go with the Firebase JS SDK + a reCAPTCHA verifier. This works but
-relies on `expo-firebase-recaptcha`, which is unmaintained and not reliable on your current
-SDK 54 / React 19 — **not recommended**.
-
-Either way: **never send or display the code on the client**, and remove the on-screen
-"tap to auto-fill" banner once real OTP is live.
+**Action Items:**
+1. Sign up at [fast2sms.com](https://www.fast2sms.com) and copy your **API Key** from the developer dashboard.
+2. In the **Vercel Project Dashboard**, add an environment variable:
+   `FAST2SMS_API_KEY` = `<your_key>`
+3. Redeploy your Vercel backend.
+4. *Note:* If the key is not set, the API runs in **simulation mode** where it will print/alert you with the code (so testing is 100% free and easy).
 
 ### 2. Online payment is self-confirmed (no real gateway)
 A customer taps "I paid" and the admin manually confirms — there is no gateway verifying the

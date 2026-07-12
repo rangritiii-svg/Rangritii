@@ -11,25 +11,55 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFF5F8"
     },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.rangritti.app"
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FFF5F8"
       },
       "package": "com.rangritti.app",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rangritti.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "RangRiti needs access to your photos so you can upload your portfolio, ID document and payment QR code.",
+        "NSCameraUsageDescription": "RangRiti needs camera access so you can take photos for your portfolio and documents.",
+        "NSLocationWhenInUseUsageDescription": "RangRiti uses your location to geo-tag your service area so nearby customers can find you."
+      }
     },
     "web": {
+      "bundler": "metro",
+      "output": "static",
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
       "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "@react-native-firebase/auth",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "RangRiti needs access to your photos so you can upload your portfolio, ID document and payment QR code.",
+          "cameraPermission": "RangRiti needs camera access so you can take photos for your portfolio and documents."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "RangRiti uses your location to geo-tag your service area so nearby customers can find you."
+        }
+      ]
     ],
     "scheme": "rangritii",
     "extra": {

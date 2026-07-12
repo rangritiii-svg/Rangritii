@@ -23,3 +23,8 @@ yarn-error.log*
 Thumbs.db
 
 .vercel
+
+# Scratch scripts and builds
+scratch/
+*.apk
+

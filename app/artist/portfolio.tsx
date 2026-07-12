@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { getTranslation } from "@/constants/locale";
+import { ensureMediaLibraryPermission } from "@/utils/permissions";
 
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 48) / 3;
@@ -45,17 +46,9 @@ export default function ArtistPortfolioScreen() {
   const handleAddPhoto = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
-    // Request permissions
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        isHindi ? "अनुमति आवश्यक है" : "Permission Denied",
-        isHindi 
-          ? "गैलरी से तस्वीरें चुनने के लिए अनुमति की आवश्यकता है।" 
-          : "We need library permissions to upload portfolio photos."
-      );
-      return;
-    }
+    // Confirm Storage/Photos permission BEFORE opening the gallery
+    const granted = await ensureMediaLibraryPermission(isHindi);
+    if (!granted) return;
 
     try {
       let result = await ImagePicker.launchImageLibraryAsync({

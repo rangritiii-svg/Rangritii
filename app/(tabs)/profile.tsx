@@ -7,17 +7,68 @@ import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, Toucha
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { getCurrentCoordinates } from "@/utils/permissions";
+import { updateArtist } from "@/firebase/firestoreService";
 
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { userProfile, setUserProfile, bookings, favorites, adminStats, language, setLanguage, adminPasscode, adminPhone, adminEmail } = useApp();
+  const { userProfile, setUserProfile, bookings, favorites, adminStats, language, setLanguage, adminPasscode, adminPhone, adminEmail, artists } = useApp();
 
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinCode, setPinCode] = useState("");
   const [pinError, setPinError] = useState("");
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [updatingLocation, setUpdatingLocation] = useState(false);
+
+  const isHindi = language === "hi_IN";
+
+  // Artist: re-capture GPS coordinates and save them to the artist profile
+  const handleUpdateMyLocation = async () => {
+    if (updatingLocation) return;
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); } catch (_e) {}
+
+    const currentArtist = artists.find(a => a.phone === userProfile.phone);
+    if (!currentArtist) {
+      Alert.alert(
+        isHindi ? "प्रोफ़ाइल नहीं मिली" : "Profile Not Found",
+        isHindi
+          ? "आपकी आर्टिस्ट प्रोफ़ाइल नहीं मिली। कृपया पुनः लॉगिन करें।"
+          : "We couldn't find your artist profile. Please log in again."
+      );
+      return;
+    }
+
+    setUpdatingLocation(true);
+    // Asks for Location permission first, then reads GPS coordinates
+    const coords = await getCurrentCoordinates(isHindi);
+    if (!coords) { setUpdatingLocation(false); return; }
+
+    try {
+      await updateArtist(currentArtist.id, {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+      // Keep the signed-in profile in sync too
+      await setUserProfile({ latitude: coords.latitude, longitude: coords.longitude });
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
+      Alert.alert(
+        isHindi ? "स्थान अपडेट हो गया ✅" : "Location Updated ✅",
+        isHindi
+          ? `आपका नया स्थान सहेज दिया गया है (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})। अब आस-पास के ग्राहक आपको आसानी से ढूँढ पाएँगे।`
+          : `Your new location has been saved (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}). Nearby customers can now find you more easily.`
+      );
+    } catch (e) {
+      console.warn("Update location error:", e);
+      Alert.alert(
+        isHindi ? "त्रुटि" : "Error",
+        isHindi ? "स्थान सहेजा नहीं जा सका। कृपया पुनः प्रयास करें।" : "Could not save your location. Please try again."
+      );
+    } finally {
+      setUpdatingLocation(false);
+    }
+  };
 
   const handleToggleLanguage = async () => {
     try { Haptics.selectionAsync().catch(() => {}); } catch (_e) {}
@@ -284,6 +335,20 @@ export default function ProfileScreen() {
               >
                 <Ionicons name="card-outline" size={20} color={colors.mutedForeground} />
                 <Text style={[styles.menuText, { color: colors.text }]}>Bank Account Settings</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.border} />
+              </TouchableOpacity>
+              <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleUpdateMyLocation}
+                disabled={updatingLocation}
+              >
+                <Ionicons name="location-outline" size={20} color={updatingLocation ? colors.border : colors.mutedForeground} />
+                <Text style={[styles.menuText, { color: colors.text }]}>
+                  {updatingLocation
+                    ? (isHindi ? "स्थान प्राप्त हो रहा है…" : "Getting your location…")
+                    : (isHindi ? "मेरा स्थान अपडेट करें (GPS)" : "Update My Location (GPS)")}
+                </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.border} />
               </TouchableOpacity>
             </>

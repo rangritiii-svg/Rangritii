@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { ensureMediaLibraryPermission } from "@/utils/permissions";
 
 export default function ArtistBankScreen() {
   const colors = useColors();
@@ -42,11 +43,8 @@ export default function ArtistBankScreen() {
 
   const handlePickBankPhoto = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "We need library permissions to upload your bank document.");
-      return;
-    }
+    const granted = await ensureMediaLibraryPermission(isHindi);
+    if (!granted) return;
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -64,11 +62,8 @@ export default function ArtistBankScreen() {
 
   const handlePickQrPhoto = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "We need library permissions to upload your payment QR code.");
-      return;
-    }
+    const granted = await ensureMediaLibraryPermission(isHindi);
+    if (!granted) return;
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "793048443440",
+    "project_id": "rangritii",
+    "storage_bucket": "rangritii.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:793048443440:android:fed1a0b28b96c40eab5bf5",
+        "android_client_info": {
+          "package_name": "com.rangritti.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAb3yFH3NimZAXbJNq7C-t1PPOA7GIPYyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

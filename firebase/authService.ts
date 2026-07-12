@@ -1,39 +1,94 @@
 /**
  * authService.ts
- * Firebase Phone Authentication helpers for RangRiti.
- *
- * Uses @react-native-firebase/auth (native SDK) which handles Android
- * app attestation (SafetyNet / Play Integrity) automatically — no
- * reCAPTCHA or ApplicationVerifier needed.
+ * Custom Phone Authentication helpers for RangRiti.
+ * Replaces Firebase Phone Auth with our custom Express/Vercel backend.
  */
 
-import auth from "@react-native-firebase/auth";
+import { VERIFICATION_CONFIG } from "@/constants/verificationConfig";
+import Constants from "expo-constants";
+import { Alert } from "react-native";
 
-export type NativeConfirmationResult = Awaited<
-  ReturnType<typeof auth>["signInWithPhoneNumber"]
->;
+// Resolve local development LAN IP so real devices can connect to the dev server
+const hostUri = Constants.expoConfig?.hostUri;
+let DEV_LAN_IP = "10.254.51.206"; // fallback
+if (hostUri) {
+  const ip = hostUri.split(":")[0];
+  if (ip) {
+    DEV_LAN_IP = ip;
+  }
+}
+
+const BACKEND_URL = VERIFICATION_CONFIG.BACKEND_URL || `http://${DEV_LAN_IP}:3000`;
 
 /**
- * Sends a real OTP SMS to the given phone number via Firebase Phone Auth.
- * @param phoneNumber  Full E.164 number, e.g. "+919876543210"
- * @returns ConfirmationResult — call .confirm(code) to verify the OTP
+ * The opaque challenge returned by sendPhoneOtp and passed back to
+ * verifyPhoneOtp. Holds the phone number and the server-signed token that
+ * proves which code was issued (the code itself never leaves the SMS/device).
+ */
+export interface NativeConfirmationResult {
+  phone: string;
+  token: string;
+}
+
+/**
+ * Sends a custom OTP SMS via the backend.
+ * @param phoneNumber Full number, e.g. "+919876543210" or "9876543210"
+ * @returns A challenge object to be passed to verifyPhoneOtp
  */
 export async function sendPhoneOtp(
   phoneNumber: string
 ): Promise<NativeConfirmationResult> {
-  return auth().signInWithPhoneNumber(phoneNumber);
+  const response = await fetch(`${BACKEND_URL}/api/otp/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ phone: phoneNumber }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || "Failed to send verification SMS");
+  }
+
+  if (!data.token) {
+    throw new Error("Server did not return a verification token. Please try again.");
+  }
+
+  // If in simulation mode, alert developer/user with the code so they don't get stuck
+  if (data.isSimulated && data.code) {
+    Alert.alert(
+      "Simulated OTP 📲",
+      `Fast2SMS key not set. Your simulated OTP is: ${data.code}`
+    );
+  }
+
+  return { phone: phoneNumber, token: data.token };
 }
 
 /**
- * Verifies the OTP code that the user typed in.
- * @param confirmationResult  Returned from sendPhoneOtp()
- * @param code  6-digit code entered by the user
- * @returns Firebase UserCredential on success
- * @throws  FirebaseError with code "auth/invalid-verification-code" if wrong
+ * Verifies the custom OTP via the backend.
+ * @param challenge The confirmationResult returned by sendPhoneOtp
+ * @param code The 6-digit verification code the user entered
  */
 export async function verifyPhoneOtp(
-  confirmationResult: NativeConfirmationResult,
+  challenge: NativeConfirmationResult,
   code: string
 ) {
-  return confirmationResult.confirm(code);
+  const response = await fetch(`${BACKEND_URL}/api/otp/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ phone: challenge.phone, otp: code, token: challenge.token }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || "Verification failed");
+  }
+
+  return { success: true };
 }

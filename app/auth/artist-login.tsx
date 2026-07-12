@@ -10,77 +10,53 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
-import { sendPhoneOtp, verifyPhoneOtp } from "@/firebase/authService";
-import type { NativeConfirmationResult } from "@/firebase/authService";
-
+import { updateArtist } from "@/firebase/firestoreService";
 export default function ArtistLoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { setUserProfile, artists, language } = useApp();
 
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
+  const [password, setPassword] = useState("");
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const [confirmationResult, setConfirmationResult] = useState<NativeConfirmationResult | null>(null);
 
-  // Countdown timer for Resend OTP
-  useEffect(() => {
-    let interval: any;
-    if (timer > 0) {
-      interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [timer]);
-
-  const handleSendOtp = async () => {
+  const handleLoginOrRegister = async () => {
     if (phone.length !== 10) {
       Alert.alert("Invalid Number", "Please enter a valid 10-digit mobile number.");
       return;
     }
+    if (showPasswordInput && !password.trim()) {
+      Alert.alert("Required", "Please enter your password.");
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setLoading(true);
-    try {
-      const fullPhone = `+91${phone}`;
-      const result = await sendPhoneOtp(fullPhone);
-      setConfirmationResult(result);
-      setOtpSent(true);
-      setTimer(30);
-      setOtp("");
-      setLoading(false);
-      Alert.alert(
-        "OTP Sent ✅",
-        `A 6-digit verification code has been sent to +91 ${phone} via SMS.`
-      );
-    } catch (err: any) {
-      setLoading(false);
-      console.error("sendPhoneOtp error:", err);
-      Alert.alert(
-        "Failed to Send OTP",
-        `Firebase Error: ${err?.code || "Unknown Code"}\nMessage: ${err?.message || "Please check connection and try again."}`
-      );
-    }
-  };
 
-  const handleVerify = async () => {
-    if (otp.length < 6) {
-      Alert.alert("Invalid OTP", "Please enter the complete 6-digit OTP.");
-      return;
-    }
-    if (!confirmationResult) {
-      Alert.alert("Error", "Please request an OTP first.");
-      return;
-    }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setLoading(true);
     try {
-      await verifyPhoneOtp(confirmationResult, otp);
-
       const cleanPhone = `+91 ${phone}`;
       const matchedArtist = artists.find((a) => a.phone === cleanPhone);
 
       if (matchedArtist) {
+        if (!showPasswordInput) {
+          setLoading(false);
+          setShowPasswordInput(true);
+          return;
+        }
+
+        // Verify password
+        if (matchedArtist.password) {
+          if (matchedArtist.password !== password.trim()) {
+            Alert.alert("Incorrect Password", "The password you entered is incorrect. Please try again.");
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Old account: save password entered on first login
+          matchedArtist.password = password.trim();
+          updateArtist(matchedArtist.id, { password: password.trim() }).catch((e) => console.warn(e));
+        }
+
         await setUserProfile({
           role: "artist",
           name: matchedArtist.name,
@@ -99,14 +75,10 @@ export default function ArtistLoginScreen() {
       }
     } catch (err: any) {
       setLoading(false);
-      console.error("verifyPhoneOtp error:", err);
+      console.error("Artist login error:", err);
       Alert.alert(
-        "Verification Failed",
-        err?.message?.includes("auth/invalid-verification-code")
-          ? "The OTP you entered is incorrect. Please check the SMS and try again."
-          : err?.message?.includes("auth/code-expired")
-          ? "This OTP has expired. Please tap 'Resend OTP' to get a new one."
-          : "Verification failed. Please try again."
+        "Authentication Failed",
+        err?.message || "Please check your connection and try again."
       );
     }
   };
@@ -151,101 +123,68 @@ export default function ArtistLoginScreen() {
             onChangeText={setPhone}
             keyboardType="phone-pad"
             maxLength={10}
-            editable={!otpSent}
+            editable={!showPasswordInput}
           />
-          {otpSent && (
-            <TouchableOpacity onPress={() => { setOtpSent(false); setConfirmationResult(null); }}>
+          {showPasswordInput && (
+            <TouchableOpacity onPress={() => { setShowPasswordInput(false); setPassword(""); }}>
               <Text style={[styles.changeLink, { color: colors.gold }]}>Change</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* OTP Input — shown after SMS is sent */}
-        {otpSent && (
+        {/* Password Input */}
+        {showPasswordInput && (
           <>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-              <Text style={[styles.label, { color: colors.text, marginTop: 0 }]}>
-                {language === "hi_IN" ? "OTP दर्ज करें" : "Enter OTP"}
-              </Text>
-              {timer > 0 ? (
-                <Text style={{ fontSize: 12, color: colors.gold, fontFamily: "Poppins_600SemiBold" }}>
-                  {language === "hi_IN" ? `${timer}s में पुनः भेजें` : `Resend in ${timer}s`}
-                </Text>
-              ) : (
-                <TouchableOpacity onPress={handleSendOtp} disabled={loading}>
-                  <Text style={{ fontSize: 12, color: colors.gold, fontFamily: "Poppins_700Bold" }}>
-                    {language === "hi_IN" ? "OTP पुनः भेजें" : "Resend OTP"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <Text style={[styles.otpHint, { color: colors.mutedForeground }]}>
-              {language === "hi_IN"
-                ? `6-अंकीय OTP +91 ${phone} पर भेज दिया गया है`
-                : `A 6-digit OTP has been sent to +91 ${phone}`}
-            </Text>
-
+            <Text style={[styles.label, { color: colors.text }]}>Password *</Text>
             <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="shield-checkmark-outline" size={18} color={colors.mutedForeground} />
+              <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
               <TextInput
-                style={[styles.input, { color: colors.text, letterSpacing: 6, fontSize: 20 }]}
-                placeholder="• • • • • •"
+                style={[styles.input, { color: colors.text }]}
+                placeholder="Enter password"
                 placeholderTextColor={colors.mutedForeground}
-                value={otp}
-                onChangeText={setOtp}
-                keyboardType="number-pad"
-                maxLength={6}
-                autoFocus
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
               />
             </View>
           </>
         )}
 
+        {/* OTP Input — shown after SMS is sent */}
         {/* Action Button */}
-        {!otpSent ? (
-          <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: colors.gold }]}
-            onPress={handleSendOtp}
-            activeOpacity={0.85}
-            disabled={loading}
-          >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={[styles.primaryBtnText, { color: "#fff" }]}>Send OTP via SMS</Text>
-            }
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: colors.gold }]}
-            onPress={handleVerify}
-            activeOpacity={0.85}
-            disabled={loading}
-          >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <>
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                  <Text style={[styles.primaryBtnText, { color: "#fff" }]}>Verify & Continue</Text>
-                </>
-            }
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[styles.primaryBtn, { backgroundColor: colors.gold }]}
+          onPress={handleLoginOrRegister}
+          activeOpacity={0.85}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle" size={20} color="#fff" />
+              <Text style={[styles.primaryBtnText, { color: "#fff" }]}>Continue</Text>
+            </>
+          )}
+        </TouchableOpacity>
 
         {/* New Artist CTA */}
-        <View style={[styles.newArtistBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.newArtistTitle, { color: colors.text }]}>New to RangRiti?</Text>
-          <Text style={[styles.newArtistDesc, { color: colors.mutedForeground }]}>
-            Create your artist profile and start getting bookings today. Registration takes only 5 minutes.
-          </Text>
-          <TouchableOpacity
-            style={[styles.registerBtn, { borderColor: colors.gold }]}
-            onPress={() => router.push("/auth/artist-register")}
-          >
-            <MaterialCommunityIcons name="flower" size={16} color={colors.gold} />
-            <Text style={[styles.registerBtnText, { color: colors.gold }]}>Register as Artist →</Text>
-          </TouchableOpacity>
-        </View>
+        {!showPasswordInput && (
+          <View style={[styles.newArtistBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.newArtistTitle, { color: colors.text }]}>New to RangRiti?</Text>
+            <Text style={[styles.newArtistDesc, { color: colors.mutedForeground }]}>
+              Create your artist profile and start getting bookings today. Registration takes only 5 minutes.
+            </Text>
+            <TouchableOpacity
+              style={[styles.registerBtn, { borderColor: colors.gold }]}
+              onPress={() => router.push("/auth/artist-register")}
+            >
+              <MaterialCommunityIcons name="flower" size={16} color={colors.gold} />
+              <Text style={[styles.registerBtnText, { color: colors.gold }]}>Register as Artist →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Benefits */}
         <View style={[styles.featureBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>

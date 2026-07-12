@@ -68,6 +68,7 @@ export interface Artist {
   bankIfsc?: string; // Payout bank IFSC code
   upiId?: string; // Artist's own UPI ID (used by admin to pay the artist)
   upiQrPhoto?: string; // Artist's own payment QR image (base64 data URI)
+  password?: string; // password for auth login
 }
 
 export interface Customer {
@@ -79,6 +80,9 @@ export interface Customer {
   area: string;
   isActive: boolean;
   createdAt: string;
+  latitude?: number;  // optional geo-tag captured at signup
+  longitude?: number;
+  password?: string; // password for auth login
 }
 
 export interface CancellationPolicy {
@@ -135,6 +139,8 @@ export interface UserProfile {
   city: string;
   area: string;
   role: "customer" | "artist" | "admin" | null;
+  latitude?: number;  // optional geo-tag of the signed-in user
+  longitude?: number;
 }
 
 export interface CommissionLog {
@@ -206,7 +212,7 @@ interface AppContextType {
   getArtistBookings: (artistId: string) => Booking[];
   updateArtistStatus: (artistId: string, status: Artist["status"], missingDocsReason?: string) => void;
   toggleUserActiveStatus: (userId: string, isArtist: boolean) => void;
-  registerNewArtist: (artist: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes">) => Promise<string>;
+  registerNewArtist: (artist: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes"> & { latitude?: number; longitude?: number }) => Promise<string>;
   updateArtistPackages: (artistId: string, packages: ArtistPackage[]) => void;
   addCustomer: (customer: Omit<Customer, "id" | "isActive" | "createdAt">) => void;
   updateBookingPaymentLink: (bookingId: string, paymentLink: string) => void;
@@ -630,7 +636,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const registerNewArtist = useCallback(async (artistData: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes">): Promise<string> => {
+  const registerNewArtist = useCallback(async (artistData: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes"> & { latitude?: number; longitude?: number }): Promise<string> => {
     const id = "a" + (Date.now() + Math.round(Math.random() * 1000)).toString().substring(8);
     const newArtist: Artist = {
       ...artistData,
@@ -640,8 +646,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       reviews: [],
       status: "Pending",
       isActive: true,
-      latitude: 19.1 + Math.random() * 0.1,
-      longitude: 72.8 + Math.random() * 0.1,
+      // Use the artist's real geo-tagged coordinates when provided; otherwise
+      // fall back to a point near Jaipur, Rajasthan (the app's primary market).
+      latitude: artistData.latitude ?? 26.9124 + (Math.random() - 0.5) * 0.1,
+      longitude: artistData.longitude ?? 75.7873 + (Math.random() - 0.5) * 0.1,
       strikes: 0,
       packages: [
         {

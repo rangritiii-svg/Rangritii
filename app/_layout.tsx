@@ -1,5 +1,6 @@
 import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold, useFonts } from "@expo-google-fonts/poppins";
-import { router, Stack } from "expo-router";
+import { router, Stack, usePathname } from "expo-router";
+import "@/utils/webAlert"; // patches Alert.alert on web (react-native-web's Alert is a no-op)
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -14,16 +15,20 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 function RootLayoutNav() {
   const { userProfile, globalNotification } = useApp();
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
   const toastY = useRef(new Animated.Value(-150)).current;
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (userProfile.role === null) {
+      // Logged-out users go to onboarding — but auth pages themselves must stay
+      // reachable (on the website users can deep-link straight to /auth/...)
+      const isPublicRoute = pathname?.startsWith("/auth") || pathname === "/onboarding";
+      if (userProfile.role === null && !isPublicRoute) {
         router.replace("/onboarding");
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [userProfile.role]);
+  }, [userProfile.role, pathname]);
 
   useEffect(() => {
     if (globalNotification?.visible) {

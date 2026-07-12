@@ -10,19 +10,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
-import { sendPhoneOtp, verifyPhoneOtp } from "@/firebase/authService";
-import type { NativeConfirmationResult } from "@/firebase/authService";
-
-const INDIAN_STATES_CITIES: Record<string, string[]> = {
-  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
-  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Aurangabad"],
-  "Delhi": ["Delhi", "New Delhi", "Noida", "Gurugram"],
-  "Uttar Pradesh": ["Lucknow", "Kanpur", "Noida", "Ghaziabad", "Agra", "Varanasi"],
-  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhinagar"],
-  "Haryana": ["Gurugram", "Faridabad", "Panipat", "Ambala"],
-  "Karnataka": ["Bengaluru", "Mysuru", "Hubballi", "Mangaluru"],
-  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli"]
-};
+import { INDIAN_STATES_CITIES } from "@/constants/locations";
+import { getCurrentCoordinates } from "@/utils/permissions";
+import { updateCustomer } from "@/firebase/firestoreService";
 
 export default function CustomerLoginScreen() {
   const colors = useColors();
@@ -32,120 +22,129 @@ export default function CustomerLoginScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-
-
 
   // Dropdown Modal states
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
 
-  // Firebase Phone Auth
-  const [confirmationResult, setConfirmationResult] = useState<NativeConfirmationResult | null>(null);
-  const [timer, setTimer] = useState(0);
+  // Geo-tagged location (optional, captured from device GPS during sign up)
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locating, setLocating] = useState(false);
 
-  // Countdown timer for resend
-  useEffect(() => {
-    let interval: any;
-    if (timer > 0) {
-      interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
+  const handleCaptureLocation = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setLocating(true);
+    // Asks for Location permission first, then reads GPS coordinates
+    const coords = await getCurrentCoordinates(language === "hi_IN");
+    setLocating(false);
+    if (coords) {
+      setLatitude(coords.latitude);
+      setLongitude(coords.longitude);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
-    return () => clearInterval(interval);
-  }, [timer]);
+  };
 
-  const handleSendOtp = async () => {
+  const handleLoginOrSignup = async () => {
     if (!isLogin && !name.trim()) { Alert.alert("Required", "Please enter your full name."); return; }
     if (phone.length !== 10) { Alert.alert("Invalid Number", "Please enter a valid 10-digit mobile number."); return; }
     if (!isLogin && !state) { Alert.alert("Required", "Please select your state."); return; }
     if (!isLogin && !city) { Alert.alert("Required", "Please select your city."); return; }
+    if (!password.trim()) { Alert.alert("Required", "Please enter your password."); return; }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setLoading(true);
 
     const userPhone = `+91 ${phone}`;
 
-    // Block login for unregistered customers
-    if (isLogin) {
-      const registered = customers.some(c => c.phone === userPhone);
-      if (!registered) {
-        Alert.alert(
-          "Not Registered",
-          "This phone number is not registered. Please switch to 'Sign Up' to create an account."
-        );
-        setLoading(false);
-        return;
-      }
-    }
-
     try {
-      // Send phone OTP via Firebase
-      const result = await sendPhoneOtp(`+91${phone}`);
-      setConfirmationResult(result);
-      setOtpSent(true);
-      setTimer(30);
-      setOtp("");
-      setLoading(false);
-      Alert.alert("OTP Sent ✅", `A 6-digit code has been sent to +91 ${phone} via SMS.`);
-    } catch (err: any) {
-      setLoading(false);
-      console.error("sendPhoneOtp error:", err);
-      Alert.alert(
-        "Failed to Send OTP",
-        `Firebase Error: ${err?.code || "Unknown Code"}\nMessage: ${err?.message || "Please check connection and try again."}`
-      );
-    }
-  };
-
-  const handleVerify = async () => {
-    if (otp.length < 6) { Alert.alert("Invalid OTP", "Please enter the complete 6-digit SMS OTP."); return; }
-    if (!confirmationResult) { Alert.alert("Error", "Please request an OTP first."); return; }
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setLoading(true);
-
-    try {
-      // Verify Firebase phone OTP
-      await verifyPhoneOtp(confirmationResult, otp);
-
-      const userPhone = `+91 ${phone}`;
-      let userName = name.trim();
-      let userCity = city.trim();
-      let userState = state.trim();
-      let userArea = area.trim();
-
       if (isLogin) {
+        // Find existing customer
         const existingCustomer = customers.find(c => c.phone === userPhone);
-        if (existingCustomer) {
-          userName = existingCustomer.name;
-          userCity = existingCustomer.city;
-          userState = existingCustomer.state;
-          userArea = existingCustomer.area;
-        } else {
-          userName = "Customer";
-          userCity = "India";
-          userState = "";
-          userArea = "";
+        if (!existingCustomer) {
+          Alert.alert(
+            "Not Registered",
+            "This mobile number is not registered. Please switch to 'Sign Up' to create an account."
+          );
+          setLoading(false);
+          return;
         }
+
+        // Verify password
+        if (existingCustomer.password) {
+          if (existingCustomer.password !== password.trim()) {
+            Alert.alert("Incorrect Password", "The password you entered is incorrect. Please try again.");
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Old account: save password entered on first login
+          existingCustomer.password = password.trim();
+          updateCustomer(existingCustomer.id, { password: password.trim() }).catch((e: any) => console.warn(e));
+        }
+
+        await setUserProfile({
+          role: "customer",
+          name: existingCustomer.name,
+          phone: userPhone,
+          state: existingCustomer.state,
+          city: existingCustomer.city,
+          area: existingCustomer.area,
+          ...(existingCustomer.latitude != null && existingCustomer.longitude != null 
+            ? { latitude: existingCustomer.latitude, longitude: existingCustomer.longitude } 
+            : {}),
+        });
+      } else {
+        // Sign Up Mode: check duplicates
+        const registered = customers.some(c => c.phone === userPhone);
+        if (registered) {
+          Alert.alert(
+            "Already Registered",
+            "This mobile number is already registered. Please switch to 'Login' to sign in."
+          );
+          setLoading(false);
+          return;
+        }
+
+        const userName = name.trim();
+        const userCity = city.trim();
+        const userState = state.trim();
+        const userArea = area.trim();
+
+        addCustomer({
+          name: userName,
+          phone: userPhone,
+          state: userState,
+          city: userCity,
+          area: userArea,
+          password: password.trim(),
+          ...(latitude != null && longitude != null ? { latitude, longitude } : {}),
+        });
+
+        await setUserProfile({
+          role: "customer",
+          name: userName,
+          phone: userPhone,
+          state: userState,
+          city: userCity,
+          area: userArea,
+          ...(latitude != null && longitude != null ? { latitude, longitude } : {}),
+        });
       }
 
-      if (!isLogin) {
-        addCustomer({ name: userName, phone: userPhone, state: userState, city: userCity, area: userArea });
-      }
-
-      await setUserProfile({ role: "customer", name: userName, phone: userPhone, state: userState, city: userCity, area: userArea });
       setLoading(false);
       router.replace("/(tabs)");
     } catch (err: any) {
       setLoading(false);
-      console.error("verifyPhoneOtp error:", err);
+      console.error("Login/Signup error:", err);
       Alert.alert(
-        "Verification Failed",
-        `Firebase Error: ${err?.code || "Unknown Code"}\nMessage: ${err?.message || "Please check connection and try again."}`
+        "Authentication Failed",
+        err?.message || "Please check your connection and try again."
       );
     }
   };
@@ -170,10 +169,10 @@ export default function CustomerLoginScreen() {
       <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
         {/* Login / Sign Up toggle */}
         <View style={[styles.toggleRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          <TouchableOpacity style={[styles.toggleBtn, isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(true); setOtpSent(false); setConfirmationResult(null); }}>
+          <TouchableOpacity style={[styles.toggleBtn, isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(true); }}>
             <Text style={[styles.toggleText, { color: isLogin ? colors.primaryForeground : colors.mutedForeground }]}>Login</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.toggleBtn, !isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(false); setOtpSent(false); setConfirmationResult(null); }}>
+          <TouchableOpacity style={[styles.toggleBtn, !isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(false); }}>
             <Text style={[styles.toggleText, { color: !isLogin ? colors.primaryForeground : colors.mutedForeground }]}>Sign Up</Text>
           </TouchableOpacity>
         </View>
@@ -206,6 +205,43 @@ export default function CustomerLoginScreen() {
               <Ionicons name="location-outline" size={18} color={colors.mutedForeground} />
               <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. Andheri West, Bandra" placeholderTextColor={colors.mutedForeground} value={area} onChangeText={setArea} autoCapitalize="words" />
             </View>
+
+            {/* Optional geo-tag — helps show artists near the customer */}
+            <Text style={[styles.label, { color: colors.text }]}>📍 Geo-tag Your Location (Optional)</Text>
+            <TouchableOpacity
+              style={[
+                styles.geoBtn,
+                {
+                  backgroundColor: latitude != null ? "rgba(16,185,129,0.1)" : colors.card,
+                  borderColor: latitude != null ? "#10B981" : colors.border,
+                },
+              ]}
+              onPress={handleCaptureLocation}
+              disabled={locating}
+              activeOpacity={0.85}
+            >
+              {locating ? (
+                <>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={[styles.geoBtnText, { color: colors.text }]}>Getting your location…</Text>
+                </>
+              ) : latitude != null && longitude != null ? (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.geoBtnText, { color: "#10B981" }]}>Location Tagged ✓</Text>
+                    <Text style={[styles.geoCoords, { color: colors.mutedForeground }]}>
+                      {latitude.toFixed(5)}, {longitude.toFixed(5)} · Tap to update
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="location" size={20} color={colors.primary} />
+                  <Text style={[styles.geoBtnText, { color: colors.text }]}>Capture Current Location (GPS)</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </>
         )}
 
@@ -213,72 +249,37 @@ export default function CustomerLoginScreen() {
         <Text style={[styles.label, { color: colors.text }]}>Mobile Number *</Text>
         <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.countryCode, { color: colors.text }]}>🇮🇳 +91</Text>
-          <TextInput style={[styles.input, { color: colors.text }]} placeholder="10-digit mobile number" placeholderTextColor={colors.mutedForeground} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} editable={!otpSent} />
-          {otpSent && (
-            <TouchableOpacity onPress={() => { setOtpSent(false); setConfirmationResult(null); }}>
-              <Text style={[styles.changeLink, { color: colors.primary }]}>Change</Text>
-            </TouchableOpacity>
-          )}
+          <TextInput style={[styles.input, { color: colors.text }]} placeholder="10-digit mobile number" placeholderTextColor={colors.mutedForeground} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} />
         </View>
 
-        {/* OTP fields — shown after send */}
-        {otpSent && (
-          <>
-            {/* Phone OTP */}
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-              <Text style={[styles.label, { color: colors.text, marginTop: 0 }]}>SMS OTP</Text>
-              {timer > 0 ? (
-                <Text style={{ fontSize: 12, color: colors.primary, fontFamily: "Poppins_600SemiBold" }}>
-                  {language === "hi_IN" ? `${timer}s में पुनः भेजें` : `Resend in ${timer}s`}
-                </Text>
-              ) : (
-                <TouchableOpacity onPress={handleSendOtp} disabled={loading}>
-                  <Text style={{ fontSize: 12, color: colors.primary, fontFamily: "Poppins_700Bold" }}>
-                    {language === "hi_IN" ? "OTP पुनः भेजें" : "Resend OTP"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <Text style={[styles.otpHint, { color: colors.mutedForeground }]}>
-              {language === "hi_IN" ? `6-अंकीय OTP +91 ${phone} पर भेज दिया गया है` : `A 6-digit OTP was sent to +91 ${phone}`}
-            </Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="shield-checkmark-outline" size={18} color={colors.mutedForeground} />
-              <TextInput
-                style={[styles.input, { color: colors.text, letterSpacing: 6, fontSize: 20 }]}
-                placeholder="• • • • • •"
-                placeholderTextColor={colors.mutedForeground}
-                value={otp}
-                onChangeText={setOtp}
-                keyboardType="number-pad"
-                maxLength={6}
-                autoFocus
-              />
-            </View>
-          </>
-        )}
+        {/* Password */}
+        <Text style={[styles.label, { color: colors.text }]}>Password *</Text>
+        <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
+          <TextInput
+            style={[styles.input, { color: colors.text }]}
+            placeholder="Enter password"
+            placeholderTextColor={colors.mutedForeground}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </View>
 
         {/* Action Button */}
-        {!otpSent ? (
-          <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: colors.primary }]} onPress={handleSendOtp} disabled={loading} activeOpacity={0.85}>
-            {loading
-              ? <ActivityIndicator color={colors.primaryForeground} />
-              : <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Send Verification Code</Text>
-            }
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: colors.primary }]} onPress={handleVerify} disabled={loading} activeOpacity={0.85}>
-            {loading
-              ? <ActivityIndicator color={colors.primaryForeground} />
-              : <>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.primaryForeground} />
-                  <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>
-                    {isLogin ? "Verify & Login" : "Verify & Complete Signup"}
-                  </Text>
-                </>
-            }
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: colors.primary }]} onPress={handleLoginOrSignup} disabled={loading} activeOpacity={0.85}>
+          {loading ? (
+            <ActivityIndicator color={colors.primaryForeground} />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle" size={20} color={colors.primaryForeground} />
+              <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>
+                {isLogin ? "Login" : "Complete Signup"}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
 
         {/* Benefits */}
         <View style={[styles.featureBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
@@ -370,6 +371,9 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular" },
   changeLink: { fontSize: 12, fontFamily: "Poppins_600SemiBold" },
   otpHint: { fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 6, marginTop: 4 },
+  geoBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14 },
+  geoBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
+  geoCoords: { fontSize: 11, fontFamily: "Poppins_400Regular", marginTop: 2 },
   primaryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 16, marginTop: 20, marginBottom: 8 },
   primaryBtnText: { fontSize: 16, fontFamily: "Poppins_700Bold" },
   featureBox: { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 24, gap: 8 },

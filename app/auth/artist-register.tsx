@@ -2,26 +2,17 @@ import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-ico
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Modal, FlatList
+  StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Modal, FlatList, ActivityIndicator
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
-
-const INDIAN_STATES_CITIES: Record<string, string[]> = {
-  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
-  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Aurangabad"],
-  "Delhi": ["Delhi", "New Delhi", "Noida", "Gurugram"],
-  "Uttar Pradesh": ["Lucknow", "Kanpur", "Noida", "Ghaziabad", "Agra", "Varanasi"],
-  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhinagar"],
-  "Haryana": ["Gurugram", "Faridabad", "Panipat", "Ambala"],
-  "Karnataka": ["Bengaluru", "Mysuru", "Hubballi", "Mangaluru"],
-  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli"]
-};
+import { INDIAN_STATES_CITIES } from "@/constants/locations";
+import { ensureMediaLibraryPermission, getCurrentCoordinates } from "@/utils/permissions";
 
 const MEHNDI_TYPES = [
   "Bridal", "Arabic", "Traditional", "Marwari", "Modern Bridal", "Indo-Western",
@@ -43,10 +34,10 @@ export default function ArtistRegisterScreen() {
   const insets = useSafeAreaInsets();
   const { setUserProfile, registerNewArtist, language } = useApp();
 
+  const params = useLocalSearchParams<{ phone?: string }>();
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-
-
 
   // Dropdown Modal states
   const [stateModalVisible, setStateModalVisible] = useState(false);
@@ -54,7 +45,8 @@ export default function ArtistRegisterScreen() {
 
   // Step 1 — Personal Info
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(params.phone ?? "");
+  const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [experience, setExperience] = useState("");
   const [bio, setBio] = useState("");
@@ -65,6 +57,24 @@ export default function ArtistRegisterScreen() {
   const [area, setArea] = useState("");
   const [pincode, setPincode] = useState("");
   const [travelRadius, setTravelRadius] = useState("");
+
+  // Geo-tagged location (captured from device GPS)
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locating, setLocating] = useState(false);
+
+  const handleCaptureLocation = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setLocating(true);
+    // Asks for Location permission first, then reads GPS coordinates
+    const coords = await getCurrentCoordinates(language === "hi_IN");
+    setLocating(false);
+    if (coords) {
+      setLatitude(coords.latitude);
+      setLongitude(coords.longitude);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }
+  };
 
   // Step 3 — Services
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
@@ -107,11 +117,9 @@ export default function ArtistRegisterScreen() {
   // Generic image launcher — opens gallery then shows the action modal
   const launchImagePicker = async (field: ImageField, replaceIdx?: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow library access to upload photos.");
-      return;
-    }
+    // Always confirm Storage/Photos permission BEFORE opening the gallery
+    const granted = await ensureMediaLibraryPermission(language === "hi_IN");
+    if (!granted) return;
     try {
       // allowsEditing lets the user do a basic crop inline before confirming
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -184,6 +192,7 @@ export default function ArtistRegisterScreen() {
       if (!fullName.trim()) { Alert.alert("Required", "Please enter your full name."); return false; }
       if (phone.length !== 10) { Alert.alert("Required", "Enter a valid 10-digit phone number."); return false; }
       if (!email.trim()) { Alert.alert("Required", "Please enter your email address."); return false; }
+      if (!password.trim()) { Alert.alert("Required", "Please enter a password."); return false; }
     }
     if (step === 2) {
       if (!state.trim() || !city.trim() || !area.trim()) { Alert.alert("Required", "State, city and area are required."); return false; }
@@ -234,6 +243,7 @@ export default function ArtistRegisterScreen() {
       await registerNewArtist({
         name: fullName.trim(),
         phone: userPhone,
+        password: password.trim(),
         city: userCity,
         state: state.trim(),
         area: userArea,
@@ -252,6 +262,8 @@ export default function ArtistRegisterScreen() {
         idCardPhoto: regIdCardImage,
         upiId: upiId.trim(),
         upiQrPhoto: regUpiQrImage,
+        // Real GPS coordinates when the artist geo-tagged their location
+        ...(latitude != null && longitude != null ? { latitude, longitude } : {}),
       });
 
       await setUserProfile({
@@ -338,6 +350,18 @@ export default function ArtistRegisterScreen() {
               <TextInput style={[styles.input, { color: colors.text }]} placeholder="yourname@domain.com" placeholderTextColor={colors.mutedForeground} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
             </Field>
 
+            <Field label="Password *" colors={colors}>
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder="Set password for your account"
+                placeholderTextColor={colors.mutedForeground}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </Field>
+
             <Field label="Years of Experience *" colors={colors}>
               <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. 5" placeholderTextColor={colors.mutedForeground} value={experience} onChangeText={setExperience} keyboardType="number-pad" maxLength={2} />
             </Field>
@@ -408,10 +432,47 @@ export default function ArtistRegisterScreen() {
               <TextInput style={[styles.input, { color: colors.text }]} placeholder="Max distance you'll travel (e.g. 15)" placeholderTextColor={colors.mutedForeground} value={travelRadius} onChangeText={setTravelRadius} keyboardType="number-pad" maxLength={3} />
             </Field>
 
+            {/* Geo-tag current location */}
+            <Text style={[styles.label, { color: colors.text }]}>📍 Geo-tag Your Location</Text>
+            <TouchableOpacity
+              style={[
+                styles.geoBtn,
+                {
+                  backgroundColor: latitude != null ? "rgba(16,185,129,0.1)" : colors.card,
+                  borderColor: latitude != null ? "#10B981" : colors.border,
+                },
+              ]}
+              onPress={handleCaptureLocation}
+              disabled={locating}
+              activeOpacity={0.85}
+            >
+              {locating ? (
+                <>
+                  <ActivityIndicator size="small" color={colors.gold} />
+                  <Text style={[styles.geoBtnText, { color: colors.text }]}>Getting your location…</Text>
+                </>
+              ) : latitude != null && longitude != null ? (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.geoBtnText, { color: "#10B981" }]}>Location Tagged ✓</Text>
+                    <Text style={[styles.geoCoords, { color: colors.mutedForeground }]}>
+                      {latitude.toFixed(5)}, {longitude.toFixed(5)} · Tap to update
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="location" size={20} color={colors.gold} />
+                  <Text style={[styles.geoBtnText, { color: colors.text }]}>Capture Current Location (GPS)</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
             <View style={[styles.infoBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
               <Ionicons name="information-circle-outline" size={18} color={colors.gold} />
               <Text style={[styles.infoBoxText, { color: colors.text }]}>
-                Your exact address is kept private. Customers only see your city and area.
+                Geo-tagging helps nearby customers find you. Your exact address stays private — customers only see your city and area.
               </Text>
             </View>
           </View>
@@ -915,6 +976,9 @@ const styles = StyleSheet.create({
   textAreaWrapper: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 2 },
   textArea: { fontSize: 13, fontFamily: "Poppins_400Regular", minHeight: 90, lineHeight: 20 },
   charCount: { alignSelf: "flex-end", fontSize: 10, fontFamily: "Poppins_400Regular", marginTop: 4 },
+  geoBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, marginTop: 6 },
+  geoBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
+  geoCoords: { fontSize: 11, fontFamily: "Poppins_400Regular", marginTop: 2 },
   infoBox: { flexDirection: "row", gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, marginTop: 14, alignItems: "flex-start" },
   infoBoxText: { flex: 1, fontSize: 12, fontFamily: "Poppins_400Regular", lineHeight: 18 },
   stylesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
