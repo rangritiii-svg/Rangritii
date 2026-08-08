@@ -12,7 +12,28 @@
           "package_name": "com.rangritti.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "793048443440-jll7fhd76roqu3rcmjbidlpju93itfu3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rangritti.app",
+            "certificate_hash": "66a7f935b407ed72c83f637a2b4eda3395a686c0"
+          }
+        },
+        {
+          "client_id": "793048443440-tu2co27tjjqstrbdnv49fteae2n0rj9f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rangritti.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "793048443440-1kdb26k58cb0eh36jge0llki0u8pfruo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAb3yFH3NimZAXbJNq7C-t1PPOA7GIPYyI"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "793048443440-1kdb26k58cb0eh36jge0llki0u8pfruo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

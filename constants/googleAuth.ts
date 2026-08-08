@@ -15,4 +15,5 @@
  * The website ("Continue with Google" popup) needs only step 1 — no client ID
  * in code. The native Android flow needs the Web client ID below.
  */
-export const GOOGLE_WEB_CLIENT_ID = "";
+export const GOOGLE_WEB_CLIENT_ID =
+  "793048443440-1kdb26k58cb0eh36jge0llki0u8pfruo.apps.googleusercontent.com";
