@@ -21,10 +21,10 @@
 
 ## Key pages
 
-- Home / landing: https://rangritii-api.vercel.app/
-- Customer login & sign up: https://rangritii-api.vercel.app/auth/customer-login
-- Artist login: https://rangritii-api.vercel.app/auth/artist-login
-- Artist registration: https://rangritii-api.vercel.app/auth/artist-register
+- Home / landing: https://rangritii.vercel.app/
+- Customer login & sign up: https://rangritii.vercel.app/auth/customer-login
+- Artist login: https://rangritii.vercel.app/auth/artist-login
+- Artist registration: https://rangritii.vercel.app/auth/artist-register
 
 ## Audience
 

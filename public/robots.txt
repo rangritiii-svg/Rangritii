@@ -3,4 +3,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 
-Sitemap: https://rangritii-api.vercel.app/sitemap.xml
+Sitemap: https://rangritii.vercel.app/sitemap.xml

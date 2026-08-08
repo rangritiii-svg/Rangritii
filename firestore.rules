@@ -1,36 +1,82 @@
 rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RangRitti Firestore Security Rules — STAGE 1 hardening
+//
+// Customers and artists authenticate with phone+password checked against
+// Firestore documents (no Firebase Auth session), so request.auth is always
+// null for them and per-user rules are not yet possible. This stage therefore
+// closes the highest-impact holes that do NOT require an auth migration:
+//
+//   1. settings/* is now READ-ONLY from clients. It stores the admin UPI ID
+//      shown to customers at payment time — previously anyone with the public
+//      Firebase config could overwrite it and redirect payments. Admin writes
+//      now go through the Vercel API (POST /api/admin/settings), which
+//      verifies the HMAC admin session token and writes with the Firebase
+//      Admin SDK (service accounts bypass these rules).
+//   2. Deletes are denied everywhere — the app never deletes documents.
+//   3. Chat messages are append-only (no edits/rewrites of history).
+//   4. Unknown collections are denied (no explicit match = no access).
+//
+// STAGE 2 (requires migrating customer/artist login to Firebase Auth, e.g.
+// the existing Google sign-in plus phone-number linking, or custom tokens
+// minted by the Vercel API):
+//   - artists: update only by the owning artist or admin custom claim
+//   - customers: reads restricted to the owning user (docs currently hold
+//     passwords — today ANYONE can read them; fixing this needs per-user
+//     auth, or moving password checks server-side)
+//   - bookings: read/write only by the participating customer/artist/admin
+//   - chats: participants only
+// ═══════════════════════════════════════════════════════════════════════════
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ── ADMIN SETTINGS ───────────────────────────────────────────────
+    // Clients only ever read (UPI ID / QR / support contacts at payment
+    // time). All writes go through the Vercel API with the Admin SDK.
+    match /settings/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // ── ARTISTS ──────────────────────────────────────────────────────
-    // Anyone can read approved artists (for the browse/search screens)
-    // Only the artist themselves (matched by phone) or an admin can write.
+    // Public browse/search; registration and profile edits are still
+    // client-side (no auth session to key on until Stage 2).
     match /artists/{artistId} {
       allow read: if true;
-      allow create: if true;   // Registration — open write so new artists can register
-      allow update, delete: if true; // Relax for now; tighten after auth is added
+      allow create, update: if true;
+      allow delete: if false;
     }
 
     // ── CUSTOMERS ────────────────────────────────────────────────────
+    // Signup/login and profile edits are client-side (phone+password
+    // lookup happens in the app), so create/update stay open for now.
     match /customers/{customerId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if false;
     }
 
     // ── BOOKINGS ─────────────────────────────────────────────────────
-    // Everyone can read and write for now (tighten after auth is wired)
+    // Created by customers, status/payment updated by customer, artist
+    // and admin dashboards — all without an auth session until Stage 2.
     match /bookings/{bookingId} {
-      allow read, write: if true;
-    }
-
-    // ── ADMIN SETTINGS ───────────────────────────────────────────────
-    match /settings/{doc} {
       allow read: if true;
-      allow write: if true;   // Protect with admin auth later
+      allow create, update: if true;
+      allow delete: if false;
     }
 
     // ── CHATS ────────────────────────────────────────────────────────
+    // Messages are append-only: they can be read and sent, but never
+    // edited or deleted after the fact.
     match /chats/{conversationId}/messages/{msgId} {
-      allow read, write: if true;
+      allow read, create: if true;
+      allow update, delete: if false;
     }
+
+    // Anything not matched above (including future collections) is
+    // denied by default — add an explicit match block before using a
+    // new collection from the app.
   }
 }

@@ -11,19 +11,19 @@ Customers can now sign in with their Google account on **both the website and th
 Android app** (`app/auth/customer-login.tsx`). First-time Google users get a customer
 account created automatically (keyed by email); returning users are logged straight in.
 
-**One-time setup:**
-1. **Firebase Console → Authentication → Sign-in method → enable "Google"** and save.
-   → The website's Google popup starts working immediately after the next deploy.
-2. For the **Android app**: copy the **Web client ID** shown under the Google provider
-   settings and paste it into `constants/googleAuth.ts` (`GOOGLE_WEB_CLIENT_ID`).
-3. Add your app's **SHA-1 fingerprint** in Firebase Console → Project settings →
-   Android app (get it with `cd android && ./gradlew signingReport`), re-download
-   `google-services.json` into the project root, then **rebuild the app**
-   (`npx expo run:android` or an EAS build) — a new native module
-   (`@react-native-google-signin/google-signin`) was added.
+**One-time setup — ✅ ALL DONE on 8 Aug 2026:**
+1. ✅ Google provider enabled in Firebase Console (public-facing name "RangRiti",
+   support email rangritiii@gmail.com).
+2. ✅ Web client ID wired into `constants/googleAuth.ts`.
+3. ✅ SHA-1 of `android/app/debug.keystore` (`5E:8F:16:...:F6:25`) added in Firebase →
+   Project settings → Android app, and the refreshed `google-services.json` (now with
+   all OAuth clients) replaced in the project root.
+4. ✅ `rangritii-api.vercel.app` added to Firebase → Authentication → Settings →
+   **Authorized domains** (required for the web popup).
 
-Until steps 2–3 are done, the Google button on Android shows a friendly setup message
-instead of crashing; website Google login only needs step 1.
+**Only remaining step:** rebuild the Android app (`npx expo run:android` or an EAS
+build) so the new native module (`@react-native-google-signin/google-signin`) is
+included. Website Google login needs no further steps.
 
 ### 2. Admin login is now server-verified (critical security fix) 🛡️
 The old admin gate was a 6-digit passcode stored in a **publicly readable** Firestore
@@ -43,16 +43,16 @@ invalid sessions back to the login screen. **No separate admin app is needed** �
 protected screen works in the app and on the website, and without your env-configured
 credentials nobody can get in (there is no default password; unconfigured = login disabled).
 
-**Action (Vercel dashboard → Settings → Environment Variables):**
-| Variable | Purpose |
+**Vercel env vars (production) — state as of 8 Aug 2026:**
+| Variable | Status |
 |---|---|
-| `ADMIN_EMAIL` | Admin login email |
-| `ADMIN_PASSWORD` | Admin login password (choose a strong one) |
-| `ADMIN_EMAILS` | _(optional)_ comma-separated Google accounts allowed to use "Sign in with Google" (defaults to `ADMIN_EMAIL`) |
-| `ADMIN_SECRET` | _(optional)_ random string for signing sessions (falls back to `OTP_SECRET`) |
+| `ADMIN_EMAILS` | ✅ set to `rangritiii@gmail.com` — admin "Sign in with Google" works with this account |
+| `OTP_SECRET` | ✅ set to a fresh random value (also signs admin sessions) |
+| `ADMIN_EMAIL` + `ADMIN_PASSWORD` | ⬜ NOT set — email+password admin login stays disabled (fails closed). Add both in the Vercel dashboard only if you also want password login; Google login is enough. |
+| `FAST2SMS_API_KEY` | ⬜ NOT set — SMS OTP still runs in free simulation mode |
 
-Then redeploy. Endpoints added: `/api/admin/login`, `/api/admin/google`,
-`/api/admin/session` (`api/index.js`).
+Endpoints added: `/api/admin/login`, `/api/admin/google`, `/api/admin/session`
+(`api/index.js`).
 
 ### 3. SEO + GEO (search engines & AI assistants) 🌐
 - `app/+html.tsx` rewritten: canonical URL, full Open Graph/Twitter tags with absolute

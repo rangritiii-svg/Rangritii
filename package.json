@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "server": "node server.js",
-    "build": "echo 'No build step required for serverless API'"
+    "build": "expo export -p web && node scripts/postexport-seo.js"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",

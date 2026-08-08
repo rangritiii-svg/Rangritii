@@ -10,7 +10,7 @@ import React from "react";
  * Route-specific titles are added per-screen with <Head> from "expo-router/head".
  */
 
-const SITE_URL = "https://rangritii-api.vercel.app";
+const SITE_URL = "https://rangritii.vercel.app";
 const SITE_NAME = "RangRiti";
 const TITLE = "RangRiti — Book Verified Mehndi Artists in Rajasthan | रंगरीति";
 const DESCRIPTION =

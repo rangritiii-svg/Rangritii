@@ -7,7 +7,8 @@ const app = express();
 
 // Enable CORS for Expo clients
 app.use(cors());
-app.use(express.json());
+// 2mb limit: the admin QR code is sent as a base64 data URI when saving settings
+app.use(express.json({ limit: '2mb' }));
 
 // =========================================================================
 // ✉️ SMTP EMAIL CONFIGURATION (100% FREE)
