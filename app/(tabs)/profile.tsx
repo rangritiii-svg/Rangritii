@@ -9,15 +9,13 @@ import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { getCurrentCoordinates } from "@/utils/permissions";
 import { updateArtist } from "@/firebase/firestoreService";
+import { clearAdminSession } from "@/utils/adminAuth";
 
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { userProfile, setUserProfile, bookings, favorites, adminStats, language, setLanguage, adminPasscode, adminPhone, adminEmail, artists } = useApp();
+  const { userProfile, setUserProfile, bookings, favorites, adminStats, language, setLanguage, adminPhone, adminEmail, artists } = useApp();
 
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pinCode, setPinCode] = useState("");
-  const [pinError, setPinError] = useState("");
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [updatingLocation, setUpdatingLocation] = useState(false);
@@ -88,32 +86,11 @@ export default function ProfileScreen() {
     .slice(0, 2)
     .toUpperCase() || "ME";
 
+  // Long-press on the avatar opens the server-verified admin login screen.
+  // (The old client-side passcode was readable by anyone in Firestore — removed.)
   const handleAvatarLongPress = () => {
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {}); } catch (_e) {}
-    setShowPinModal(true);
-  };
-
-  const handlePinChange = async (text: string) => {
-    const cleanText = text.replace(/[^0-9]/g, "");
-    setPinCode(cleanText);
-    setPinError("");
-
-    if (cleanText.length === 6) {
-      if (cleanText === adminPasscode) {
-        try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
-        setShowPinModal(false);
-        setPinCode("");
-        await setUserProfile({ role: "admin" });
-        Alert.alert("Access Granted", "Logged in as Platform Administrator.");
-      } else {
-        try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {}); } catch (_e) {}
-        setPinError("Incorrect PIN code");
-        setTimeout(() => {
-          setPinCode("");
-          setPinError("");
-        }, 1200);
-      }
-    }
+    router.push("/admin/login");
   };
 
   const handleSwitchRole = () => {
@@ -122,6 +99,7 @@ export default function ProfileScreen() {
     const roleLabel = nextRole === "artist" ? "Mehndi Artist" : "Customer";
 
     const performSwitch = async () => {
+      if (isAdminMode) await clearAdminSession();
       await setUserProfile({ role: nextRole });
     };
 
@@ -142,6 +120,7 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     const performSignOut = async () => {
+      await clearAdminSession();
       await setUserProfile({ role: null });
       router.replace("/onboarding");
     };
@@ -377,80 +356,6 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* PIN Verification Modal */}
-      <Modal
-        visible={showPinModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => {
-          setShowPinModal(false);
-          setPinCode("");
-          setPinError("");
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.modalHeader}>
-              <MaterialCommunityIcons name="shield-crown" size={38} color={colors.gold} />
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Admin Passcode</Text>
-              <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
-                Enter the 6-digit administration code to unlock the admin dashboard.
-              </Text>
-            </View>
-
-            <View style={styles.pinContainer}>
-              {[0, 1, 2, 3, 4, 5].map((index) => {
-                const digit = pinCode[index];
-                const hasValue = digit !== undefined;
-                return (
-                  <View
-                    key={index}
-                    style={[
-                      styles.pinDot,
-                      {
-                        borderColor: pinError ? colors.destructive : hasValue ? colors.gold : colors.border,
-                        backgroundColor: pinError ? colors.destructive + "15" : hasValue ? colors.gold + "15" : "transparent"
-                      }
-                    ]}
-                  >
-                    {hasValue && (
-                      <View style={[styles.pinDotInner, { backgroundColor: pinError ? colors.destructive : colors.gold }]} />
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-
-            {pinError ? (
-              <Text style={[styles.pinErrorText, { color: colors.destructive }]}>{pinError}</Text>
-            ) : null}
-
-            {/* Hidden overlay TextInput */}
-            <TextInput
-              style={styles.hiddenInput}
-              keyboardType="number-pad"
-              maxLength={6}
-              value={pinCode}
-              onChangeText={handlePinChange}
-              autoFocus={true}
-            />
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, { borderColor: colors.border }]}
-                onPress={() => {
-                  setShowPinModal(false);
-                  setPinCode("");
-                  setPinError("");
-                }}
-              >
-                <Text style={{ color: colors.mutedForeground, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
       {/* Help & Support Modal */}
       <Modal visible={showHelpModal} animationType="slide" transparent={true} onRequestClose={() => setShowHelpModal(false)}>
         <View style={styles.bottomModalOverlay}>
@@ -501,7 +406,7 @@ export default function ProfileScreen() {
               
               <View style={{ height: 16 }} />
               <Text style={[styles.modalSectionTitle, { color: colors.primary }]}>Account Security & Controls</Text>
-              <Text style={[styles.modalBodyText, { color: colors.text }]}>• Admin access is protected by a custom security passcode, which can be modified directly from the admin panel dashboard.</Text>
+              <Text style={[styles.modalBodyText, { color: colors.text }]}>• Admin access is protected by server-verified credentials and an authorized Google account allowlist — configured privately by the platform owner.</Text>
               <Text style={[styles.modalBodyText, { color: colors.text }]}>• You have the right to request account data deletion or export by contacting our support desk.</Text>
             </ScrollView>
           </View>

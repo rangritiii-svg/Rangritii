@@ -1,0 +1,33 @@
+# RangRiti (रंगरीति)
+
+> RangRiti is an Indian marketplace website and Android app for discovering and
+> booking verified mehndi (henna) artists across all 41 districts of Rajasthan,
+> India — including Jaipur, Jodhpur, Udaipur, Kota, Ajmer, Bikaner and Alwar.
+
+## What RangRiti offers
+
+- Browse verified bridal, Arabic and traditional Rajasthani mehndi artists with
+  photo portfolios, star ratings, years of experience and transparent hourly rates.
+- Artists are geo-tagged with GPS coordinates, so customers can find the nearest
+  artist and see the distance on a map.
+- Book a preferred date and time slot, chat with the artist in-app, and pay
+  online via UPI or in cash.
+- Every artist is manually verified (government ID + bank documents) before
+  appearing in search results.
+- Customer login via mobile number & password or Google account.
+- Bilingual interface: English and Hindi (हिंदी).
+- Cancellation policy: full refund when cancelling 24+ hours before the session;
+  tiered refunds after that.
+
+## Key pages
+
+- Home / landing: https://rangritii-api.vercel.app/
+- Customer login & sign up: https://rangritii-api.vercel.app/auth/customer-login
+- Artist login: https://rangritii-api.vercel.app/auth/artist-login
+- Artist registration: https://rangritii-api.vercel.app/auth/artist-register
+
+## Audience
+
+Brides, families and event planners in Rajasthan looking for mehndi artists for
+weddings (शादी), engagements, Karva Chauth, Teej, Diwali, Eid and other
+festivals; and mehndi artists looking to receive online bookings.

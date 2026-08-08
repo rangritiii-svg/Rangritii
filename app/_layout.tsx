@@ -21,8 +21,12 @@ function RootLayoutNav() {
   useEffect(() => {
     const timer = setTimeout(() => {
       // Logged-out users go to onboarding — but auth pages themselves must stay
-      // reachable (on the website users can deep-link straight to /auth/...)
-      const isPublicRoute = pathname?.startsWith("/auth") || pathname === "/onboarding";
+      // reachable (on the website users can deep-link straight to /auth/... or
+      // the server-protected /admin/login)
+      const isPublicRoute =
+        pathname?.startsWith("/auth") ||
+        pathname === "/onboarding" ||
+        pathname === "/admin/login";
       if (userProfile.role === null && !isPublicRoute) {
         router.replace("/onboarding");
       }
@@ -72,6 +76,7 @@ function RootLayoutNav() {
         <Stack.Screen name="book/[artistid]" options={{ animation: "slide_from_bottom", presentation: "modal" }} />
         <Stack.Screen name="chat/[artistid]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="payment/[bookingid]" options={{ animation: "slide_from_bottom", presentation: "modal" }} />
+        <Stack.Screen name="admin/login" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="admin/index" options={{ animation: "slide_from_right" }} />
       </Stack>
 

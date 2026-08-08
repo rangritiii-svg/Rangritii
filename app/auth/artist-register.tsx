@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import Head from "expo-router/head";
 import React, { useState } from "react";
 import {
   Alert, KeyboardAvoidingView, Platform, ScrollView,
@@ -298,6 +299,13 @@ export default function ArtistRegisterScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <Head>
+        <title>Register as a Mehndi Artist — RangRiti | Free Artist Onboarding</title>
+        <meta
+          name="description"
+          content="Join RangRiti as a verified mehndi artist — create your portfolio, set your hourly rate, geo-tag your service area and start receiving bookings from customers across Rajasthan."
+        />
+      </Head>
       {/* Header */}
       <LinearGradient colors={["#C9932F", "#8B6914"]} style={[styles.header, { paddingTop: Math.max(insets.top + 8, 36) }]}>
         <View style={styles.headerTopRow}>

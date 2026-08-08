@@ -255,6 +255,147 @@ app.post('/api/otp/send', async (req, res) => {
   }
 });
 
+// =========================================================================
+// 🔐 ADMIN AUTHENTICATION (SERVER-VERIFIED)
+// =========================================================================
+//
+// The admin dashboard is protected by credentials that live ONLY in Vercel
+// environment variables — they are never stored in Firestore or shipped to
+// the client, so no app user can discover or change them.
+//
+// Required env vars (set in the Vercel dashboard):
+//   ADMIN_EMAIL     — the administrator's login email
+//   ADMIN_PASSWORD  — the administrator's login password
+//   ADMIN_EMAILS    — (optional) comma-separated Google account emails allowed
+//                     to sign in with "Continue with Google" (defaults to ADMIN_EMAIL)
+//   ADMIN_SECRET    — (optional) secret for signing admin session tokens
+//                     (falls back to OTP_SECRET)
+//
+// If ADMIN_EMAIL / ADMIN_PASSWORD are not configured, password login is
+// DISABLED (it fails closed) — there is no default passcode.
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET || OTP_SECRET;
+const ADMIN_SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function signAdminSession(email, expiresAt) {
+  return crypto
+    .createHmac('sha256', ADMIN_SECRET)
+    .update(`admin.${email.toLowerCase()}.${expiresAt}`)
+    .digest('hex');
+}
+
+function issueAdminToken(email) {
+  const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
+  const emailB64 = Buffer.from(email.toLowerCase()).toString('base64url');
+  return `${emailB64}.${expiresAt}.${signAdminSession(email, expiresAt)}`;
+}
+
+function verifyAdminToken(token) {
+  try {
+    if (!token || typeof token !== 'string') return { valid: false };
+    const parts = token.split('.');
+    if (parts.length !== 3) return { valid: false };
+    const email = Buffer.from(parts[0], 'base64url').toString('utf8');
+    const expiresAt = parseInt(parts[1], 10);
+    if (!email || !expiresAt || Number.isNaN(expiresAt)) return { valid: false };
+    if (Date.now() > expiresAt) return { valid: false, expired: true };
+    const expected = signAdminSession(email, expiresAt);
+    if (!safeEqual(expected, parts[2])) return { valid: false };
+    return { valid: true, email };
+  } catch (_e) {
+    return { valid: false };
+  }
+}
+
+function getAllowedAdminEmails() {
+  const raw = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || '';
+  return raw
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+// Email + password admin login
+app.post('/api/admin/login', async (req, res) => {
+  const { email, password } = req.body || {};
+
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    return res.status(503).json({
+      error:
+        'Admin login is not configured. Set ADMIN_EMAIL and ADMIN_PASSWORD environment variables in the Vercel dashboard and redeploy.',
+    });
+  }
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  // Hash both sides so safeEqual compares equal-length buffers (no length leak)
+  const hash = (v) => crypto.createHash('sha256').update(String(v)).digest('hex');
+  const emailOk = safeEqual(hash(String(email).trim().toLowerCase()), hash(adminEmail.trim().toLowerCase()));
+  const passOk = safeEqual(hash(password), hash(adminPassword));
+
+  if (!emailOk || !passOk) {
+    return res.status(401).json({ error: 'Invalid admin credentials.' });
+  }
+
+  return res.json({ success: true, token: issueAdminToken(email), email: String(email).trim().toLowerCase() });
+});
+
+// Google Sign-In admin login — verifies the Google ID token with Google's
+// tokeninfo endpoint, then checks the email against the ADMIN_EMAILS allowlist.
+app.post('/api/admin/google', async (req, res) => {
+  const { idToken } = req.body || {};
+  if (!idToken) {
+    return res.status(400).json({ error: 'Google ID token is required.' });
+  }
+
+  const allowed = getAllowedAdminEmails();
+  if (allowed.length === 0) {
+    return res.status(503).json({
+      error:
+        'Google admin login is not configured. Set ADMIN_EMAILS (or ADMIN_EMAIL) in the Vercel dashboard and redeploy.',
+    });
+  }
+
+  try {
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+    );
+    const data = await response.json();
+
+    if (!response.ok || !data.email) {
+      return res.status(401).json({ error: 'Google token verification failed.' });
+    }
+    if (data.email_verified !== 'true' && data.email_verified !== true) {
+      return res.status(401).json({ error: 'Google account email is not verified.' });
+    }
+
+    const email = String(data.email).toLowerCase();
+    if (!allowed.includes(email)) {
+      return res.status(403).json({ error: 'This Google account is not authorized for admin access.' });
+    }
+
+    return res.json({ success: true, token: issueAdminToken(email), email });
+  } catch (err) {
+    console.error('Admin Google verify error:', err);
+    return res.status(500).json({ error: 'Could not verify Google sign-in. Please try again.' });
+  }
+});
+
+// Session check — the admin dashboard calls this on load
+app.post('/api/admin/session', (req, res) => {
+  const { token } = req.body || {};
+  const result = verifyAdminToken(token);
+  if (!result.valid) {
+    return res.status(401).json({ valid: false, error: result.expired ? 'Session expired.' : 'Invalid session.' });
+  }
+  return res.json({ valid: true, email: result.email });
+});
+
 // Route to verify OTP
 app.post('/api/otp/verify', async (req, res) => {
   const { phone, otp, token } = req.body;

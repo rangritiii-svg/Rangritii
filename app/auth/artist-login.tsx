@@ -2,6 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import Head from "expo-router/head";
 import React, { useState, useEffect } from "react";
 import {
   Alert, KeyboardAvoidingView, Platform, ScrollView,
@@ -88,6 +89,13 @@ export default function ArtistLoginScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <Head>
+        <title>Mehndi Artist Login — RangRiti | Grow Your Mehndi Business</title>
+        <meta
+          name="description"
+          content="Artist login for RangRiti — manage your mehndi portfolio, hourly rates, bookings and earnings. Receive booking requests from customers across Rajasthan."
+        />
+      </Head>
       {/* Header */}
       <LinearGradient colors={["#C9932F", "#A87525"]} style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>

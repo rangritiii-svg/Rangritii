@@ -1,6 +1,76 @@
 # RangRiti — Fixes Applied & Remaining Setup
 
-_Last updated: 11 July 2026_
+_Last updated: 8 August 2026_
+
+---
+
+## 🆕 8 August 2026 — Google Login, secure Admin Login & SEO/GEO overhaul
+
+### 1. Google Login ("Continue with Google") 🔑
+Customers can now sign in with their Google account on **both the website and the
+Android app** (`app/auth/customer-login.tsx`). First-time Google users get a customer
+account created automatically (keyed by email); returning users are logged straight in.
+
+**One-time setup:**
+1. **Firebase Console → Authentication → Sign-in method → enable "Google"** and save.
+   → The website's Google popup starts working immediately after the next deploy.
+2. For the **Android app**: copy the **Web client ID** shown under the Google provider
+   settings and paste it into `constants/googleAuth.ts` (`GOOGLE_WEB_CLIENT_ID`).
+3. Add your app's **SHA-1 fingerprint** in Firebase Console → Project settings →
+   Android app (get it with `cd android && ./gradlew signingReport`), re-download
+   `google-services.json` into the project root, then **rebuild the app**
+   (`npx expo run:android` or an EAS build) — a new native module
+   (`@react-native-google-signin/google-signin`) was added.
+
+Until steps 2–3 are done, the Google button on Android shows a friendly setup message
+instead of crashing; website Google login only needs step 1.
+
+### 2. Admin login is now server-verified (critical security fix) 🛡️
+The old admin gate was a 6-digit passcode stored in a **publicly readable** Firestore
+`settings` document (default `000000`) — effectively anyone could read the passcode and
+open the admin dashboard. That whole mechanism is removed.
+
+**New flow:** a dedicated **Admin Login screen** (`/admin/login`, opened by long-pressing
+the profile avatar, or directly by URL on the website). It supports:
+- **Email + password** — checked by the backend against Vercel env vars (never stored in
+  the app or Firestore).
+- **Sign in with Google** — the backend verifies the Google ID token and only accepts
+  emails on your private allowlist.
+
+On success the server issues a signed, 24-hour session token; the admin dashboard
+re-verifies it with the server every time it opens (`/api/admin/session`) and bounces
+invalid sessions back to the login screen. **No separate admin app is needed** — the same
+protected screen works in the app and on the website, and without your env-configured
+credentials nobody can get in (there is no default password; unconfigured = login disabled).
+
+**Action (Vercel dashboard → Settings → Environment Variables):**
+| Variable | Purpose |
+|---|---|
+| `ADMIN_EMAIL` | Admin login email |
+| `ADMIN_PASSWORD` | Admin login password (choose a strong one) |
+| `ADMIN_EMAILS` | _(optional)_ comma-separated Google accounts allowed to use "Sign in with Google" (defaults to `ADMIN_EMAIL`) |
+| `ADMIN_SECRET` | _(optional)_ random string for signing sessions (falls back to `OTP_SECRET`) |
+
+Then redeploy. Endpoints added: `/api/admin/login`, `/api/admin/google`,
+`/api/admin/session` (`api/index.js`).
+
+### 3. SEO + GEO (search engines & AI assistants) 🌐
+- `app/+html.tsx` rewritten: canonical URL, full Open Graph/Twitter tags with absolute
+  image URLs (the old `/assets/og-image.png` path was broken — WhatsApp previews showed
+  no image), geo meta tags (`geo.region` IN-RJ, Jaipur coordinates) for local search,
+  and **JSON-LD structured data** (Organization, WebSite, LocalBusiness with services,
+  FAQPage) so Google can show rich results and AI assistants can answer questions
+  about RangRiti accurately.
+- **Per-page titles & descriptions** via `expo-router/head` on the landing page and all
+  auth pages; the admin login page is marked `noindex`.
+- New files in `public/`: `robots.txt` (blocks `/admin` from crawlers, links sitemap),
+  `sitemap.xml`, `llms.txt` (AI-crawler summary of the service — "GEO"),
+  `manifest.webmanifest` + `icon.png` (favicon / add-to-homescreen).
+- A `<noscript>` content block describes the service for non-JavaScript crawlers.
+
+_No action needed. Optional: submit `https://rangritii-api.vercel.app/sitemap.xml` in
+Google Search Console to speed up indexing, and consider buying a custom domain
+(e.g. rangriti.in) — update `SITE_URL` in `app/+html.tsx` + `public/*` if you do._
 
 ---
 

@@ -83,6 +83,8 @@ export interface Customer {
   latitude?: number;  // optional geo-tag captured at signup
   longitude?: number;
   password?: string; // password for auth login
+  email?: string;    // set when the account was created via Google Sign-In
+  photoUrl?: string; // Google profile photo
 }
 
 export interface CancellationPolicy {
@@ -141,6 +143,8 @@ export interface UserProfile {
   role: "customer" | "artist" | "admin" | null;
   latitude?: number;  // optional geo-tag of the signed-in user
   longitude?: number;
+  email?: string;    // set when signed in via Google
+  photoUrl?: string; // Google profile photo
 }
 
 export interface CommissionLog {

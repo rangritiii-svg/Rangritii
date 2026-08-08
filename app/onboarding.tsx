@@ -2,6 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import Head from "expo-router/head";
 import React, { useRef, useState } from "react";
 import { Alert, Animated, Dimensions, Image, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -77,6 +78,13 @@ export default function OnboardingScreen() {
 
   return (
     <LinearGradient colors={["#E8849E", "#F9AABF", "#C9932F"]} style={styles.container} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+      <Head>
+        <title>RangRiti — Book Verified Mehndi Artists in Rajasthan | रंगरीति</title>
+        <meta
+          name="description"
+          content="Welcome to RangRiti — connect with talented, verified mehndi artists for weddings, festivals and special occasions across Rajasthan. Login as a customer or artist to get started."
+        />
+      </Head>
       <View style={[styles.overlay, { paddingTop: webTop + 20 }]}>
         <Animated.View style={[styles.heroSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.logoContainer}>

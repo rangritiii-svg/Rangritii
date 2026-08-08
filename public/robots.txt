@@ -1,0 +1,6 @@
+# RangRiti — robots.txt
+User-agent: *
+Allow: /
+Disallow: /admin
+
+Sitemap: https://rangritii-api.vercel.app/sitemap.xml

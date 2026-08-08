@@ -2,6 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import Head from "expo-router/head";
 import React, { useState, useEffect } from "react";
 import {
   Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
@@ -13,6 +14,7 @@ import { useColors } from "@/hooks/useColors";
 import { INDIAN_STATES_CITIES } from "@/constants/locations";
 import { getCurrentCoordinates } from "@/utils/permissions";
 import { updateCustomer } from "@/firebase/firestoreService";
+import { signInWithGoogle } from "@/utils/googleAuth";
 
 export default function CustomerLoginScreen() {
   const colors = useColors();
@@ -27,6 +29,7 @@ export default function CustomerLoginScreen() {
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Dropdown Modal states
   const [stateModalVisible, setStateModalVisible] = useState(false);
@@ -149,8 +152,78 @@ export default function CustomerLoginScreen() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setGoogleLoading(true);
+    try {
+      const gUser = await signInWithGoogle();
+
+      // Returning Google user → log straight in with their saved details
+      const existing = customers.find(
+        (c) => c.email && c.email.toLowerCase() === gUser.email
+      );
+
+      if (existing) {
+        await setUserProfile({
+          role: "customer",
+          name: existing.name,
+          phone: existing.phone,
+          state: existing.state,
+          city: existing.city,
+          area: existing.area,
+          email: gUser.email,
+          ...(gUser.photoUrl ? { photoUrl: gUser.photoUrl } : {}),
+          ...(existing.latitude != null && existing.longitude != null
+            ? { latitude: existing.latitude, longitude: existing.longitude }
+            : {}),
+        });
+      } else {
+        // First Google sign-in → create the customer account automatically.
+        // City/state can be filled in later from the Profile screen.
+        addCustomer({
+          name: gUser.name,
+          phone: "",
+          state: state.trim(),
+          city: city.trim(),
+          area: area.trim(),
+          email: gUser.email,
+          ...(gUser.photoUrl ? { photoUrl: gUser.photoUrl } : {}),
+          ...(latitude != null && longitude != null ? { latitude, longitude } : {}),
+        });
+
+        await setUserProfile({
+          role: "customer",
+          name: gUser.name,
+          phone: "",
+          state: state.trim(),
+          city: city.trim(),
+          area: area.trim(),
+          email: gUser.email,
+          ...(gUser.photoUrl ? { photoUrl: gUser.photoUrl } : {}),
+          ...(latitude != null && longitude != null ? { latitude, longitude } : {}),
+        });
+      }
+
+      setGoogleLoading(false);
+      router.replace("/(tabs)");
+    } catch (err: any) {
+      setGoogleLoading(false);
+      // Don't show an error alert when the user simply closed the popup
+      if (!/cancelled/i.test(err?.message || "")) {
+        Alert.alert("Google Sign-In", err?.message || "Google sign-in failed. Please try again.");
+      }
+    }
+  };
+
   return (
     <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <Head>
+        <title>Customer Login & Sign Up — RangRiti | Book Mehndi Artists Online</title>
+        <meta
+          name="description"
+          content="Login or create your free RangRiti customer account — with your mobile number or Google account — to browse verified mehndi artists near you in Rajasthan and book online."
+        />
+      </Head>
 
       {/* Header */}
       <LinearGradient colors={["#F9AABF", "#E8849E"]} style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}>
@@ -281,6 +354,30 @@ export default function CustomerLoginScreen() {
           )}
         </TouchableOpacity>
 
+        {/* OR divider */}
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>OR</Text>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+        </View>
+
+        {/* Continue with Google */}
+        <TouchableOpacity
+          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={handleGoogleLogin}
+          disabled={googleLoading}
+          activeOpacity={0.85}
+        >
+          {googleLoading ? (
+            <ActivityIndicator color={colors.text} />
+          ) : (
+            <>
+              <Ionicons name="logo-google" size={20} color="#DB4437" />
+              <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
         {/* Benefits */}
         <View style={[styles.featureBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
           <Text style={[styles.featureTitle, { color: colors.text }]}>🗺️ After Login You Can:</Text>
@@ -376,6 +473,11 @@ const styles = StyleSheet.create({
   geoCoords: { fontSize: 11, fontFamily: "Poppins_400Regular", marginTop: 2 },
   primaryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 16, marginTop: 20, marginBottom: 8 },
   primaryBtnText: { fontSize: 16, fontFamily: "Poppins_700Bold" },
+  dividerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 10 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12, fontFamily: "Poppins_600SemiBold", letterSpacing: 1 },
+  googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 16, borderWidth: 1.5, paddingVertical: 14 },
+  googleBtnText: { fontSize: 15, fontFamily: "Poppins_600SemiBold" },
   featureBox: { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 24, gap: 8 },
   featureTitle: { fontSize: 14, fontFamily: "Poppins_700Bold", marginBottom: 4 },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 8 },

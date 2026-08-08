@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npx expo export -p web",
+  "buildCommand": "npx expo export -p web && node scripts/postexport-seo.js",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [

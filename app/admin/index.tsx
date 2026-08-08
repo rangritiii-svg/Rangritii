@@ -5,12 +5,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
-  ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert, Platform, Image
+  ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, Alert, Platform, Image
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { ensureMediaLibraryPermission } from "@/utils/permissions";
+import { verifyAdminSession } from "@/utils/adminAuth";
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: "#F59E0B", Confirmed: "#10B981", Completed: "#6B7280", Cancelled: "#EF4444",
@@ -24,10 +25,27 @@ export default function AdminDashboard() {
     updateArtistStatus, toggleUserActiveStatus, updateBookingPaymentLink,
     commissionPercent, commissionLogs, cancellationPolicy, policyLogs,
     updateCommissionPercent, updateCancellationPolicy, resolveBookingDispute,
-    adminPasscode, updateAdminPasscode, updateBookingStatus, updatePaymentStatus,
+    updateBookingStatus, updatePaymentStatus,
     adminUpiId, adminQrCodeUrl, updateAdminUpiId, updateAdminQrCodeUrl,
     adminPhone, adminEmail, updateAdminPhone, updateAdminEmail
   } = useApp();
+
+  // Server-verified session gate — the dashboard never renders without a
+  // valid admin token issued by the backend (see utils/adminAuth.ts).
+  const [adminAuthOk, setAdminAuthOk] = useState(false);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const session = await verifyAdminSession();
+      if (!active) return;
+      if (!session.valid) {
+        router.replace("/admin/login");
+        return;
+      }
+      setAdminAuthOk(true);
+    })();
+    return () => { active = false; };
+  }, []);
 
   const [tab, setTab] = useState<"overview" | "users" | "applications" | "bookings" | "payments" | "settings">("overview");
   const [usersSubTab, setUsersSubTab] = useState<"customers" | "artists">("customers");
@@ -51,7 +69,6 @@ export default function AdminDashboard() {
   const [policyTier2Comp, setPolicyTier2Comp] = useState(cancellationPolicy.tier2ArtistCompPercent.toString());
   const [policyTier3Refund, setPolicyTier3Refund] = useState(cancellationPolicy.tier3RefundPercent.toString());
   const [policyTier3Comp, setPolicyTier3Comp] = useState(cancellationPolicy.tier3ArtistCompPercent.toString());
-  const [passcodeInput, setPasscodeInput] = useState(adminPasscode);
   const [upiInput, setUpiInput] = useState(adminUpiId);
   const [qrInput, setQrInput] = useState(adminQrCodeUrl);
   const [phoneInput, setPhoneInput] = useState(adminPhone);
@@ -66,12 +83,11 @@ export default function AdminDashboard() {
     setPolicyTier2Comp(cancellationPolicy.tier2ArtistCompPercent.toString());
     setPolicyTier3Refund(cancellationPolicy.tier3RefundPercent.toString());
     setPolicyTier3Comp(cancellationPolicy.tier3ArtistCompPercent.toString());
-    setPasscodeInput(adminPasscode);
     setUpiInput(adminUpiId);
     setQrInput(adminQrCodeUrl);
     setPhoneInput(adminPhone);
     setEmailInput(adminEmail);
-  }, [commissionPercent, cancellationPolicy, adminPasscode, adminUpiId, adminQrCodeUrl, adminPhone, adminEmail]);
+  }, [commissionPercent, cancellationPolicy, adminUpiId, adminQrCodeUrl, adminPhone, adminEmail]);
 
   const handleSaveUpiDetails = async () => {
     if (!upiInput.trim()) {
@@ -114,29 +130,6 @@ export default function AdminDashboard() {
     await updateAdminPhone(phoneInput.trim());
     await updateAdminEmail(emailInput.trim());
     Alert.alert("Settings Saved ✅", "Admin Support Contact Details updated successfully.");
-  };
-
-  const handleSavePasscode = () => {
-    if (passcodeInput.length !== 6) {
-      Alert.alert("Invalid Passcode", "The administrator security passcode must be exactly 6 digits.");
-      return;
-    }
-
-    Alert.alert(
-      "Update Security Passcode?",
-      "Are you sure you want to change the admin dashboard passcode?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Update Passcode", 
-          onPress: async () => {
-            await updateAdminPasscode(passcodeInput);
-            try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); } catch (_e) {}
-            Alert.alert("Passcode Updated ✅", "The administrator security passcode has been updated successfully.");
-          }
-        }
-      ]
-    );
   };
 
   const sortedBookings = [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -307,6 +300,19 @@ export default function AdminDashboard() {
       ]
     );
   };
+
+  // Block rendering until the server confirms a valid admin session
+  if (!adminAuthOk) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", gap: 14 }]}>
+        <MaterialCommunityIcons name="shield-crown" size={40} color="#C9932F" />
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ fontSize: 13, fontFamily: "Poppins_500Medium", color: colors.mutedForeground }}>
+          Verifying admin session…
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -1071,29 +1077,15 @@ export default function AdminDashboard() {
               </TouchableOpacity>
             </View>
 
-            {/* Admin Security Passcode Card */}
+            {/* Admin Security Info Card */}
             <View style={[styles.settingsCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 16 }]}>
-              <Text style={[styles.settingsCardTitle, { color: colors.text }]}>🔑 Admin Security Passcode</Text>
+              <Text style={[styles.settingsCardTitle, { color: colors.text }]}>🔑 Admin Login Security</Text>
               <Text style={[styles.settingsCardDesc, { color: colors.mutedForeground }]}>
-                Change the 6-digit passcode used to access the Administrator Dashboard.
+                Dashboard access is verified on the server. To change the admin email, password or the
+                authorized Google accounts, update the ADMIN_EMAIL, ADMIN_PASSWORD and ADMIN_EMAILS
+                environment variables in the Vercel dashboard and redeploy. Credentials are never stored
+                in the app or the database.
               </Text>
-              
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={[styles.settingsInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.secondary, width: 140 }]}
-                  keyboardType="numeric"
-                  value={passcodeInput}
-                  onChangeText={setPasscodeInput}
-                  maxLength={6}
-                  secureTextEntry={false}
-                  placeholder="6-digit code"
-                />
-              </View>
-
-              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSavePasscode}>
-                <Ionicons name="save-outline" size={16} color="#fff" />
-                <Text style={styles.saveBtnText}>Update Security Passcode</Text>
-              </TouchableOpacity>
             </View>
 
             {/* Active Disputes Monitoring section */}
