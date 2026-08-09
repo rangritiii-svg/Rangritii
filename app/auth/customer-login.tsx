@@ -6,19 +6,31 @@ import Head from "expo-router/head";
 import React, { useState, useEffect } from "react";
 import {
   Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, FlatList
+  StyleSheet, Text, TextInput, TouchableOpacity, View, Modal, FlatList,
+  useWindowDimensions
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
-import { useColors } from "@/hooks/useColors";
 import { INDIAN_STATES_CITIES } from "@/constants/locations";
 import { getCurrentCoordinates } from "@/utils/permissions";
 import { updateCustomer } from "@/firebase/firestoreService";
 import { signInWithGoogle } from "@/utils/googleAuth";
 
+/* RangRiti 2.0 design tokens — kept in sync with app/onboarding.tsx */
+const MAROON = "#4A1020";
+const DARK = "#1A0A0E";
+const GOLD = "#C9932F";
+const GOLD_DARK = "#A87525";
+const BLUSH = "#FDEDF3";
+const CREAM = "#FFF8F0";
+const INK = "#2A1020";
+const MUTED = "#8A6070";
+const BORDER = "#F5D0DC";
+
 export default function CustomerLoginScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
   const { setUserProfile, addCustomer, language, customers } = useApp();
 
   const [isLogin, setIsLogin] = useState(true);
@@ -98,8 +110,8 @@ export default function CustomerLoginScreen() {
           state: existingCustomer.state,
           city: existingCustomer.city,
           area: existingCustomer.area,
-          ...(existingCustomer.latitude != null && existingCustomer.longitude != null 
-            ? { latitude: existingCustomer.latitude, longitude: existingCustomer.longitude } 
+          ...(existingCustomer.latitude != null && existingCustomer.longitude != null
+            ? { latitude: existingCustomer.latitude, longitude: existingCustomer.longitude }
             : {}),
         });
       } else {
@@ -216,7 +228,7 @@ export default function CustomerLoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Head>
         <title>Customer Login & Sign Up — RangRiti | Book Mehndi Artists Online</title>
         <meta
@@ -226,13 +238,17 @@ export default function CustomerLoginScreen() {
       </Head>
 
       {/* Header */}
-      <LinearGradient colors={["#F9AABF", "#E8849E"]} style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}>
+      <LinearGradient
+        colors={[DARK, MAROON, "#6E1830"]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: Math.max(insets.top + 10, 40) }]}
+      >
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <View style={styles.headerIconCircle}>
-            <Ionicons name="person" size={28} color="#F9AABF" />
+            <Ionicons name="person" size={28} color={GOLD} />
           </View>
           <Text style={styles.headerTitle}>Customer {isLogin ? "Login" : "Sign Up"}</Text>
           <Text style={styles.headerSubtitle}>Find & book the best Mehndi artists near you</Text>
@@ -240,53 +256,54 @@ export default function CustomerLoginScreen() {
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
+        <View style={[styles.formInner, isWide && styles.formInnerWide]}>
         {/* Login / Sign Up toggle */}
-        <View style={[styles.toggleRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          <TouchableOpacity style={[styles.toggleBtn, isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(true); }}>
-            <Text style={[styles.toggleText, { color: isLogin ? colors.primaryForeground : colors.mutedForeground }]}>Login</Text>
+        <View style={styles.toggleRow}>
+          <TouchableOpacity style={[styles.toggleBtn, isLogin && styles.toggleBtnActive]} onPress={() => { setIsLogin(true); }}>
+            <Text style={[styles.toggleText, { color: isLogin ? "#fff" : MUTED }]}>Login</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.toggleBtn, !isLogin && { backgroundColor: colors.primary }]} onPress={() => { setIsLogin(false); }}>
-            <Text style={[styles.toggleText, { color: !isLogin ? colors.primaryForeground : colors.mutedForeground }]}>Sign Up</Text>
+          <TouchableOpacity style={[styles.toggleBtn, !isLogin && styles.toggleBtnActive]} onPress={() => { setIsLogin(false); }}>
+            <Text style={[styles.toggleText, { color: !isLogin ? "#fff" : MUTED }]}>Sign Up</Text>
           </TouchableOpacity>
         </View>
 
         {/* Sign Up extra fields */}
         {!isLogin && (
           <>
-            <Text style={[styles.label, { color: colors.text }]}>Full Name *</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="person-outline" size={18} color={colors.mutedForeground} />
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="Your full name" placeholderTextColor={colors.mutedForeground} value={name} onChangeText={setName} autoCapitalize="words" />
+            <Text style={styles.label}>Full Name *</Text>
+            <View style={styles.inputRow}>
+              <Ionicons name="person-outline" size={18} color={MUTED} />
+              <TextInput style={styles.input} placeholder="Your full name" placeholderTextColor={MUTED} value={name} onChangeText={setName} autoCapitalize="words" />
             </View>
 
-            <Text style={[styles.label, { color: colors.text }]}>State *</Text>
-            <TouchableOpacity style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setStateModalVisible(true)}>
-              <Ionicons name="map-outline" size={18} color={colors.mutedForeground} />
-              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: state ? colors.text : colors.mutedForeground }}>{state || "Select State"}</Text>
-              <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
+            <Text style={styles.label}>State *</Text>
+            <TouchableOpacity style={styles.inputRow} onPress={() => setStateModalVisible(true)}>
+              <Ionicons name="map-outline" size={18} color={MUTED} />
+              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: state ? INK : MUTED }}>{state || "Select State"}</Text>
+              <Ionicons name="chevron-down" size={18} color={MUTED} />
             </TouchableOpacity>
 
-            <Text style={[styles.label, { color: colors.text }]}>City *</Text>
-            <TouchableOpacity style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border, opacity: state ? 1 : 0.6 }]} onPress={() => { if (!state) { Alert.alert("Select State First", "Please select a state to view cities."); return; } setCityModalVisible(true); }}>
-              <Ionicons name="business-outline" size={18} color={colors.mutedForeground} />
-              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: city ? colors.text : colors.mutedForeground }}>{city || "Select City"}</Text>
-              <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
+            <Text style={styles.label}>City *</Text>
+            <TouchableOpacity style={[styles.inputRow, { opacity: state ? 1 : 0.6 }]} onPress={() => { if (!state) { Alert.alert("Select State First", "Please select a state to view cities."); return; } setCityModalVisible(true); }}>
+              <Ionicons name="business-outline" size={18} color={MUTED} />
+              <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: city ? INK : MUTED }}>{city || "Select City"}</Text>
+              <Ionicons name="chevron-down" size={18} color={MUTED} />
             </TouchableOpacity>
 
-            <Text style={[styles.label, { color: colors.text }]}>Area / Locality</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="location-outline" size={18} color={colors.mutedForeground} />
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. Andheri West, Bandra" placeholderTextColor={colors.mutedForeground} value={area} onChangeText={setArea} autoCapitalize="words" />
+            <Text style={styles.label}>Area / Locality</Text>
+            <View style={styles.inputRow}>
+              <Ionicons name="location-outline" size={18} color={MUTED} />
+              <TextInput style={styles.input} placeholder="e.g. Andheri West, Bandra" placeholderTextColor={MUTED} value={area} onChangeText={setArea} autoCapitalize="words" />
             </View>
 
             {/* Optional geo-tag — helps show artists near the customer */}
-            <Text style={[styles.label, { color: colors.text }]}>📍 Geo-tag Your Location (Optional)</Text>
+            <Text style={styles.label}>📍 Geo-tag Your Location (Optional)</Text>
             <TouchableOpacity
               style={[
                 styles.geoBtn,
                 {
-                  backgroundColor: latitude != null ? "rgba(16,185,129,0.1)" : colors.card,
-                  borderColor: latitude != null ? "#10B981" : colors.border,
+                  backgroundColor: latitude != null ? "rgba(16,185,129,0.1)" : "#fff",
+                  borderColor: latitude != null ? "#10B981" : BORDER,
                 },
               ]}
               onPress={handleCaptureLocation}
@@ -295,23 +312,23 @@ export default function CustomerLoginScreen() {
             >
               {locating ? (
                 <>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={[styles.geoBtnText, { color: colors.text }]}>Getting your location…</Text>
+                  <ActivityIndicator size="small" color={GOLD} />
+                  <Text style={[styles.geoBtnText, { color: INK }]}>Getting your location…</Text>
                 </>
               ) : latitude != null && longitude != null ? (
                 <>
                   <Ionicons name="checkmark-circle" size={20} color="#10B981" />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.geoBtnText, { color: "#10B981" }]}>Location Tagged ✓</Text>
-                    <Text style={[styles.geoCoords, { color: colors.mutedForeground }]}>
+                    <Text style={styles.geoCoords}>
                       {latitude.toFixed(5)}, {longitude.toFixed(5)} · Tap to update
                     </Text>
                   </View>
                 </>
               ) : (
                 <>
-                  <Ionicons name="location" size={20} color={colors.primary} />
-                  <Text style={[styles.geoBtnText, { color: colors.text }]}>Capture Current Location (GPS)</Text>
+                  <Ionicons name="location" size={20} color={GOLD} />
+                  <Text style={[styles.geoBtnText, { color: INK }]}>Capture Current Location (GPS)</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -319,20 +336,20 @@ export default function CustomerLoginScreen() {
         )}
 
         {/* Mobile Number */}
-        <Text style={[styles.label, { color: colors.text }]}>Mobile Number *</Text>
-        <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.countryCode, { color: colors.text }]}>🇮🇳 +91</Text>
-          <TextInput style={[styles.input, { color: colors.text }]} placeholder="10-digit mobile number" placeholderTextColor={colors.mutedForeground} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} />
+        <Text style={styles.label}>Mobile Number *</Text>
+        <View style={styles.inputRow}>
+          <Text style={styles.countryCode}>🇮🇳 +91</Text>
+          <TextInput style={styles.input} placeholder="10-digit mobile number" placeholderTextColor={MUTED} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} />
         </View>
 
         {/* Password */}
-        <Text style={[styles.label, { color: colors.text }]}>Password *</Text>
-        <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
+        <Text style={styles.label}>Password *</Text>
+        <View style={styles.inputRow}>
+          <Ionicons name="lock-closed-outline" size={18} color={MUTED} />
           <TextInput
-            style={[styles.input, { color: colors.text }]}
+            style={styles.input}
             placeholder="Enter password"
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={MUTED}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -341,46 +358,48 @@ export default function CustomerLoginScreen() {
         </View>
 
         {/* Action Button */}
-        <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: colors.primary }]} onPress={handleLoginOrSignup} disabled={loading} activeOpacity={0.85}>
-          {loading ? (
-            <ActivityIndicator color={colors.primaryForeground} />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle" size={20} color={colors.primaryForeground} />
-              <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>
-                {isLogin ? "Login" : "Complete Signup"}
-              </Text>
-            </>
-          )}
+        <TouchableOpacity style={styles.primaryBtnShadow} onPress={handleLoginOrSignup} disabled={loading} activeOpacity={0.85}>
+          <LinearGradient colors={[GOLD, GOLD_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.primaryBtn}>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Text style={styles.primaryBtnText}>
+                  {isLogin ? "Login" : "Complete Signup"}
+                </Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
 
         {/* OR divider */}
         <View style={styles.dividerRow}>
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>OR</Text>
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
         </View>
 
         {/* Continue with Google */}
         <TouchableOpacity
-          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={styles.googleBtn}
           onPress={handleGoogleLogin}
           disabled={googleLoading}
           activeOpacity={0.85}
         >
           {googleLoading ? (
-            <ActivityIndicator color={colors.text} />
+            <ActivityIndicator color={INK} />
           ) : (
             <>
               <Ionicons name="logo-google" size={20} color="#DB4437" />
-              <Text style={[styles.googleBtnText, { color: colors.text }]}>Continue with Google</Text>
+              <Text style={styles.googleBtnText}>Continue with Google</Text>
             </>
           )}
         </TouchableOpacity>
 
         {/* Benefits */}
-        <View style={[styles.featureBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          <Text style={[styles.featureTitle, { color: colors.text }]}>🗺️ After Login You Can:</Text>
+        <View style={styles.featureBox}>
+          <Text style={styles.featureTitle}>🗺️ After Login You Can:</Text>
           {[
             "See all registered Mehndi artists on a map",
             "Search artists by service type (Bridal, Arabic etc.)",
@@ -389,35 +408,36 @@ export default function CustomerLoginScreen() {
             "Pay online via UPI or choose Cash payment",
           ].map((f, i) => (
             <View key={i} style={styles.featureRow}>
-              <MaterialCommunityIcons name="check-circle" size={16} color={colors.primary} />
-              <Text style={[styles.featureText, { color: colors.text }]}>{f}</Text>
+              <MaterialCommunityIcons name="check-circle" size={16} color={GOLD} />
+              <Text style={styles.featureText}>{f}</Text>
             </View>
           ))}
         </View>
 
         <TouchableOpacity style={styles.switchRole} onPress={() => router.replace("/auth/artist-login")}>
-          <Text style={[styles.switchRoleText, { color: colors.mutedForeground }]}>
+          <Text style={styles.switchRoleText}>
             Are you a Mehndi Artist?{" "}
-            <Text style={{ color: colors.gold, fontFamily: "Poppins_600SemiBold" }}>Artist Login →</Text>
+            <Text style={{ color: GOLD_DARK, fontFamily: "Poppins_600SemiBold" }}>Artist Login →</Text>
           </Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* State Selector Modal */}
       <Modal visible={stateModalVisible} animationType="slide" transparent={true} onRequestClose={() => setStateModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select State</Text>
-              <TouchableOpacity onPress={() => setStateModalVisible(false)}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
+              <Text style={styles.modalTitle}>Select State</Text>
+              <TouchableOpacity onPress={() => setStateModalVisible(false)}><Ionicons name="close" size={24} color={INK} /></TouchableOpacity>
             </View>
             <FlatList
               data={Object.keys(INDIAN_STATES_CITIES)}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
-                <TouchableOpacity style={[styles.modalItem, { borderBottomColor: colors.border }]} onPress={() => { setState(item); setCity(""); setStateModalVisible(false); }}>
-                  <Text style={[styles.modalItemText, { color: colors.text }, state === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
-                  {state === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                <TouchableOpacity style={styles.modalItem} onPress={() => { setState(item); setCity(""); setStateModalVisible(false); }}>
+                  <Text style={[styles.modalItemText, state === item && { color: GOLD_DARK, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
+                  {state === item && <Ionicons name="checkmark" size={18} color={GOLD_DARK} />}
                 </TouchableOpacity>
               )}
             />
@@ -428,18 +448,18 @@ export default function CustomerLoginScreen() {
       {/* City Selector Modal */}
       <Modal visible={cityModalVisible} animationType="slide" transparent={true} onRequestClose={() => setCityModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select City</Text>
-              <TouchableOpacity onPress={() => setCityModalVisible(false)}><Ionicons name="close" size={24} color={colors.text} /></TouchableOpacity>
+              <Text style={styles.modalTitle}>Select City</Text>
+              <TouchableOpacity onPress={() => setCityModalVisible(false)}><Ionicons name="close" size={24} color={INK} /></TouchableOpacity>
             </View>
             <FlatList
               data={state ? INDIAN_STATES_CITIES[state] : []}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
-                <TouchableOpacity style={[styles.modalItem, { borderBottomColor: colors.border }]} onPress={() => { setCity(item); setCityModalVisible(false); }}>
-                  <Text style={[styles.modalItemText, { color: colors.text }, city === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
-                  {city === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                <TouchableOpacity style={styles.modalItem} onPress={() => { setCity(item); setCityModalVisible(false); }}>
+                  <Text style={[styles.modalItemText, city === item && { color: GOLD_DARK, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
+                  {city === item && <Ionicons name="checkmark" size={18} color={GOLD_DARK} />}
                 </TouchableOpacity>
               )}
             />
@@ -451,43 +471,47 @@ export default function CustomerLoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: CREAM },
   header: { paddingBottom: 28, paddingHorizontal: 20 },
-  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  backBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,248,240,0.12)", borderWidth: 1, borderColor: "rgba(255,248,240,0.25)", alignItems: "center", justifyContent: "center", marginBottom: 16 },
   headerContent: { alignItems: "center" },
-  headerIconCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", marginBottom: 10 },
-  headerTitle: { fontSize: 24, fontWeight: "700", color: "#fff", fontFamily: "Poppins_700Bold" },
-  headerSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "Poppins_400Regular", textAlign: "center", marginTop: 4 },
-  formContainer: { padding: 20, gap: 4, paddingBottom: 60 },
-  toggleRow: { flexDirection: "row", borderRadius: 12, borderWidth: 1, padding: 4, marginBottom: 16 },
+  headerIconCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(201,147,47,0.15)", borderWidth: 1.5, borderColor: "rgba(201,147,47,0.45)", alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  headerTitle: { fontSize: 24, fontWeight: "700", color: CREAM, fontFamily: "Poppins_700Bold" },
+  headerSubtitle: { fontSize: 13, color: "rgba(253,248,241,0.8)", fontFamily: "Poppins_400Regular", textAlign: "center", marginTop: 4 },
+  formContainer: { padding: 20, paddingBottom: 60 },
+  formInner: { width: "100%", gap: 4 },
+  formInnerWide: { maxWidth: 520, alignSelf: "center", backgroundColor: "#fff", borderRadius: 20, borderWidth: 1, borderColor: BORDER, padding: 24, marginTop: 12 },
+  toggleRow: { flexDirection: "row", borderRadius: 14, borderWidth: 1, borderColor: BORDER, backgroundColor: BLUSH, padding: 4, marginBottom: 16 },
   toggleBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center" },
+  toggleBtnActive: { backgroundColor: GOLD, shadowColor: GOLD, shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
   toggleText: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
-  label: { fontSize: 13, fontFamily: "Poppins_600SemiBold", marginBottom: 6, marginTop: 12 },
-  inputRow: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-  countryCode: { fontSize: 14, fontFamily: "Poppins_500Medium" },
-  input: { flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular" },
+  label: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: INK, marginBottom: 6, marginTop: 12 },
+  inputRow: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, borderColor: BORDER, backgroundColor: "#fff", paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  countryCode: { fontSize: 14, fontFamily: "Poppins_500Medium", color: INK },
+  input: { flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: INK },
   changeLink: { fontSize: 12, fontFamily: "Poppins_600SemiBold" },
   otpHint: { fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 6, marginTop: 4 },
   geoBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14 },
   geoBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
-  geoCoords: { fontSize: 11, fontFamily: "Poppins_400Regular", marginTop: 2 },
-  primaryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 16, marginTop: 20, marginBottom: 8 },
-  primaryBtnText: { fontSize: 16, fontFamily: "Poppins_700Bold" },
+  geoCoords: { fontSize: 11, fontFamily: "Poppins_400Regular", color: MUTED, marginTop: 2 },
+  primaryBtnShadow: { borderRadius: 16, marginTop: 20, marginBottom: 8, shadowColor: GOLD, shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  primaryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 16 },
+  primaryBtnText: { fontSize: 16, fontFamily: "Poppins_700Bold", color: "#fff" },
   dividerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 10 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12, fontFamily: "Poppins_600SemiBold", letterSpacing: 1 },
-  googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 16, borderWidth: 1.5, paddingVertical: 14 },
-  googleBtnText: { fontSize: 15, fontFamily: "Poppins_600SemiBold" },
-  featureBox: { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 24, gap: 8 },
-  featureTitle: { fontSize: 14, fontFamily: "Poppins_700Bold", marginBottom: 4 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: BORDER },
+  dividerText: { fontSize: 12, fontFamily: "Poppins_600SemiBold", color: MUTED, letterSpacing: 1 },
+  googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 16, borderWidth: 1.5, borderColor: BORDER, backgroundColor: "#fff", paddingVertical: 14 },
+  googleBtnText: { fontSize: 15, fontFamily: "Poppins_600SemiBold", color: INK },
+  featureBox: { borderRadius: 18, borderWidth: 1, borderColor: BORDER, backgroundColor: BLUSH, padding: 16, marginTop: 24, gap: 8 },
+  featureTitle: { fontSize: 11.5, fontFamily: "Poppins_700Bold", color: GOLD_DARK, letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  featureText: { fontSize: 13, fontFamily: "Poppins_400Regular" },
+  featureText: { fontSize: 13, fontFamily: "Poppins_400Regular", color: INK },
   switchRole: { alignItems: "center", paddingVertical: 16 },
-  switchRoleText: { fontSize: 13, fontFamily: "Poppins_400Regular", textAlign: "center" },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, maxHeight: "65%" },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)" },
-  modalTitle: { fontSize: 18, fontFamily: "Poppins_700Bold" },
-  modalItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16, borderBottomWidth: 0.5 },
-  modalItemText: { fontSize: 14, fontFamily: "Poppins_400Regular" },
+  switchRoleText: { fontSize: 13, fontFamily: "Poppins_400Regular", color: MUTED, textAlign: "center" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(26,10,14,0.5)", justifyContent: "flex-end" },
+  modalContent: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, maxHeight: "65%" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: BORDER },
+  modalTitle: { fontSize: 18, fontFamily: "Poppins_700Bold", color: INK },
+  modalItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: BORDER },
+  modalItemText: { fontSize: 14, fontFamily: "Poppins_400Regular", color: INK },
 });

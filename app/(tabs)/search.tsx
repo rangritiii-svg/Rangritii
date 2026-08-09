@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { FlatList, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArtistCard } from "@/components/ArtistCard";
 import { SearchBar } from "@/components/SearchBar";
@@ -19,6 +19,8 @@ const SORTS = [
 export default function SearchScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
   const { artists, favorites, toggleFavorite } = useApp();
 
   const [query, setQuery] = useState("");
@@ -72,7 +74,7 @@ export default function SearchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}>
       {/* Search Header Row */}
-      <View style={styles.searchHeaderRow}>
+      <View style={[styles.searchHeaderRow, isWide && styles.wideConstraint]}>
         <View style={styles.searchContainer}>
           <SearchBar
             value={query}
@@ -101,7 +103,7 @@ export default function SearchScreen() {
 
       {/* Expandable Advanced Filters Panel */}
       {showFilters && (
-        <View style={[styles.filtersPanel, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <View style={[styles.filtersPanel, { backgroundColor: colors.card, borderBottomColor: colors.border }, isWide && styles.wideConstraint]}>
           <ScrollView showsVerticalScrollIndicator={false} style={styles.filtersScroll}>
             {/* Filter Section: City */}
             <Text style={[styles.filterHeading, { color: colors.text }]}>City</Text>
@@ -113,15 +115,15 @@ export default function SearchScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: selectedCity === city ? colors.secondary : "transparent",
-                      borderColor: selectedCity === city ? colors.primary : colors.border,
+                      backgroundColor: selectedCity === city ? colors.gold : "transparent",
+                      borderColor: selectedCity === city ? colors.gold : colors.border,
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.filterChipText,
-                      { color: selectedCity === city ? colors.secondaryForeground : colors.mutedForeground },
+                      { color: selectedCity === city ? "#FFFFFF" : colors.mutedForeground },
                     ]}
                   >
                     {city}
@@ -140,15 +142,15 @@ export default function SearchScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: selectedStyle === style ? colors.secondary : "transparent",
-                      borderColor: selectedStyle === style ? colors.primary : colors.border,
+                      backgroundColor: selectedStyle === style ? colors.gold : "transparent",
+                      borderColor: selectedStyle === style ? colors.gold : colors.border,
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.filterChipText,
-                      { color: selectedStyle === style ? colors.secondaryForeground : colors.mutedForeground },
+                      { color: selectedStyle === style ? "#FFFFFF" : colors.mutedForeground },
                     ]}
                   >
                     {style}
@@ -167,15 +169,15 @@ export default function SearchScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: selectedBudget === budget ? colors.secondary : "transparent",
-                      borderColor: selectedBudget === budget ? colors.primary : colors.border,
+                      backgroundColor: selectedBudget === budget ? colors.gold : "transparent",
+                      borderColor: selectedBudget === budget ? colors.gold : colors.border,
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.filterChipText,
-                      { color: selectedBudget === budget ? colors.secondaryForeground : colors.mutedForeground },
+                      { color: selectedBudget === budget ? "#FFFFFF" : colors.mutedForeground },
                     ]}
                   >
                     {budget}
@@ -194,15 +196,15 @@ export default function SearchScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: sortBy === sort.id ? colors.secondary : "transparent",
-                      borderColor: sortBy === sort.id ? colors.primary : colors.border,
+                      backgroundColor: sortBy === sort.id ? colors.gold : "transparent",
+                      borderColor: sortBy === sort.id ? colors.gold : colors.border,
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.filterChipText,
-                      { color: sortBy === sort.id ? colors.secondaryForeground : colors.mutedForeground },
+                      { color: sortBy === sort.id ? "#FFFFFF" : colors.mutedForeground },
                     ]}
                   >
                     {sort.label}
@@ -221,7 +223,7 @@ export default function SearchScreen() {
       )}
 
       {/* Dynamic Results Counter */}
-      <View style={styles.resultsCounterRow}>
+      <View style={[styles.resultsCounterRow, isWide && styles.wideConstraint]}>
         <Text style={[styles.counterText, { color: colors.mutedForeground }]}>
           Found {filtered.length} {filtered.length === 1 ? "artist" : "artists"} matching filters
         </Text>
@@ -244,7 +246,7 @@ export default function SearchScreen() {
         )}
         numColumns={2}
         columnWrapperStyle={styles.gridRowWrapper}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, isWide && styles.wideConstraint]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -269,6 +271,11 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  wideConstraint: {
+    width: "100%",
+    maxWidth: 1120,
+    alignSelf: "center",
   },
   searchHeaderRow: {
     flexDirection: "row",

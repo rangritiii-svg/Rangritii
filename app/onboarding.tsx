@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import Head from "expo-router/head";
 import React, { useRef, useState } from "react";
 import {
-  Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity,
+  Image, Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity,
   useWindowDimensions, View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,6 +29,12 @@ const CREAM = "#FFF8F0";
 const INK = "#2A1020";
 const MUTED = "#8A6070";
 
+// Android APK download link shown on the website. Upload the APK as a release
+// asset on GitHub (Releases → New release → attach APK) and this link always
+// points to the newest one.
+const APP_DOWNLOAD_URL = "https://github.com/rangritiii-svg/Rangritii/releases/latest";
+const IS_WEB = Platform.OS === "web";
+
 export default function LandingScreen() {
   const insets = useSafeAreaInsets();
   const { language, setLanguage } = useApp();
@@ -47,6 +53,7 @@ export default function LandingScreen() {
   const goArtist = () => { tap(); router.push("/auth/artist-login"); };
   const goRegister = () => { tap(); router.push("/auth/artist-register"); };
   const toggleLang = async () => { tap(); await setLanguage(isHindi ? "en_IN" : "hi_IN"); };
+  const downloadApp = () => { tap(); Linking.openURL(APP_DOWNLOAD_URL).catch(() => {}); };
 
   const STYLES_DATA = [
     {
@@ -260,6 +267,17 @@ export default function LandingScreen() {
                   </View>
                 ))}
               </View>
+
+              {/* Android app download — website only */}
+              {IS_WEB && (
+                <TouchableOpacity style={styles.downloadPill} onPress={downloadApp} activeOpacity={0.85}>
+                  <Ionicons name="logo-android" size={16} color="#3DDC84" />
+                  <Text style={styles.downloadPillText}>
+                    {H("Download the Android App", "एंड्रॉइड ऐप डाउनलोड करें")}
+                  </Text>
+                  <Ionicons name="download-outline" size={14} color={GOLD} />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Visual */}
@@ -496,6 +514,12 @@ export default function LandingScreen() {
               <TouchableOpacity onPress={goCustomer}><Text style={styles.footerLink}>{H("Customer Login", "ग्राहक लॉगिन")}</Text></TouchableOpacity>
               <TouchableOpacity onPress={goArtist}><Text style={styles.footerLink}>{H("Artist Login", "आर्टिस्ट लॉगिन")}</Text></TouchableOpacity>
               <TouchableOpacity onPress={goRegister}><Text style={styles.footerLink}>{H("Become an Artist", "आर्टिस्ट बनें")}</Text></TouchableOpacity>
+              {IS_WEB && (
+                <TouchableOpacity onPress={downloadApp} style={styles.footerDownloadBtn}>
+                  <Ionicons name="logo-android" size={15} color="#3DDC84" />
+                  <Text style={styles.footerDownloadText}>{H("Download Android App", "एंड्रॉइड ऐप डाउनलोड करें")}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
           <View style={[styles.section, styles.footerBottom]}>
@@ -545,6 +569,8 @@ const styles = StyleSheet.create({
   trustRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   trustChip: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,248,240,0.08)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   trustChipText: { fontSize: 11.5, fontFamily: "Poppins_500Medium", color: "rgba(253,248,241,0.9)" },
+  downloadPill: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start", marginTop: 16, borderWidth: 1.2, borderColor: "rgba(61,220,132,0.45)", backgroundColor: "rgba(61,220,132,0.08)", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
+  downloadPillText: { fontSize: 12.5, fontFamily: "Poppins_600SemiBold", color: CREAM },
 
   heroVisual: { position: "relative" },
   heroImageWrap: { borderRadius: 24, overflow: "hidden", aspectRatio: 4 / 3, borderWidth: 1.5, borderColor: "rgba(201,147,47,0.35)" },
@@ -634,6 +660,8 @@ const styles = StyleSheet.create({
   footerTag: { fontSize: 12.5, fontFamily: "Poppins_400Regular", color: "rgba(253,248,241,0.6)", marginTop: 10, maxWidth: 380, lineHeight: 19 },
   footerLinks: { gap: 10 },
   footerLink: { fontSize: 13.5, fontFamily: "Poppins_600SemiBold", color: PINK_LIGHT },
+  footerDownloadBtn: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 4, borderWidth: 1, borderColor: "rgba(61,220,132,0.4)", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, alignSelf: "flex-start" },
+  footerDownloadText: { fontSize: 12.5, fontFamily: "Poppins_600SemiBold", color: "#3DDC84" },
   footerBottom: { borderTopWidth: 1, borderTopColor: "rgba(253,248,241,0.12)", marginTop: 28, paddingTop: 18 },
   footerFine: { fontSize: 11, fontFamily: "Poppins_400Regular", color: "rgba(253,248,241,0.45)", textAlign: "center" },
 });

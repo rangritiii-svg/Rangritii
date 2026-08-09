@@ -7,13 +7,25 @@ import Head from "expo-router/head";
 import React, { useState } from "react";
 import {
   Alert, KeyboardAvoidingView, Platform, ScrollView,
-  StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Modal, FlatList, ActivityIndicator
+  StyleSheet, Text, TextInput, TouchableOpacity, View, Image, Modal, FlatList, ActivityIndicator,
+  useWindowDimensions
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { INDIAN_STATES_CITIES } from "@/constants/locations";
 import { ensureMediaLibraryPermission, getCurrentCoordinates } from "@/utils/permissions";
+
+/* RangRiti 2.0 design tokens — kept in sync with app/onboarding.tsx */
+const MAROON = "#4A1020";
+const DARK = "#1A0A0E";
+const GOLD = "#C9932F";
+const GOLD_DARK = "#A87525";
+const BLUSH = "#FDEDF3";
+const CREAM = "#FFF8F0";
+const INK = "#2A1020";
+const MUTED = "#8A6070";
+const BORDER = "#F5D0DC";
 
 const MEHNDI_TYPES = [
   "Bridal", "Arabic", "Traditional", "Marwari", "Modern Bridal", "Indo-Western",
@@ -33,6 +45,8 @@ const STEPS = [
 export default function ArtistRegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
   const { setUserProfile, registerNewArtist, language } = useApp();
 
   const params = useLocalSearchParams<{ phone?: string }>();
@@ -296,7 +310,7 @@ export default function ArtistRegisterScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <Head>
@@ -307,62 +321,69 @@ export default function ArtistRegisterScreen() {
         />
       </Head>
       {/* Header */}
-      <LinearGradient colors={["#C9932F", "#8B6914"]} style={[styles.header, { paddingTop: Math.max(insets.top + 8, 36) }]}>
-        <View style={styles.headerTopRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => step > 1 ? setStep(step - 1) : router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Artist Registration</Text>
-          <Text style={styles.stepBadge}>{step}/{STEPS.length}</Text>
-        </View>
+      <LinearGradient
+        colors={[DARK, MAROON, "#6E1830"]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: Math.max(insets.top + 8, 36) }]}
+      >
+        <View style={[styles.headerInner, isWide && styles.headerInnerWide]}>
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => step > 1 ? setStep(step - 1) : router.back()}>
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Artist Registration</Text>
+            <Text style={styles.stepBadge}>{step}/{STEPS.length}</Text>
+          </View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${progressPct}%` }]} />
-        </View>
+          {/* Progress Bar */}
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: `${progressPct}%` }]} />
+          </View>
 
-        {/* Step Indicators */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepsRow}>
-          {STEPS.map(s => (
-            <View key={s.id} style={styles.stepItem}>
-              <View style={[styles.stepCircle, s.id <= step ? styles.stepCircleActive : styles.stepCircleInactive]}>
-                {s.id < step
-                  ? <Ionicons name="checkmark" size={14} color="#fff" />
-                  : <Ionicons name={s.icon as any} size={14} color={s.id === step ? "#C9932F" : "rgba(255,255,255,0.4)"} />
-                }
+          {/* Step Indicators */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepsRow}>
+            {STEPS.map(s => (
+              <View key={s.id} style={styles.stepItem}>
+                <View style={[styles.stepCircle, s.id <= step ? styles.stepCircleActive : styles.stepCircleInactive]}>
+                  {s.id < step
+                    ? <Ionicons name="checkmark" size={14} color="#fff" />
+                    : <Ionicons name={s.icon as any} size={14} color={s.id === step ? "#fff" : "rgba(255,248,240,0.45)"} />
+                  }
+                </View>
+                <Text style={[styles.stepLabel, { color: s.id === step ? GOLD : "rgba(255,248,240,0.55)" }]}>{s.title}</Text>
               </View>
-              <Text style={[styles.stepLabel, { color: s.id === step ? "#fff" : "rgba(255,255,255,0.5)" }]}>{s.title}</Text>
-            </View>
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        </View>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled">
+        <View style={[styles.formInner, isWide && styles.formInnerWide]}>
 
         {/* ─── STEP 1: Personal Info ─── */}
         {step === 1 && (
           <View style={styles.stepContent}>
-            <Text style={[styles.stepHeading, { color: colors.text }]}>👤 Personal Information</Text>
-            <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>Tell us about yourself</Text>
+            <Text style={styles.stepHeading}>👤 Personal Information</Text>
+            <Text style={styles.stepDesc}>Tell us about yourself</Text>
 
             <Field label="Full Name *" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. Priya Sharma" placeholderTextColor={colors.mutedForeground} value={fullName} onChangeText={setFullName} autoCapitalize="words" />
+              <TextInput style={styles.input} placeholder="e.g. Priya Sharma" placeholderTextColor={MUTED} value={fullName} onChangeText={setFullName} autoCapitalize="words" />
             </Field>
 
             <Field label="Mobile Number *" colors={colors}>
-              <Text style={[styles.countryCode, { color: colors.text }]}>🇮🇳 +91</Text>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="10-digit number" placeholderTextColor={colors.mutedForeground} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} />
+              <Text style={styles.countryCode}>🇮🇳 +91</Text>
+              <TextInput style={styles.input} placeholder="10-digit number" placeholderTextColor={MUTED} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={10} />
             </Field>
 
             <Field label="Email Address *" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="yourname@domain.com" placeholderTextColor={colors.mutedForeground} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+              <TextInput style={styles.input} placeholder="yourname@domain.com" placeholderTextColor={MUTED} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
             </Field>
 
             <Field label="Password *" colors={colors}>
               <TextInput
-                style={[styles.input, { color: colors.text }]}
+                style={styles.input}
                 placeholder="Set password for your account"
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor={MUTED}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -371,15 +392,15 @@ export default function ArtistRegisterScreen() {
             </Field>
 
             <Field label="Years of Experience *" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. 5" placeholderTextColor={colors.mutedForeground} value={experience} onChangeText={setExperience} keyboardType="number-pad" maxLength={2} />
+              <TextInput style={styles.input} placeholder="e.g. 5" placeholderTextColor={MUTED} value={experience} onChangeText={setExperience} keyboardType="number-pad" maxLength={2} />
             </Field>
 
-            <Text style={[styles.label, { color: colors.text }]}>About You / Bio</Text>
-            <View style={[styles.textAreaWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={styles.label}>About You / Bio</Text>
+            <View style={styles.textAreaWrapper}>
               <TextInput
-                style={[styles.textArea, { color: colors.text }]}
+                style={styles.textArea}
                 placeholder="Describe your style, specialties and experience... (customers will see this)"
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor={MUTED}
                 value={bio}
                 onChangeText={setBio}
                 multiline
@@ -387,7 +408,7 @@ export default function ArtistRegisterScreen() {
                 textAlignVertical="top"
                 maxLength={300}
               />
-              <Text style={[styles.charCount, { color: colors.mutedForeground }]}>{bio.length}/300</Text>
+              <Text style={styles.charCount}>{bio.length}/300</Text>
             </View>
 
           </View>
@@ -396,22 +417,22 @@ export default function ArtistRegisterScreen() {
         {/* ─── STEP 2: Location ─── */}
         {step === 2 && (
           <View style={styles.stepContent}>
-            <Text style={[styles.stepHeading, { color: colors.text }]}>📍 Location Details</Text>
-            <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>Where do you provide your services?</Text>
+            <Text style={styles.stepHeading}>📍 Location Details</Text>
+            <Text style={styles.stepDesc}>Where do you provide your services?</Text>
 
             <Field label="State *" colors={colors}>
               <TouchableOpacity style={{ flex: 1, flexDirection: "row", alignItems: "center" }} onPress={() => setStateModalVisible(true)}>
-                <Ionicons name="map-outline" size={18} color={colors.mutedForeground} style={{ marginRight: 10 }} />
-                <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: state ? colors.text : colors.mutedForeground }}>
+                <Ionicons name="map-outline" size={18} color={MUTED} style={{ marginRight: 10 }} />
+                <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: state ? INK : MUTED }}>
                   {state || "Select State"}
                 </Text>
-                <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
+                <Ionicons name="chevron-down" size={18} color={MUTED} />
               </TouchableOpacity>
             </Field>
 
             <Field label="City *" colors={colors}>
-              <TouchableOpacity 
-                style={{ flex: 1, flexDirection: "row", alignItems: "center", opacity: state ? 1 : 0.6 }} 
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: "row", alignItems: "center", opacity: state ? 1 : 0.6 }}
                 onPress={() => {
                   if (!state) {
                     Alert.alert("Select State First", "Please select a state to view available cities.");
@@ -420,34 +441,34 @@ export default function ArtistRegisterScreen() {
                   setCityModalVisible(true);
                 }}
               >
-                <Ionicons name="business-outline" size={18} color={colors.mutedForeground} style={{ marginRight: 10 }} />
-                <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: city ? colors.text : colors.mutedForeground }}>
+                <Ionicons name="business-outline" size={18} color={MUTED} style={{ marginRight: 10 }} />
+                <Text style={{ flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: city ? INK : MUTED }}>
                   {city || "Select City"}
                 </Text>
-                <Ionicons name="chevron-down" size={18} color={colors.mutedForeground} />
+                <Ionicons name="chevron-down" size={18} color={MUTED} />
               </TouchableOpacity>
             </Field>
 
             <Field label="Area / Locality *" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. Andheri West, Bandra" placeholderTextColor={colors.mutedForeground} value={area} onChangeText={setArea} autoCapitalize="words" />
+              <TextInput style={styles.input} placeholder="e.g. Andheri West, Bandra" placeholderTextColor={MUTED} value={area} onChangeText={setArea} autoCapitalize="words" />
             </Field>
 
             <Field label="Pincode" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="6-digit pincode" placeholderTextColor={colors.mutedForeground} value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} />
+              <TextInput style={styles.input} placeholder="6-digit pincode" placeholderTextColor={MUTED} value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} />
             </Field>
 
             <Field label="Travel Radius (km)" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder="Max distance you'll travel (e.g. 15)" placeholderTextColor={colors.mutedForeground} value={travelRadius} onChangeText={setTravelRadius} keyboardType="number-pad" maxLength={3} />
+              <TextInput style={styles.input} placeholder="Max distance you'll travel (e.g. 15)" placeholderTextColor={MUTED} value={travelRadius} onChangeText={setTravelRadius} keyboardType="number-pad" maxLength={3} />
             </Field>
 
             {/* Geo-tag current location */}
-            <Text style={[styles.label, { color: colors.text }]}>📍 Geo-tag Your Location</Text>
+            <Text style={styles.label}>📍 Geo-tag Your Location</Text>
             <TouchableOpacity
               style={[
                 styles.geoBtn,
                 {
-                  backgroundColor: latitude != null ? "rgba(16,185,129,0.1)" : colors.card,
-                  borderColor: latitude != null ? "#10B981" : colors.border,
+                  backgroundColor: latitude != null ? "rgba(16,185,129,0.1)" : "#fff",
+                  borderColor: latitude != null ? "#10B981" : BORDER,
                 },
               ]}
               onPress={handleCaptureLocation}
@@ -456,30 +477,30 @@ export default function ArtistRegisterScreen() {
             >
               {locating ? (
                 <>
-                  <ActivityIndicator size="small" color={colors.gold} />
-                  <Text style={[styles.geoBtnText, { color: colors.text }]}>Getting your location…</Text>
+                  <ActivityIndicator size="small" color={GOLD} />
+                  <Text style={[styles.geoBtnText, { color: INK }]}>Getting your location…</Text>
                 </>
               ) : latitude != null && longitude != null ? (
                 <>
                   <Ionicons name="checkmark-circle" size={20} color="#10B981" />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.geoBtnText, { color: "#10B981" }]}>Location Tagged ✓</Text>
-                    <Text style={[styles.geoCoords, { color: colors.mutedForeground }]}>
+                    <Text style={styles.geoCoords}>
                       {latitude.toFixed(5)}, {longitude.toFixed(5)} · Tap to update
                     </Text>
                   </View>
                 </>
               ) : (
                 <>
-                  <Ionicons name="location" size={20} color={colors.gold} />
-                  <Text style={[styles.geoBtnText, { color: colors.text }]}>Capture Current Location (GPS)</Text>
+                  <Ionicons name="location" size={20} color={GOLD} />
+                  <Text style={[styles.geoBtnText, { color: INK }]}>Capture Current Location (GPS)</Text>
                 </>
               )}
             </TouchableOpacity>
 
-            <View style={[styles.infoBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-              <Ionicons name="information-circle-outline" size={18} color={colors.gold} />
-              <Text style={[styles.infoBoxText, { color: colors.text }]}>
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle-outline" size={18} color={GOLD_DARK} />
+              <Text style={styles.infoBoxText}>
                 Geo-tagging helps nearby customers find you. Your exact address stays private — customers only see your city and area.
               </Text>
             </View>
@@ -489,10 +510,10 @@ export default function ArtistRegisterScreen() {
         {/* ─── STEP 3: Services & Pricing ─── */}
         {step === 3 && (
           <View style={styles.stepContent}>
-            <Text style={[styles.stepHeading, { color: colors.text }]}>✋ Services & Pricing</Text>
-            <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>What styles do you offer and your rates?</Text>
+            <Text style={styles.stepHeading}>✋ Services & Pricing</Text>
+            <Text style={styles.stepDesc}>What styles do you offer and your rates?</Text>
 
-            <Text style={[styles.label, { color: colors.text }]}>Types of Mehndi You Offer * <Text style={{ color: colors.mutedForeground, fontFamily: "Poppins_400Regular" }}>(select all that apply)</Text></Text>
+            <Text style={styles.label}>Types of Mehndi You Offer * <Text style={{ color: MUTED, fontFamily: "Poppins_400Regular" }}>(select all that apply)</Text></Text>
             <View style={styles.stylesGrid}>
               {MEHNDI_TYPES.map(style => {
                 const active = selectedStyles.includes(style);
@@ -500,52 +521,52 @@ export default function ArtistRegisterScreen() {
                   <TouchableOpacity
                     key={style}
                     onPress={() => toggleStyle(style)}
-                    style={[styles.styleChip, active ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.card, borderColor: colors.border }]}
+                    style={[styles.styleChip, active ? styles.chipActive : styles.chipIdle]}
                   >
-                    <Text style={[styles.styleChipText, { color: active ? colors.primaryForeground : colors.text }]}>{style}</Text>
+                    <Text style={[styles.styleChipText, { color: active ? "#fff" : INK }]}>{style}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <View style={[styles.pricingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.pricingCardTitle, { color: colors.text }]}>💰 Your Charges</Text>
+            <View style={styles.pricingCard}>
+              <Text style={styles.pricingCardTitle}>💰 Your Charges</Text>
 
-              <Text style={[styles.label, { color: colors.text }]}>Hourly Rate (₹) *</Text>
+              <Text style={styles.label}>Hourly Rate (₹) *</Text>
               <Field label="" colors={colors}>
-                <Text style={[styles.rupee, { color: colors.text }]}>₹</Text>
-                <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. 500" placeholderTextColor={colors.mutedForeground} value={hourlyRate} onChangeText={setHourlyRate} keyboardType="number-pad" />
-                <Text style={[styles.perHr, { color: colors.mutedForeground }]}>/ hour</Text>
+                <Text style={styles.rupee}>₹</Text>
+                <TextInput style={styles.input} placeholder="e.g. 500" placeholderTextColor={MUTED} value={hourlyRate} onChangeText={setHourlyRate} keyboardType="number-pad" />
+                <Text style={styles.perHr}>/ hour</Text>
               </Field>
 
-              <Text style={[styles.label, { color: colors.text }]}>Minimum Charge (₹)</Text>
+              <Text style={styles.label}>Minimum Charge (₹)</Text>
               <Field label="" colors={colors}>
-                <Text style={[styles.rupee, { color: colors.text }]}>₹</Text>
-                <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. 1500" placeholderTextColor={colors.mutedForeground} value={minCharge} onChangeText={setMinCharge} keyboardType="number-pad" />
+                <Text style={styles.rupee}>₹</Text>
+                <TextInput style={styles.input} placeholder="e.g. 1500" placeholderTextColor={MUTED} value={minCharge} onChangeText={setMinCharge} keyboardType="number-pad" />
               </Field>
 
-              <Text style={[styles.label, { color: colors.text }]}>Full Bridal Package (₹)</Text>
+              <Text style={styles.label}>Full Bridal Package (₹)</Text>
               <Field label="" colors={colors}>
-                <Text style={[styles.rupee, { color: colors.text }]}>₹</Text>
-                <TextInput style={[styles.input, { color: colors.text }]} placeholder="e.g. 12000" placeholderTextColor={colors.mutedForeground} value={bridalRate} onChangeText={setBridalRate} keyboardType="number-pad" />
+                <Text style={styles.rupee}>₹</Text>
+                <TextInput style={styles.input} placeholder="e.g. 12000" placeholderTextColor={MUTED} value={bridalRate} onChangeText={setBridalRate} keyboardType="number-pad" />
               </Field>
             </View>
 
-            <Text style={[styles.label, { color: colors.text }]}>Service Mode</Text>
+            <Text style={styles.label}>Service Mode</Text>
             <View style={styles.serviceToggleRow}>
               <TouchableOpacity
-                style={[styles.serviceToggle, homeVisit ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[styles.serviceToggle, homeVisit ? styles.chipActive : styles.chipIdle]}
                 onPress={() => setHomeVisit(!homeVisit)}
               >
-                <Ionicons name="home-outline" size={16} color={homeVisit ? colors.primaryForeground : colors.text} />
-                <Text style={[styles.serviceToggleText, { color: homeVisit ? colors.primaryForeground : colors.text }]}>Home Visit</Text>
+                <Ionicons name="home-outline" size={16} color={homeVisit ? "#fff" : INK} />
+                <Text style={[styles.serviceToggleText, { color: homeVisit ? "#fff" : INK }]}>Home Visit</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.serviceToggle, studioVisit ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[styles.serviceToggle, studioVisit ? styles.chipActive : styles.chipIdle]}
                 onPress={() => setStudioVisit(!studioVisit)}
               >
-                <Ionicons name="storefront-outline" size={16} color={studioVisit ? colors.primaryForeground : colors.text} />
-                <Text style={[styles.serviceToggleText, { color: studioVisit ? colors.primaryForeground : colors.text }]}>Studio / Parlour</Text>
+                <Ionicons name="storefront-outline" size={16} color={studioVisit ? "#fff" : INK} />
+                <Text style={[styles.serviceToggleText, { color: studioVisit ? "#fff" : INK }]}>Studio / Parlour</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -554,25 +575,25 @@ export default function ArtistRegisterScreen() {
         {/* ─── STEP 4: Work Photos ─── */}
         {step === 4 && (
           <View style={styles.stepContent}>
-            <Text style={[styles.stepHeading, { color: colors.text }]}>📸 Previous Work Photos</Text>
-            <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>Showcase your best Mehndi designs to attract customers</Text>
+            <Text style={styles.stepHeading}>📸 Previous Work Photos</Text>
+            <Text style={styles.stepDesc}>Showcase your best Mehndi designs to attract customers</Text>
 
             <TouchableOpacity
-              style={[styles.uploadHint, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+              style={styles.uploadHint}
               onPress={() => handlePickPortfolioPhoto()}
             >
-              <Ionicons name="cloud-upload-outline" size={32} color={colors.gold} />
-              <Text style={[styles.uploadHintTitle, { color: colors.text }]}>Upload Portfolio Photos</Text>
-              <Text style={[styles.uploadHintDesc, { color: colors.mutedForeground }]}>
+              <Ionicons name="cloud-upload-outline" size={32} color={GOLD} />
+              <Text style={styles.uploadHintTitle}>Upload Portfolio Photos</Text>
+              <Text style={styles.uploadHintDesc}>
                 Tap here to open your phone gallery and select work photos.
               </Text>
             </TouchableOpacity>
 
-            <Text style={[styles.label, { color: colors.text, marginTop: 16 }]}>Uploaded Work Photos ({regPortfolioImages.length})</Text>
+            <Text style={[styles.label, { marginTop: 16 }]}>Uploaded Work Photos ({regPortfolioImages.length})</Text>
 
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
               {regPortfolioImages.map((img, idx) => (
-                <View key={idx} style={{ width: 100, height: 100, borderRadius: 8, overflow: "hidden", position: "relative" }}>
+                <View key={idx} style={{ width: 100, height: 100, borderRadius: 12, overflow: "hidden", position: "relative", borderWidth: 1, borderColor: BORDER }}>
                   <Image source={{ uri: img }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
                   {/* Tap photo to replace it */}
                   <TouchableOpacity
@@ -580,7 +601,7 @@ export default function ArtistRegisterScreen() {
                     onPress={() => handlePickPortfolioPhoto(idx)}
                   />
                   {/* Edit badge */}
-                  <View style={{ position: "absolute", bottom: 4, left: 4, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 }}>
+                  <View style={{ position: "absolute", bottom: 4, left: 4, backgroundColor: "rgba(26,10,14,0.6)", borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 }}>
                     <Text style={{ fontSize: 9, color: "#fff", fontFamily: "Poppins_600SemiBold" }}>✎ Edit</Text>
                   </View>
                   {/* Remove button */}
@@ -595,17 +616,17 @@ export default function ArtistRegisterScreen() {
 
               {/* Add new photo tile */}
               <TouchableOpacity
-                style={{ width: 100, height: 100, borderRadius: 8, borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, justifyContent: "center", alignItems: "center", backgroundColor: colors.card }}
+                style={{ width: 100, height: 100, borderRadius: 12, borderStyle: "dashed", borderWidth: 1.5, borderColor: GOLD, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(201,147,47,0.06)" }}
                 onPress={() => handlePickPortfolioPhoto()}
               >
-                <Ionicons name="add" size={24} color={colors.gold} />
-                <Text style={{ fontSize: 10, fontFamily: "Poppins_600SemiBold", color: colors.gold, marginTop: 2 }}>Add Photo</Text>
+                <Ionicons name="add" size={24} color={GOLD_DARK} />
+                <Text style={{ fontSize: 10, fontFamily: "Poppins_600SemiBold", color: GOLD_DARK, marginTop: 2 }}>Add Photo</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.infoBox, { backgroundColor: colors.secondary, borderColor: colors.border, marginTop: 20 }]}>
-              <Ionicons name="bulb-outline" size={18} color={colors.gold} />
-              <Text style={[styles.infoBoxText, { color: colors.text }]}>
+            <View style={[styles.infoBox, { marginTop: 20 }]}>
+              <Ionicons name="bulb-outline" size={18} color={GOLD_DARK} />
+              <Text style={styles.infoBoxText}>
                 Tip: Artists with 5+ portfolio photos get 3× more bookings. Tap any photo to replace it.
               </Text>
             </View>
@@ -615,31 +636,31 @@ export default function ArtistRegisterScreen() {
         {/* ─── STEP 5: Verification ─── */}
         {step === 5 && (
           <View style={styles.stepContent}>
-            <Text style={[styles.stepHeading, { color: colors.text }]}>🛡️ Identity Verification</Text>
-            <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>Required to build trust with customers and receive payments</Text>
+            <Text style={styles.stepHeading}>🛡️ Identity Verification</Text>
+            <Text style={styles.stepDesc}>Required to build trust with customers and receive payments</Text>
 
-            <Text style={[styles.label, { color: colors.text }]}>Government ID Type *</Text>
+            <Text style={styles.label}>Government ID Type *</Text>
             <View style={styles.idTypeGrid}>
               {ID_TYPES.map(id => (
                 <TouchableOpacity
                   key={id}
                   onPress={() => setIdType(id)}
-                  style={[styles.idChip, idType === id ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[styles.idChip, idType === id ? styles.chipActive : styles.chipIdle]}
                 >
-                  <Text style={[styles.idChipText, { color: idType === id ? colors.primaryForeground : colors.text }]}>{id}</Text>
+                  <Text style={[styles.idChipText, { color: idType === id ? "#fff" : INK }]}>{id}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <Field label="ID Number *" colors={colors}>
-              <TextInput style={[styles.input, { color: colors.text }]} placeholder={idType || "Enter your ID number"} placeholderTextColor={colors.mutedForeground} value={idNumber} onChangeText={setIdNumber} autoCapitalize="characters" />
+              <TextInput style={styles.input} placeholder={idType || "Enter your ID number"} placeholderTextColor={MUTED} value={idNumber} onChangeText={setIdNumber} autoCapitalize="characters" />
             </Field>
 
             {/* Government ID Photo selection */}
             {regIdCardImage ? (
               <View style={{ alignItems: "center", marginVertical: 12 }}>
-                <Image source={{ uri: regIdCardImage }} style={{ width: "100%", height: 180, borderRadius: 12 }} resizeMode="cover" />
-                <TouchableOpacity 
+                <Image source={{ uri: regIdCardImage }} style={{ width: "100%", height: 180, borderRadius: 14, borderWidth: 1, borderColor: BORDER }} resizeMode="cover" />
+                <TouchableOpacity
                   style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, backgroundColor: "rgba(220,38,38,0.1)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
                   onPress={() => setRegIdCardImage("")}
                 >
@@ -648,27 +669,27 @@ export default function ArtistRegisterScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity 
-                style={[styles.uploadHint, { backgroundColor: colors.secondary, borderColor: colors.border, paddingVertical: 14, marginVertical: 8 }]}
+              <TouchableOpacity
+                style={[styles.uploadHint, { paddingVertical: 14, marginVertical: 8 }]}
                 onPress={handlePickIdCardPhoto}
               >
-                <FontAwesome5 name="id-card" size={24} color={colors.gold} />
-                <Text style={[styles.uploadHintTitle, { color: colors.text, fontSize: 14, marginTop: 4 }]}>Upload ID Document Photo</Text>
-                <Text style={{ fontSize: 10, color: colors.mutedForeground, textAlign: "center", marginTop: 2 }}>Tap to open phone library storage</Text>
+                <FontAwesome5 name="id-card" size={24} color={GOLD} />
+                <Text style={[styles.uploadHintTitle, { fontSize: 14, marginTop: 4 }]}>Upload ID Document Photo</Text>
+                <Text style={{ fontSize: 10, color: MUTED, textAlign: "center", marginTop: 2 }}>Tap to open phone library storage</Text>
               </TouchableOpacity>
             )}
 
-            <View style={[styles.pricingCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 12 }]}>
-              <Text style={[styles.pricingCardTitle, { color: colors.text }]}>💸 UPI Payment Details</Text>
-              <Text style={[styles.bankNote, { color: colors.mutedForeground }]}>Required to receive booking payments directly to your UPI account.</Text>
+            <View style={[styles.pricingCard, { marginTop: 12 }]}>
+              <Text style={styles.pricingCardTitle}>💸 UPI Payment Details</Text>
+              <Text style={styles.bankNote}>Required to receive booking payments directly to your UPI account.</Text>
 
               {/* UPI ID input */}
               <Field label="Your UPI ID *" colors={colors}>
-                <Ionicons name="at-outline" size={18} color={colors.mutedForeground} />
+                <Ionicons name="at-outline" size={18} color={MUTED} />
                 <TextInput
-                  style={[styles.input, { color: colors.text }]}
+                  style={styles.input}
                   placeholder="e.g. yourname@upi or 9876543210@paytm"
-                  placeholderTextColor={colors.mutedForeground}
+                  placeholderTextColor={MUTED}
                   value={upiId}
                   onChangeText={setUpiId}
                   autoCapitalize="none"
@@ -677,22 +698,22 @@ export default function ArtistRegisterScreen() {
               </Field>
 
               {/* UPI QR Code upload */}
-              <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>UPI QR Code Photo (Optional)</Text>
-              <Text style={{ fontSize: 11, fontFamily: "Poppins_400Regular", color: colors.mutedForeground, marginBottom: 8 }}>
+              <Text style={[styles.label, { marginTop: 10 }]}>UPI QR Code Photo (Optional)</Text>
+              <Text style={{ fontSize: 11, fontFamily: "Poppins_400Regular", color: MUTED, marginBottom: 8 }}>
                 Upload a screenshot of your UPI QR so customers can pay you directly.
               </Text>
               {regUpiQrImage ? (
                 <View style={{ alignItems: "center", marginVertical: 8 }}>
-                  <View style={{ width: 180, height: 180, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: colors.border }}>
+                  <View style={{ width: 180, height: 180, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: BORDER, backgroundColor: "#fff" }}>
                     <Image source={{ uri: regUpiQrImage }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
                   </View>
                   <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
                     <TouchableOpacity
-                      style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.secondary, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#fff", paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, borderWidth: 1, borderColor: BORDER }}
                       onPress={handlePickUpiQrPhoto}
                     >
-                      <Ionicons name="refresh-outline" size={14} color={colors.gold} />
-                      <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.gold }}>Replace QR</Text>
+                      <Ionicons name="refresh-outline" size={14} color={GOLD_DARK} />
+                      <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: GOLD_DARK }}>Replace QR</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(220,38,38,0.08)", paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16 }}
@@ -705,19 +726,19 @@ export default function ArtistRegisterScreen() {
                 </View>
               ) : (
                 <TouchableOpacity
-                  style={{ borderStyle: "dashed", borderWidth: 1.5, borderColor: colors.border, padding: 20, borderRadius: 16, alignItems: "center", backgroundColor: colors.secondary, marginTop: 4, gap: 6 }}
+                  style={{ borderStyle: "dashed", borderWidth: 1.5, borderColor: GOLD, padding: 20, borderRadius: 16, alignItems: "center", backgroundColor: "rgba(201,147,47,0.06)", marginTop: 4, gap: 6 }}
                   onPress={handlePickUpiQrPhoto}
                 >
-                  <MaterialCommunityIcons name="qrcode-scan" size={32} color={colors.gold} />
-                  <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: colors.text }}>Upload UPI QR Code</Text>
-                  <Text style={{ fontSize: 10, color: colors.mutedForeground, textAlign: "center" }}>Tap to select a QR code screenshot from your gallery</Text>
+                  <MaterialCommunityIcons name="qrcode-scan" size={32} color={GOLD} />
+                  <Text style={{ fontSize: 13, fontFamily: "Poppins_600SemiBold", color: INK }}>Upload UPI QR Code</Text>
+                  <Text style={{ fontSize: 10, color: MUTED, textAlign: "center" }}>Tap to select a QR code screenshot from your gallery</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Summary */}
-            <View style={[styles.summaryCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-              <Text style={[styles.summaryTitle, { color: colors.text }]}>📋 Registration Summary</Text>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>📋 Registration Summary</Text>
               <SummaryRow label="Name" value={fullName || "—"} colors={colors} />
               <SummaryRow label="Phone" value={phone ? `+91 ${phone}` : "—"} colors={colors} />
               <SummaryRow label="Location" value={[area, city, state].filter(Boolean).join(", ") || "—"} colors={colors} />
@@ -729,13 +750,13 @@ export default function ArtistRegisterScreen() {
 
             {/* Terms */}
             <TouchableOpacity style={styles.termsRow} onPress={() => setAgreed(!agreed)} activeOpacity={0.8}>
-              <View style={[styles.checkbox, { borderColor: colors.border, backgroundColor: agreed ? colors.primary : colors.card }]}>
+              <View style={[styles.checkbox, { borderColor: agreed ? GOLD : BORDER, backgroundColor: agreed ? GOLD : "#fff" }]}>
                 {agreed && <Ionicons name="checkmark" size={14} color="#fff" />}
               </View>
-              <Text style={[styles.termsText, { color: colors.text }]}>
+              <Text style={styles.termsText}>
                 I agree to Rangritii's{" "}
-                <Text style={{ color: colors.primary, fontFamily: "Poppins_600SemiBold" }}>Terms of Service</Text>,{" "}
-                <Text style={{ color: colors.primary, fontFamily: "Poppins_600SemiBold" }}>Privacy Policy</Text>, and confirm all information provided is accurate.
+                <Text style={{ color: GOLD_DARK, fontFamily: "Poppins_600SemiBold" }}>Terms of Service</Text>,{" "}
+                <Text style={{ color: GOLD_DARK, fontFamily: "Poppins_600SemiBold" }}>Privacy Policy</Text>, and confirm all information provided is accurate.
               </Text>
             </TouchableOpacity>
           </View>
@@ -744,42 +765,45 @@ export default function ArtistRegisterScreen() {
         {/* Navigation Buttons */}
         <View style={styles.navButtons}>
           {step > 1 && (
-            <TouchableOpacity style={[styles.prevBtn, { borderColor: colors.border }]} onPress={() => setStep(step - 1)}>
-              <Ionicons name="chevron-back" size={18} color={colors.text} />
-              <Text style={[styles.prevBtnText, { color: colors.text }]}>Back</Text>
+            <TouchableOpacity style={styles.prevBtn} onPress={() => setStep(step - 1)}>
+              <Ionicons name="chevron-back" size={18} color={INK} />
+              <Text style={styles.prevBtnText}>Back</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[styles.nextBtn, { backgroundColor: colors.gold, flex: step > 1 ? 2 : 1 }]}
+            style={[styles.nextBtnShadow, { flex: step > 1 ? 2 : 1 }]}
             onPress={handleNext}
             disabled={loading}
             activeOpacity={0.85}
           >
-            {loading ? (
-              <Text style={styles.nextBtnText}>Submitting...</Text>
-            ) : step === 5 ? (
-              <>
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <Text style={styles.nextBtnText}>Submit Registration</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.nextBtnText}>Next Step</Text>
-                <Ionicons name="chevron-forward" size={18} color="#fff" />
-              </>
-            )}
+            <LinearGradient colors={[GOLD, GOLD_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtn}>
+              {loading ? (
+                <Text style={styles.nextBtnText}>Submitting...</Text>
+              ) : step === 5 ? (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={styles.nextBtnText}>Submit Registration</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.nextBtnText}>Next Step</Text>
+                  <Ionicons name="chevron-forward" size={18} color="#fff" />
+                </>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
+        </View>
         </View>
       </ScrollView>
 
       {/* State Selector Modal */}
       <Modal visible={stateModalVisible} animationType="slide" transparent={true} onRequestClose={() => setStateModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select State</Text>
+              <Text style={styles.modalTitle}>Select State</Text>
               <TouchableOpacity onPress={() => setStateModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
+                <Ionicons name="close" size={24} color={INK} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -787,15 +811,15 @@ export default function ArtistRegisterScreen() {
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  style={styles.modalItem}
                   onPress={() => {
                     setState(item);
                     setCity("");
                     setStateModalVisible(false);
                   }}
                 >
-                  <Text style={[styles.modalItemText, { color: colors.text }, state === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
-                  {state === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                  <Text style={[styles.modalItemText, state === item && { color: GOLD_DARK, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
+                  {state === item && <Ionicons name="checkmark" size={18} color={GOLD_DARK} />}
                 </TouchableOpacity>
               )}
             />
@@ -806,11 +830,11 @@ export default function ArtistRegisterScreen() {
       {/* City Selector Modal */}
       <Modal visible={cityModalVisible} animationType="slide" transparent={true} onRequestClose={() => setCityModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select City</Text>
+              <Text style={styles.modalTitle}>Select City</Text>
               <TouchableOpacity onPress={() => setCityModalVisible(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
+                <Ionicons name="close" size={24} color={INK} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -818,14 +842,14 @@ export default function ArtistRegisterScreen() {
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  style={styles.modalItem}
                   onPress={() => {
                     setCity(item);
                     setCityModalVisible(false);
                   }}
                 >
-                  <Text style={[styles.modalItemText, { color: colors.text }, city === item && { color: colors.primary, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
-                  {city === item && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                  <Text style={[styles.modalItemText, city === item && { color: GOLD_DARK, fontFamily: "Poppins_600SemiBold" }]}>{item}</Text>
+                  {city === item && <Ionicons name="checkmark" size={18} color={GOLD_DARK} />}
                 </TouchableOpacity>
               )}
             />
@@ -842,16 +866,16 @@ export default function ArtistRegisterScreen() {
         onRequestClose={() => { setImageActionVisible(false); setPendingImageUri(""); }}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.imageActionSheet, { backgroundColor: colors.card }]}>
+          <View style={styles.imageActionSheet}>
             {/* Handle pill */}
             <View style={styles.sheetHandle} />
 
-            <Text style={[styles.imageActionTitle, { color: colors.text }]}>
+            <Text style={styles.imageActionTitle}>
               {pendingField === "portfolio" ? "📷 Portfolio Photo" :
                pendingField === "idCard"   ? "🪪 ID Document Photo" :
                                              "📱 UPI QR Code Photo"}
             </Text>
-            <Text style={[styles.imageActionSubtitle, { color: colors.mutedForeground }]}>
+            <Text style={styles.imageActionSubtitle}>
               Preview your selected photo below, then choose an action.
             </Text>
 
@@ -870,27 +894,29 @@ export default function ArtistRegisterScreen() {
             <View style={styles.imageActionBtnsCol}>
               {/* Save */}
               <TouchableOpacity
-                style={[styles.imageActionBtn, { backgroundColor: colors.gold }]}
+                style={styles.imageActionBtnShadow}
                 onPress={commitPendingImage}
                 activeOpacity={0.85}
               >
-                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={[styles.imageActionBtnText, { color: "#fff" }]}>Save Photo</Text>
+                <LinearGradient colors={[GOLD, GOLD_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.imageActionBtn}>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                  <Text style={[styles.imageActionBtnText, { color: "#fff" }]}>Save Photo</Text>
+                </LinearGradient>
               </TouchableOpacity>
 
               {/* Crop */}
               <TouchableOpacity
-                style={[styles.imageActionBtn, { backgroundColor: colors.secondary, borderWidth: 1.5, borderColor: colors.border }]}
+                style={[styles.imageActionBtn, styles.imageActionBtnGhost]}
                 onPress={reopenWithCrop}
                 activeOpacity={0.85}
               >
-                <Ionicons name="crop-outline" size={20} color={colors.text} />
-                <Text style={[styles.imageActionBtnText, { color: colors.text }]}>Crop / Adjust</Text>
+                <Ionicons name="crop-outline" size={20} color={INK} />
+                <Text style={[styles.imageActionBtnText, { color: INK }]}>Crop / Adjust</Text>
               </TouchableOpacity>
 
               {/* Select another */}
               <TouchableOpacity
-                style={[styles.imageActionBtn, { backgroundColor: colors.secondary, borderWidth: 1.5, borderColor: colors.border }]}
+                style={[styles.imageActionBtn, styles.imageActionBtnGhost]}
                 onPress={() => {
                   setImageActionVisible(false);
                   setPendingImageUri("");
@@ -898,8 +924,8 @@ export default function ArtistRegisterScreen() {
                 }}
                 activeOpacity={0.85}
               >
-                <Ionicons name="images-outline" size={20} color={colors.text} />
-                <Text style={[styles.imageActionBtnText, { color: colors.text }]}>Select Another Photo</Text>
+                <Ionicons name="images-outline" size={20} color={INK} />
+                <Text style={[styles.imageActionBtnText, { color: INK }]}>Select Another Photo</Text>
               </TouchableOpacity>
 
               {/* Cancel */}
@@ -907,7 +933,7 @@ export default function ArtistRegisterScreen() {
                 style={{ marginTop: 4, alignItems: "center", paddingVertical: 10 }}
                 onPress={() => { setImageActionVisible(false); setPendingImageUri(""); }}
               >
-                <Text style={{ fontSize: 13, fontFamily: "Poppins_500Medium", color: colors.mutedForeground }}>Cancel</Text>
+                <Text style={{ fontSize: 13, fontFamily: "Poppins_500Medium", color: MUTED }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -922,15 +948,15 @@ export default function ArtistRegisterScreen() {
 function Field({ label, children, colors }: { label: string; children: React.ReactNode; colors: any }) {
   if (!label) {
     return (
-      <View style={[fieldStyles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={fieldStyles.row}>
         {children}
       </View>
     );
   }
   return (
     <>
-      <Text style={[fieldStyles.label, { color: colors.text }]}>{label}</Text>
-      <View style={[fieldStyles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={fieldStyles.label}>{label}</Text>
+      <View style={fieldStyles.row}>
         {children}
       </View>
     </>
@@ -940,67 +966,73 @@ function Field({ label, children, colors }: { label: string; children: React.Rea
 function SummaryRow({ label, value, colors }: { label: string; value: string; colors: any }) {
   return (
     <View style={summaryStyles.row}>
-      <Text style={[summaryStyles.label, { color: colors.mutedForeground }]}>{label}</Text>
-      <Text style={[summaryStyles.value, { color: colors.text }]} numberOfLines={2}>{value}</Text>
+      <Text style={summaryStyles.label}>{label}</Text>
+      <Text style={summaryStyles.value} numberOfLines={2}>{value}</Text>
     </View>
   );
 }
 
 const fieldStyles = StyleSheet.create({
-  label: { fontSize: 13, fontFamily: "Poppins_600SemiBold", marginBottom: 6, marginTop: 14 },
-  row: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 10, marginBottom: 2 },
+  label: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: INK, marginBottom: 6, marginTop: 14 },
+  row: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, borderColor: BORDER, backgroundColor: "#fff", paddingHorizontal: 14, paddingVertical: 12, gap: 10, marginBottom: 2 },
 });
 
 const summaryStyles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8, gap: 10 },
-  label: { fontSize: 12, fontFamily: "Poppins_400Regular", flex: 1 },
-  value: { fontSize: 12, fontFamily: "Poppins_600SemiBold", flex: 2, textAlign: "right" },
+  label: { fontSize: 12, fontFamily: "Poppins_400Regular", color: MUTED, flex: 1 },
+  value: { fontSize: 12, fontFamily: "Poppins_600SemiBold", color: INK, flex: 2, textAlign: "right" },
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: CREAM },
   header: { paddingBottom: 16, paddingHorizontal: 20 },
+  headerInner: { width: "100%" },
+  headerInnerWide: { maxWidth: 640, alignSelf: "center" },
   headerTopRow: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: "700", color: "#fff", fontFamily: "Poppins_700Bold" },
-  stepBadge: { fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "Poppins_600SemiBold", backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  progressBarBg: { height: 4, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 2, marginBottom: 14 },
-  progressBarFill: { height: 4, backgroundColor: "#fff", borderRadius: 2 },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,248,240,0.12)", borderWidth: 1, borderColor: "rgba(255,248,240,0.25)", alignItems: "center", justifyContent: "center", marginRight: 12 },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: "700", color: CREAM, fontFamily: "Poppins_700Bold" },
+  stepBadge: { fontSize: 13, color: GOLD, fontFamily: "Poppins_600SemiBold", backgroundColor: "rgba(201,147,47,0.15)", borderWidth: 1, borderColor: "rgba(201,147,47,0.45)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  progressBarBg: { height: 4, backgroundColor: "rgba(255,248,240,0.18)", borderRadius: 2, marginBottom: 14 },
+  progressBarFill: { height: 4, backgroundColor: GOLD, borderRadius: 2 },
   stepsRow: { gap: 12, paddingBottom: 4 },
   stepItem: { alignItems: "center", gap: 4 },
   stepCircle: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  stepCircleActive: { backgroundColor: "#fff" },
-  stepCircleInactive: { backgroundColor: "rgba(255,255,255,0.15)" },
+  stepCircleActive: { backgroundColor: GOLD, borderWidth: 1, borderColor: "rgba(255,248,240,0.35)" },
+  stepCircleInactive: { backgroundColor: "rgba(255,248,240,0.12)" },
   stepLabel: { fontSize: 9, fontFamily: "Poppins_500Medium" },
   formScroll: { paddingBottom: 40 },
-  stepContent: { paddingHorizontal: 20, paddingTop: 20 },
-  stepHeading: { fontSize: 20, fontFamily: "Poppins_700Bold", marginBottom: 4 },
-  stepDesc: { fontSize: 13, fontFamily: "Poppins_400Regular", marginBottom: 20 },
-  label: { fontSize: 13, fontFamily: "Poppins_600SemiBold", marginBottom: 6, marginTop: 14 },
-  input: { flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular" },
-  countryCode: { fontSize: 14, fontFamily: "Poppins_500Medium" },
-  rupee: { fontSize: 16, fontFamily: "Poppins_600SemiBold" },
-  perHr: { fontSize: 12, fontFamily: "Poppins_400Regular" },
-  textAreaWrapper: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 2 },
-  textArea: { fontSize: 13, fontFamily: "Poppins_400Regular", minHeight: 90, lineHeight: 20 },
-  charCount: { alignSelf: "flex-end", fontSize: 10, fontFamily: "Poppins_400Regular", marginTop: 4 },
+  formInner: { width: "100%" },
+  formInnerWide: { maxWidth: 520, alignSelf: "center" },
+  stepContent: { marginHorizontal: 20, marginTop: 20, backgroundColor: "#fff", borderRadius: 20, borderWidth: 1, borderColor: BORDER, padding: 18 },
+  stepHeading: { fontSize: 20, fontFamily: "Poppins_700Bold", color: INK, marginBottom: 4 },
+  stepDesc: { fontSize: 13, fontFamily: "Poppins_400Regular", color: MUTED, marginBottom: 20 },
+  label: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: INK, marginBottom: 6, marginTop: 14 },
+  input: { flex: 1, fontSize: 14, fontFamily: "Poppins_400Regular", color: INK },
+  countryCode: { fontSize: 14, fontFamily: "Poppins_500Medium", color: INK },
+  rupee: { fontSize: 16, fontFamily: "Poppins_600SemiBold", color: INK },
+  perHr: { fontSize: 12, fontFamily: "Poppins_400Regular", color: MUTED },
+  textAreaWrapper: { borderRadius: 14, borderWidth: 1, borderColor: BORDER, backgroundColor: "#fff", padding: 14, marginBottom: 2 },
+  textArea: { fontSize: 13, fontFamily: "Poppins_400Regular", color: INK, minHeight: 90, lineHeight: 20 },
+  charCount: { alignSelf: "flex-end", fontSize: 10, fontFamily: "Poppins_400Regular", color: MUTED, marginTop: 4 },
   geoBtn: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 14, marginTop: 6 },
   geoBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
-  geoCoords: { fontSize: 11, fontFamily: "Poppins_400Regular", marginTop: 2 },
-  infoBox: { flexDirection: "row", gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, marginTop: 14, alignItems: "flex-start" },
-  infoBoxText: { flex: 1, fontSize: 12, fontFamily: "Poppins_400Regular", lineHeight: 18 },
+  geoCoords: { fontSize: 11, fontFamily: "Poppins_400Regular", color: MUTED, marginTop: 2 },
+  infoBox: { flexDirection: "row", gap: 10, borderRadius: 14, borderWidth: 1, borderColor: BORDER, backgroundColor: BLUSH, padding: 14, marginTop: 14, alignItems: "flex-start" },
+  infoBoxText: { flex: 1, fontSize: 12, fontFamily: "Poppins_400Regular", color: INK, lineHeight: 18 },
   stylesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
   styleChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
   styleChipText: { fontSize: 12, fontFamily: "Poppins_500Medium" },
-  pricingCard: { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 16 },
-  pricingCardTitle: { fontSize: 15, fontFamily: "Poppins_700Bold", marginBottom: 4 },
-  bankNote: { fontSize: 11, fontFamily: "Poppins_400Regular", marginBottom: 8 },
+  chipActive: { backgroundColor: GOLD, borderColor: GOLD, shadowColor: GOLD, shadowOpacity: 0.3, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  chipIdle: { backgroundColor: "#fff", borderColor: BORDER },
+  pricingCard: { borderRadius: 16, borderWidth: 1, borderColor: BORDER, backgroundColor: BLUSH, padding: 16, marginTop: 16 },
+  pricingCardTitle: { fontSize: 11.5, fontFamily: "Poppins_700Bold", color: GOLD_DARK, letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 },
+  bankNote: { fontSize: 11, fontFamily: "Poppins_400Regular", color: MUTED, marginBottom: 8 },
   serviceToggleRow: { flexDirection: "row", gap: 10, marginBottom: 4 },
   serviceToggle: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, borderWidth: 1.5, paddingVertical: 12 },
   serviceToggleText: { fontSize: 13, fontFamily: "Poppins_600SemiBold" },
-  uploadHint: { borderRadius: 16, borderWidth: 1, padding: 20, alignItems: "center", gap: 8, marginBottom: 16 },
-  uploadHintTitle: { fontSize: 15, fontFamily: "Poppins_700Bold" },
-  uploadHintDesc: { fontSize: 12, fontFamily: "Poppins_400Regular", textAlign: "center", lineHeight: 18 },
+  uploadHint: { borderRadius: 16, borderWidth: 1, borderColor: BORDER, backgroundColor: BLUSH, padding: 20, alignItems: "center", gap: 8, marginBottom: 16 },
+  uploadHintTitle: { fontSize: 15, fontFamily: "Poppins_700Bold", color: INK },
+  uploadHintDesc: { fontSize: 12, fontFamily: "Poppins_400Regular", color: MUTED, textAlign: "center", lineHeight: 18 },
   uploadBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10, marginTop: 6 },
   uploadBtnText: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#fff" },
   photosGrid: { flexDirection: "row", gap: 10, marginBottom: 10 },
@@ -1013,24 +1045,26 @@ const styles = StyleSheet.create({
   idTypeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
   idChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
   idChipText: { fontSize: 12, fontFamily: "Poppins_500Medium" },
-  summaryCard: { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 16 },
-  summaryTitle: { fontSize: 14, fontFamily: "Poppins_700Bold", marginBottom: 12 },
+  summaryCard: { borderRadius: 16, borderWidth: 1, borderColor: BORDER, backgroundColor: BLUSH, padding: 16, marginTop: 16 },
+  summaryTitle: { fontSize: 11.5, fontFamily: "Poppins_700Bold", color: GOLD_DARK, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 },
   termsRow: { flexDirection: "row", gap: 12, alignItems: "flex-start", marginTop: 16, marginBottom: 8 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center", marginTop: 1, flexShrink: 0 },
-  termsText: { flex: 1, fontSize: 12, fontFamily: "Poppins_400Regular", lineHeight: 18 },
+  termsText: { flex: 1, fontSize: 12, fontFamily: "Poppins_400Regular", color: INK, lineHeight: 18 },
   navButtons: { flexDirection: "row", gap: 12, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16 },
-  prevBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, borderWidth: 1.5, borderRadius: 14, paddingVertical: 14 },
-  prevBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
+  prevBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, borderWidth: 1.5, borderColor: BORDER, backgroundColor: "#fff", borderRadius: 14, paddingVertical: 14 },
+  prevBtnText: { fontSize: 14, fontFamily: "Poppins_600SemiBold", color: INK },
+  nextBtnShadow: { borderRadius: 14, shadowColor: GOLD, shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   nextBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14 },
   nextBtnText: { fontSize: 15, fontFamily: "Poppins_700Bold", color: "#fff" },
 
   // Custom Modal Styles for Bottom Sheet picker
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "rgba(26,10,14,0.5)",
     justifyContent: "flex-end",
   },
   modalContent: {
+    backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -1045,11 +1079,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.05)",
+    borderBottomColor: BORDER,
   },
   modalTitle: {
     fontSize: 18,
     fontFamily: "Poppins_700Bold",
+    color: INK,
   },
   modalItem: {
     flexDirection: "row",
@@ -1057,14 +1092,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
   },
   modalItemText: {
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
+    color: INK,
   },
 
   // ── Image Action Bottom-Sheet ─────────────────────────────────────
   imageActionSheet: {
+    backgroundColor: "#fff",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
@@ -1076,19 +1114,21 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(0,0,0,0.15)",
+    backgroundColor: "rgba(42,16,32,0.15)",
     alignSelf: "center",
     marginBottom: 18,
   },
   imageActionTitle: {
     fontSize: 17,
     fontFamily: "Poppins_700Bold",
+    color: INK,
     textAlign: "center",
     marginBottom: 4,
   },
   imageActionSubtitle: {
     fontSize: 12,
     fontFamily: "Poppins_400Regular",
+    color: MUTED,
     textAlign: "center",
     marginBottom: 16,
     lineHeight: 18,
@@ -1099,7 +1139,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 18,
-    backgroundColor: "#000",
+    backgroundColor: DARK,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   imagePreview: {
     width: "100%",
@@ -1108,6 +1150,14 @@ const styles = StyleSheet.create({
   imageActionBtnsCol: {
     gap: 10,
   },
+  imageActionBtnShadow: {
+    borderRadius: 14,
+    shadowColor: GOLD,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
   imageActionBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1115,6 +1165,11 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 14,
     paddingVertical: 14,
+  },
+  imageActionBtnGhost: {
+    backgroundColor: BLUSH,
+    borderWidth: 1.5,
+    borderColor: BORDER,
   },
   imageActionBtnText: {
     fontSize: 14,

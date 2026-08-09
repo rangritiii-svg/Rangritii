@@ -8,7 +8,7 @@ import { useColors } from "@/hooks/useColors";
 import { StarRating } from "./StarRating";
 
 const GRADIENT_SETS = {
-  bridal: ["#F9AABF", "#C9932F"] as [string, string],
+  bridal: ["#6E1830", "#C9932F"] as [string, string],
   arabic: ["#1A4A2E", "#2E7D52"] as [string, string],
   traditional: ["#4A2080", "#8B4FC7"] as [string, string],
   modern: ["#1A3A5C", "#2E6EA6"] as [string, string],
@@ -177,39 +177,52 @@ export function ArtistCard({
           { backgroundColor: colors.card, borderColor: colors.border },
         ]}
       >
-        <View style={styles.topSectionVertical}>
-          {/* Avatar Gradient Panel */}
-          <LinearGradient
-            colors={gradientColors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatarGradientVertical}
-          >
-            <Text style={styles.avatarTextVertical}>{initials}</Text>
-            {artist.availability === "Busy" && (
+        {/* Header row: compact gradient avatar + identity */}
+        <View style={styles.headerRowVertical}>
+          <View style={styles.avatarWrapVertical}>
+            <LinearGradient
+              colors={gradientColors}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatarCircleVertical}
+            >
+              <Text style={styles.avatarTextVertical}>{initials}</Text>
+            </LinearGradient>
+            {artist.verified && (
+              <View style={[styles.verifiedBadgeVertical, { backgroundColor: colors.gold }]}>
+                <Ionicons name="checkmark" size={10} color="#FFFFFF" />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.identityVertical}>
+            <Text style={[styles.nameVertical, { color: colors.text }]} numberOfLines={1}>
+              {artist.name}
+            </Text>
+            <Text style={[styles.specVertical, { color: colors.mutedForeground }]} numberOfLines={1}>
+              {artist.specialization}
+            </Text>
+            {artist.availability === "Busy" ? (
               <View style={[styles.busyBadgeVertical, { backgroundColor: colors.destructive }]}>
                 <Text style={styles.busyTextVertical}>Busy</Text>
               </View>
+            ) : (
+              <View style={styles.availRowVertical}>
+                <View style={styles.availDotVertical} />
+                <Text style={styles.availTextVertical}>Available</Text>
+              </View>
             )}
-          </LinearGradient>
+          </View>
 
-          {/* verified check top right */}
-          {artist.verified && (
-            <View style={[styles.verifiedBadgeVertical, { backgroundColor: colors.gold }]}>
-              <MaterialCommunityIcons name="decagram" size={20} color="#FFFFFF" />
-            </View>
-          )}
-
-          {/* heart toggle */}
           {onToggleFavorite && (
             <TouchableOpacity
               onPress={handleFavoritePress}
-              style={[styles.heartButtonVertical, { backgroundColor: "rgba(255, 255, 255, 0.85)" }]}
+              style={styles.heartButtonVertical}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons
                 name={isFavorite ? "heart" : "heart-outline"}
-                size={18}
+                size={19}
                 color={isFavorite ? colors.destructive : colors.mutedForeground}
               />
             </TouchableOpacity>
@@ -217,14 +230,6 @@ export function ArtistCard({
         </View>
 
         <View style={styles.bottomSectionVertical}>
-          <Text style={[styles.nameVertical, { color: colors.text }]} numberOfLines={1}>
-            {artist.name}
-          </Text>
-          
-          <Text style={[styles.specVertical, { color: colors.mutedForeground }]} numberOfLines={1}>
-            {artist.specialization}
-          </Text>
-
           <View style={styles.locVertical}>
             <Ionicons name="location-outline" size={11} color={colors.mutedForeground} />
             <Text style={[styles.locTextVertical, { color: colors.mutedForeground }]} numberOfLines={1}>
@@ -237,11 +242,27 @@ export function ArtistCard({
             <StarRating rating={artist.rating} size={11} showCount={true} reviewCount={artist.reviewCount} />
           </View>
 
+          <View style={styles.pillsRowVertical}>
+            {artist.styles.slice(0, 3).map((style, idx) => (
+              <View key={idx} style={[styles.pillVertical, { backgroundColor: colors.secondary }]}>
+                <Text style={[styles.pillTextVertical, { color: colors.secondaryForeground }]} numberOfLines={1}>
+                  {style}
+                </Text>
+              </View>
+            ))}
+          </View>
+
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <View style={styles.priceRowVertical}>
-            <Text style={[styles.priceLabelVertical, { color: colors.mutedForeground }]}>Onwards</Text>
-            <Text style={[styles.priceValVertical, { color: colors.secondaryForeground }]}>₹{artist.minPrice}</Text>
+            <View>
+              <Text style={[styles.priceLabelVertical, { color: colors.mutedForeground }]}>Onwards</Text>
+              <Text style={[styles.priceValVertical, { color: colors.gold }]}>₹{artist.minPrice}</Text>
+            </View>
+            <View style={[styles.viewCtaVertical, { backgroundColor: colors.gold }]}>
+              <Text style={styles.viewCtaTextVertical}>View</Text>
+              <Ionicons name="arrow-forward" size={12} color="#FFFFFF" />
+            </View>
           </View>
         </View>
       </Animated.View>
@@ -376,10 +397,10 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
   },
 
-  // Vertical Grid layout
+  // Vertical Grid layout — compact avatar + rich info (RangRiti 2.0)
   cardVertical: {
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     overflow: "hidden",
     shadowColor: "#000",
@@ -388,30 +409,52 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  topSectionVertical: {
-    height: 110,
+  headerRowVertical: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+  },
+  avatarWrapVertical: {
     position: "relative",
   },
-  avatarGradientVertical: {
-    width: "100%",
-    height: "100%",
+  avatarCircleVertical: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarTextVertical: {
-    fontSize: 32,
+    fontSize: 18,
     fontWeight: "700",
     color: "#FFFFFF",
     fontFamily: "Poppins_700Bold",
     letterSpacing: 1,
   },
-  busyBadgeVertical: {
+  verifiedBadgeVertical: {
     position: "absolute",
-    bottom: 6,
-    left: 8,
-    paddingHorizontal: 6,
+    bottom: -1,
+    right: -1,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  identityVertical: {
+    flex: 1,
+    minWidth: 0,
+  },
+  busyBadgeVertical: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 7,
     paddingVertical: 1,
     borderRadius: 6,
+    marginTop: 3,
   },
   busyTextVertical: {
     fontSize: 8,
@@ -420,28 +463,31 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
     textTransform: "uppercase",
   },
-  verifiedBadgeVertical: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+  availRowVertical: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 4,
+    marginTop: 3,
+  },
+  availDotVertical: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#16A34A",
+  },
+  availTextVertical: {
+    fontSize: 9,
+    fontFamily: "Poppins_600SemiBold",
+    color: "#16A34A",
   },
   heartButtonVertical: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
+    alignSelf: "flex-start",
+    padding: 2,
   },
   bottomSectionVertical: {
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    paddingTop: 8,
   },
   nameVertical: {
     fontSize: 14,
@@ -457,7 +503,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    marginTop: 4,
   },
   locTextVertical: {
     fontSize: 10,
@@ -466,6 +511,23 @@ const styles = StyleSheet.create({
   },
   ratingVertical: {
     marginTop: 4,
+  },
+  pillsRowVertical: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 5,
+    marginTop: 7,
+  },
+  pillVertical: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    maxWidth: "48%",
+  },
+  pillTextVertical: {
+    fontSize: 9.5,
+    fontWeight: "500",
+    fontFamily: "Poppins_500Medium",
   },
   divider: {
     height: 1,
@@ -477,12 +539,26 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   priceLabelVertical: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontFamily: "Poppins_400Regular",
   },
   priceValVertical: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
+    fontFamily: "Poppins_700Bold",
+  },
+  viewCtaVertical: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  viewCtaTextVertical: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFFFFF",
     fontFamily: "Poppins_700Bold",
   },
 });

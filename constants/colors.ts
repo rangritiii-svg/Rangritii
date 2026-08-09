@@ -2,7 +2,7 @@ const colors = {
   light: {
     text: "#1A0A0E",
     tint: "#F9AABF",
-    background: "#FFF5F8",
+    background: "#FFF8F0",
     foreground: "#2A1020",
     card: "#FFFFFF",
     cardForeground: "#2A1020",
@@ -21,7 +21,7 @@ const colors = {
     gold: "#C9932F",
     darkGreen: "#1A4A2E",
     maroon: "#F9AABF",
-    cream: "#FFF5F8",
+    cream: "#FFF8F0",
   },
   dark: {
     text: "#F5EDE0",

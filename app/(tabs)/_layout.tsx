@@ -2,13 +2,16 @@ import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColors } from "@/hooks/useColors";
+
+/* RangRiti 2.0 palette */
+const DARK = "#1A0A0E";
+const GOLD = "#C9932F";
+const INACTIVE = "rgba(253,248,241,0.45)";
+const GOLD_BORDER = "rgba(201,147,47,0.35)";
 
 export default function TabLayout() {
-  const colors = useColors();
-  const isDark = useColorScheme() === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const safeAreaInsets = useSafeAreaInsets();
@@ -17,14 +20,14 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.tint,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarActiveTintColor: GOLD,
+        tabBarInactiveTintColor: INACTIVE,
         tabBarLabelStyle: { fontSize: 10, fontFamily: "Poppins_500Medium", marginBottom: 2 },
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.card,
+          backgroundColor: isIOS ? "transparent" : DARK,
           borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: colors.border,
+          borderTopColor: GOLD_BORDER,
           elevation: 0,
           paddingBottom: safeAreaInsets.bottom,
           height: Platform.OS === "android" ? 64 + safeAreaInsets.bottom : 60 + safeAreaInsets.bottom,
@@ -32,11 +35,12 @@ export default function TabLayout() {
         },
         tabBarBackground: () =>
           isIOS ? (
-            <BlurView intensity={100} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
-          ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border }]} />
+            <View style={StyleSheet.absoluteFill}>
+              <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(26,10,14,0.88)", borderTopWidth: 1, borderTopColor: GOLD_BORDER }]} />
+            </View>
           ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: DARK, borderTopWidth: 1, borderTopColor: GOLD_BORDER }]} />
           ),
       }}
     >

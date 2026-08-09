@@ -1,15 +1,28 @@
 import React from "react";
-import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { ArtistCard } from "@/components/ArtistCard";
 import { useApp } from "@/context/AppContext";
-import { useColors } from "@/hooks/useColors";
+
+/* RangRiti 2.0 palette */
+const MAROON = "#4A1020";
+const DARK = "#1A0A0E";
+const GOLD = "#C9932F";
+const GOLD_DARK = "#A87525";
+const BLUSH = "#FDEDF3";
+const CREAM = "#FFF8F0";
+const CREAM_TEXT = "#FDF8F1";
+const INK = "#2A1020";
+const MUTED = "#8A6070";
+const CARD_BORDER = "#F5D0DC";
 
 export default function FavoritesScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
   const { artists, favorites, toggleFavorite } = useApp();
 
   // Filter artists that are in the favorites list
@@ -22,11 +35,22 @@ export default function FavoritesScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}>
-      {/* Title */}
-      <View style={styles.titleContainer}>
-        <Text style={[styles.title, { color: colors.text }]}>Saved Artists</Text>
-      </View>
+    <View style={styles.container}>
+      {/* Header — RangRiti 2.0 dark maroon gradient */}
+      <LinearGradient
+        colors={[DARK, MAROON]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: topPad + 16 }]}
+      >
+        <View style={[styles.headerInner, isWide && styles.wideConstraint]}>
+          <View style={styles.titleRow}>
+            <View style={styles.titleIconWrap}>
+              <Ionicons name="heart" size={18} color={GOLD} />
+            </View>
+            <Text style={styles.title}>Saved Artists</Text>
+          </View>
+        </View>
+      </LinearGradient>
 
       {/* Grid List of Saved Artists */}
       <FlatList
@@ -45,26 +69,29 @@ export default function FavoritesScreen() {
         )}
         numColumns={2}
         columnWrapperStyle={styles.gridRowWrapper}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, isWide && styles.wideConstraint]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <View style={[styles.emptyIconBg, { backgroundColor: colors.secondary }]}>
-              <Ionicons name="heart-outline" size={40} color={colors.secondaryForeground} />
+            <View style={styles.emptyIconBg}>
+              <Ionicons name="heart-outline" size={40} color={GOLD} />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Saved Artists</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+            <Text style={styles.emptyTitle}>No Saved Artists</Text>
+            <Text style={styles.emptySubtitle}>
               Tap the heart icon on any Mehndi artist's card to save them to your list.
             </Text>
 
             <TouchableOpacity
               onPress={handleExploreArtists}
-              style={[styles.actionButton, { backgroundColor: colors.primary }]}
-              activeOpacity={0.8}
+              style={styles.actionButtonShadow}
+              activeOpacity={0.9}
             >
-              <Text style={[styles.actionButtonText, { color: colors.primaryForeground }]}>
-                Explore Artists
-              </Text>
+              <LinearGradient colors={[GOLD, GOLD_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.actionButton}>
+                <MaterialCommunityIcons name="flower" size={16} color="#fff" />
+                <Text style={styles.actionButtonText}>
+                  Explore Artists
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         }
@@ -76,19 +103,44 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: CREAM,
   },
-  titleContainer: {
+  header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingBottom: 18,
+  },
+  headerInner: {
+    width: "100%",
+  },
+  wideConstraint: {
+    maxWidth: 900,
+    width: "100%",
+    alignSelf: "center",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  titleIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(201,147,47,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(201,147,47,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     fontFamily: "Poppins_700Bold",
+    color: CREAM_TEXT,
   },
   listContent: {
     paddingHorizontal: 10,
+    paddingTop: 16,
     paddingBottom: 100,
   },
   gridRowWrapper: {
@@ -112,6 +164,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
+    backgroundColor: BLUSH,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -120,29 +175,38 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     fontFamily: "Poppins_700Bold",
+    color: INK,
     marginBottom: 8,
     textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 13,
     fontFamily: "Poppins_400Regular",
+    color: MUTED,
     textAlign: "center",
     lineHeight: 18,
     marginBottom: 24,
   },
+  actionButtonShadow: {
+    borderRadius: 14,
+    shadowColor: GOLD,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
     paddingVertical: 12,
     paddingHorizontal: 28,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    borderRadius: 14,
   },
   actionButtonText: {
     fontSize: 14,
-    fontWeight: "600",
-    fontFamily: "Poppins_600SemiBold",
+    fontWeight: "700",
+    fontFamily: "Poppins_700Bold",
+    color: "#fff",
   },
 });

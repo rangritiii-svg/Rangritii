@@ -5,7 +5,8 @@ import { router } from "expo-router";
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Dimensions, ScrollView, StyleSheet, Text,
-  TextInput, TouchableOpacity, View, Animated
+  TextInput, TouchableOpacity, View, Animated,
+  useWindowDimensions
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ProximityMap from "@/components/ProximityMap";
@@ -15,6 +16,17 @@ import { useColors } from "@/hooks/useColors";
 import { getCurrentCoordinates, getDistanceKm } from "@/utils/permissions";
 
 const { width, height } = Dimensions.get("window");
+
+/* RangRiti 2.0 design language (see app/onboarding.tsx) */
+const MAROON = "#4A1020";
+const DARK = "#1A0A0E";
+const GOLD = "#C9932F";
+const GOLD_DARK = "#A87525";
+const CREAM = "#FFF8F0";
+const CREAM_TEXT = "#FDF8F1";
+const INK = "#2A1020";
+const MUTED = "#8A6070";
+const CARD_BORDER = "#F5D0DC";
 
 const SERVICE_FILTERS = ["All", "Bridal", "Arabic", "Traditional", "Marwari", "Modern Bridal", "Indo-Western", "Minimal"];
 
@@ -63,6 +75,8 @@ const CITY_COLORS: Record<string, string> = {
 export default function DiscoverScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width: winWidth } = useWindowDimensions();
+  const isWide = winWidth >= 900;
   const { artists, favorites, toggleFavorite, userProfile, language } = useApp();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -156,77 +170,79 @@ export default function DiscoverScreen() {
   const MAP_H = height * 0.42;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: CREAM }]}>
       {/* Top Bar */}
-      <LinearGradient colors={["#F9AABF", "#FDEDF3"]} style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.topBarInner}>
-          <View style={styles.greetingRow}>
-            <MaterialCommunityIcons name="flower" size={20} color="#C9932F" />
-            <Text style={styles.greeting}>
-              {userProfile.name ? `Hi ${userProfile.name.split(" ")[0]}` : "Discover"}
-            </Text>
-            {userProfile.city ? (
-              <View style={styles.locationPill}>
-                <Ionicons name="location" size={12} color="#F9AABF" />
-                <Text style={styles.locationPillText}>{userProfile.city}</Text>
-              </View>
-            ) : null}
-          </View>
-          <View style={styles.viewToggle}>
-            <TouchableOpacity style={[styles.viewToggleBtn, viewMode === "map" && { backgroundColor: "#F9AABF" }]} onPress={() => setViewMode("map")}>
-              <Ionicons name="map-outline" size={16} color={viewMode === "map" ? "#fff" : "#A07888"} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.viewToggleBtn, viewMode === "list" && { backgroundColor: "#F9AABF" }]} onPress={() => setViewMode("list")}>
-              <Feather name="list" size={16} color={viewMode === "list" ? "#fff" : "#A07888"} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View style={[styles.searchBar, { backgroundColor: "#fff" }]}>
-          <Feather name="search" size={18} color="#A07888" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search artist, city, service type..."
-            placeholderTextColor="#A07888"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={18} color="#A07888" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Service Filter Chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          {SERVICE_FILTERS.map(f => (
-            <TouchableOpacity
-              key={f}
-              onPress={() => { Haptics.selectionAsync().catch(() => {}); setSelectedFilter(f); }}
-              style={[styles.filterChip, selectedFilter === f ? styles.filterChipActive : styles.filterChipInactive]}
-            >
-              <Text style={[styles.filterChipText, { color: selectedFilter === f ? "#fff" : "#7A3050" }]}>
-                {getFilterLabel(f, language)}
+      <LinearGradient colors={[DARK, MAROON]} style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.headerInner}>
+          <View style={styles.topBarInner}>
+            <View style={styles.greetingRow}>
+              <MaterialCommunityIcons name="flower" size={20} color={GOLD} />
+              <Text style={styles.greeting}>
+                {userProfile.name ? `Hi ${userProfile.name.split(" ")[0]}` : "Discover"}
               </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              {userProfile.city ? (
+                <View style={styles.locationPill}>
+                  <Ionicons name="location" size={12} color={GOLD} />
+                  <Text style={styles.locationPillText}>{userProfile.city}</Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={styles.viewToggle}>
+              <TouchableOpacity style={[styles.viewToggleBtn, viewMode === "map" && { backgroundColor: GOLD }]} onPress={() => setViewMode("map")}>
+                <Ionicons name="map-outline" size={16} color={viewMode === "map" ? "#fff" : "rgba(253,248,241,0.65)"} />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.viewToggleBtn, viewMode === "list" && { backgroundColor: GOLD }]} onPress={() => setViewMode("list")}>
+                <Feather name="list" size={16} color={viewMode === "list" ? "#fff" : "rgba(253,248,241,0.65)"} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Search Bar */}
+          <View style={[styles.searchBar, { backgroundColor: "#fff" }]}>
+            <Feather name="search" size={18} color="#A07888" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search artist, city, service type..."
+              placeholderTextColor="#A07888"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <Ionicons name="close-circle" size={18} color="#A07888" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Service Filter Chips */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+            {SERVICE_FILTERS.map(f => (
+              <TouchableOpacity
+                key={f}
+                onPress={() => { Haptics.selectionAsync().catch(() => {}); setSelectedFilter(f); }}
+                style={[styles.filterChip, selectedFilter === f ? styles.filterChipActive : styles.filterChipInactive]}
+              >
+                <Text style={[styles.filterChipText, { color: selectedFilter === f ? "#fff" : CREAM_TEXT }]}>
+                  {getFilterLabel(f, language)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       </LinearGradient>
 
       {/* Results count */}
-      <View style={[styles.resultsBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.resultsText, { color: colors.mutedForeground }]}>
+      <View style={[styles.resultsBar, { backgroundColor: CREAM, borderBottomColor: CARD_BORDER }]}>
+        <Text style={[styles.resultsText, { color: MUTED }]}>
           {language === "hi_IN" ? (
             <>
-              <Text style={{ fontFamily: "Poppins_700Bold", color: colors.text }}>{nearbyArtists.length}</Text> कलाकार मिले
+              <Text style={{ fontFamily: "Poppins_700Bold", color: INK }}>{nearbyArtists.length}</Text> कलाकार मिले
               {selectedFilter !== "All" ? ` · ${getFilterLabel(selectedFilter, language)}` : ""}
               {userProfile.city ? ` (${userProfile.city} के पास)` : " (संपूर्ण भारत)"}
             </>
           ) : (
             <>
-              <Text style={{ fontFamily: "Poppins_700Bold", color: colors.text }}>{nearbyArtists.length}</Text> artists found
+              <Text style={{ fontFamily: "Poppins_700Bold", color: INK }}>{nearbyArtists.length}</Text> artists found
               {selectedFilter !== "All" ? ` · ${getFilterLabel(selectedFilter, language)}` : ""}
               {userProfile.city ? ` near ${userProfile.city}` : " across India"}
             </>
@@ -236,7 +252,7 @@ export default function DiscoverScreen() {
 
       {/* ─── MAP VIEW ─── */}
       {viewMode === "map" && (
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={isWide ? styles.scrollWide : undefined}>
           {/* Real Native MapView (or Web Grid Mockup) */}
           <View style={[styles.mapContainer, { height: MAP_H, backgroundColor: "#E8F4F8" }]}>
             {userCoords && (
@@ -252,7 +268,7 @@ export default function DiscoverScreen() {
 
             {/* Map Label */}
             <View style={styles.mapLabel}>
-              <Ionicons name="map" size={12} color="#5B8DB8" />
+              <Ionicons name="map" size={12} color={GOLD} />
               <Text style={styles.mapLabelText}>
                 {userProfile.city || "Nearby"} · {nearbyArtists.length} Artists
               </Text>
@@ -262,7 +278,7 @@ export default function DiscoverScreen() {
           {/* Selected Artist Card */}
           {selectedArtist && (
             <TouchableOpacity
-              style={[styles.selectedCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.selectedCard, { backgroundColor: "#FFFFFF", borderColor: CARD_BORDER }]}
               onPress={() => router.push(`/artist/${selectedArtist.id}`)}
               activeOpacity={0.9}
             >
@@ -277,51 +293,54 @@ export default function DiscoverScreen() {
               </LinearGradient>
               <View style={styles.selectedCardInfo}>
                 <View style={styles.selectedCardNameRow}>
-                  <Text style={[styles.selectedCardName, { color: colors.text }]} numberOfLines={1}>{selectedArtist.name}</Text>
-                  {selectedArtist.verified && <Ionicons name="checkmark-circle" size={14} color={colors.gold} />}
+                  <Text style={[styles.selectedCardName, { color: INK }]} numberOfLines={1}>{selectedArtist.name}</Text>
+                  {selectedArtist.verified && <Ionicons name="checkmark-circle" size={14} color={GOLD} />}
                 </View>
-                <Text style={[styles.selectedCardSpec, { color: colors.mutedForeground }]} numberOfLines={1}>{selectedArtist.specialization}</Text>
+                <Text style={[styles.selectedCardSpec, { color: MUTED }]} numberOfLines={1}>{selectedArtist.specialization}</Text>
                 <View style={styles.selectedCardMeta}>
-                  <Ionicons name="location-outline" size={11} color={colors.mutedForeground} />
-                  <Text style={[styles.selectedCardMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  <Ionicons name="location-outline" size={11} color={MUTED} />
+                  <Text style={[styles.selectedCardMetaText, { color: MUTED }]} numberOfLines={1}>
                     {selectedArtist.area}, {selectedArtist.city}
                     {selectedArtist.distance != null && ` • ${selectedArtist.distance.toFixed(1)} km`}
                   </Text>
                   <View style={styles.dot} />
-                  <Text style={[styles.selectedCardMetaText, { color: colors.gold }]}>₹{selectedArtist.hourlyRate}/hr</Text>
+                  <Text style={[styles.selectedCardMetaText, { color: GOLD_DARK }]}>₹{selectedArtist.hourlyRate}/hr</Text>
                 </View>
                 <View style={[styles.availBadge, { backgroundColor: selectedArtist.availability === "Available" ? "#DCFCE7" : "#FEE2E2" }]}>
                   <View style={[styles.availDot, { backgroundColor: selectedArtist.availability === "Available" ? "#16A34A" : "#DC2626" }]} />
                   <Text style={[styles.availText, { color: selectedArtist.availability === "Available" ? "#16A34A" : "#DC2626" }]}>{selectedArtist.availability}</Text>
                 </View>
               </View>
-              <View style={[styles.viewProfileBtn, { backgroundColor: colors.primary }]}>
+              <LinearGradient colors={[GOLD, GOLD_DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.viewProfileBtn}>
                 <Text style={styles.viewProfileText}>View</Text>
                 <Ionicons name="chevron-forward" size={14} color="#fff" />
-              </View>
+              </LinearGradient>
             </TouchableOpacity>
           )}
 
           {/* Near You Section */}
           <View style={styles.nearYouSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: INK }]}>
               {userProfile.city ? `📍 Near ${userProfile.city}` : "🌏 All Artists"}
             </Text>
-            {nearbyArtists.map(artist => (
-              <ArtistCard
-                key={artist.id}
-                artist={artist}
-                horizontal
-                distance={artist.distance}
-                isFavorite={favorites.includes(artist.id)}
-                onToggleFavorite={() => toggleFavorite(artist.id)}
-                onPress={() => router.push(`/artist/${artist.id}`)}
-              />
-            ))}
+            <View style={isWide ? styles.cardsGridWide : undefined}>
+              {nearbyArtists.map(artist => (
+                <View key={artist.id} style={isWide ? styles.gridItemWide : undefined}>
+                  <ArtistCard
+                    artist={artist}
+                    horizontal
+                    distance={artist.distance}
+                    isFavorite={favorites.includes(artist.id)}
+                    onToggleFavorite={() => toggleFavorite(artist.id)}
+                    onPress={() => router.push(`/artist/${artist.id}`)}
+                  />
+                </View>
+              ))}
+            </View>
             {nearbyArtists.length === 0 && (
-              <View style={[styles.emptyState, { backgroundColor: colors.secondary }]}>
-                <MaterialCommunityIcons name="flower-outline" size={40} color={colors.mutedForeground} />
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No artists found for "{searchQuery}"</Text>
+              <View style={[styles.emptyState, { backgroundColor: "#FFFFFF", borderColor: CARD_BORDER }]}>
+                <MaterialCommunityIcons name="flower-outline" size={40} color={MUTED} />
+                <Text style={[styles.emptyText, { color: MUTED }]}>No artists found for "{searchQuery}"</Text>
               </View>
             )}
           </View>
@@ -330,22 +349,25 @@ export default function DiscoverScreen() {
 
       {/* ─── LIST VIEW ─── */}
       {viewMode === "list" && (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-          {nearbyArtists.map(artist => (
-            <ArtistCard
-              key={artist.id}
-              artist={artist}
-              horizontal
-              distance={artist.distance}
-              isFavorite={favorites.includes(artist.id)}
-              onToggleFavorite={() => toggleFavorite(artist.id)}
-              onPress={() => router.push(`/artist/${artist.id}`)}
-            />
-          ))}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.listContent, isWide && styles.scrollWide]} showsVerticalScrollIndicator={false}>
+          <View style={isWide ? styles.cardsGridWide : undefined}>
+            {nearbyArtists.map(artist => (
+              <View key={artist.id} style={isWide ? styles.gridItemWide : undefined}>
+                <ArtistCard
+                  artist={artist}
+                  horizontal
+                  distance={artist.distance}
+                  isFavorite={favorites.includes(artist.id)}
+                  onToggleFavorite={() => toggleFavorite(artist.id)}
+                  onPress={() => router.push(`/artist/${artist.id}`)}
+                />
+              </View>
+            ))}
+          </View>
           {nearbyArtists.length === 0 && (
-            <View style={[styles.emptyState, { backgroundColor: colors.secondary }]}>
-              <MaterialCommunityIcons name="flower-outline" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No artists found</Text>
+            <View style={[styles.emptyState, { backgroundColor: "#FFFFFF", borderColor: CARD_BORDER }]}>
+              <MaterialCommunityIcons name="flower-outline" size={40} color={MUTED} />
+              <Text style={[styles.emptyText, { color: MUTED }]}>No artists found</Text>
             </View>
           )}
         </ScrollView>
@@ -356,28 +378,29 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { paddingHorizontal: 16, paddingBottom: 12 },
+  topBar: { paddingHorizontal: 16, paddingBottom: 14 },
+  headerInner: { width: "100%", maxWidth: 1120, alignSelf: "center" },
   topBarInner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
   greetingRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  greeting: { fontSize: 18, fontFamily: "Poppins_700Bold", color: "#4A1020" },
-  locationPill: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(255,255,255,0.7)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
-  locationPillText: { fontSize: 11, fontFamily: "Poppins_500Medium", color: "#7A3050" },
-  viewToggle: { flexDirection: "row", backgroundColor: "rgba(255,255,255,0.5)", borderRadius: 10, padding: 3, gap: 3 },
+  greeting: { fontSize: 18, fontFamily: "Poppins_700Bold", color: CREAM_TEXT },
+  locationPill: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(255,248,240,0.12)", borderWidth: 1, borderColor: "rgba(201,147,47,0.4)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
+  locationPillText: { fontSize: 11, fontFamily: "Poppins_500Medium", color: CREAM_TEXT },
+  viewToggle: { flexDirection: "row", backgroundColor: "rgba(255,248,240,0.12)", borderRadius: 10, padding: 3, gap: 3 },
   viewToggleBtn: { padding: 6, borderRadius: 8 },
-  searchBar: { flexDirection: "row", alignItems: "center", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, gap: 10, marginBottom: 10, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  searchBar: { flexDirection: "row", alignItems: "center", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, gap: 10, marginBottom: 10, shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
   searchInput: { flex: 1, fontSize: 13, fontFamily: "Poppins_400Regular", color: "#1A0A0E" },
   filterRow: { gap: 8, paddingVertical: 2 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-  filterChipActive: { backgroundColor: "#C9932F" },
-  filterChipInactive: { backgroundColor: "rgba(255,255,255,0.6)" },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+  filterChipActive: { backgroundColor: GOLD, borderColor: GOLD },
+  filterChipInactive: { backgroundColor: "rgba(255,248,240,0.12)", borderColor: "rgba(255,248,240,0.22)" },
   filterChipText: { fontSize: 12, fontFamily: "Poppins_600SemiBold" },
   resultsBar: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1 },
   resultsText: { fontSize: 12, fontFamily: "Poppins_400Regular" },
-  mapContainer: { marginHorizontal: 16, marginTop: 12, borderRadius: 20, overflow: "hidden", position: "relative" },
+  mapContainer: { marginHorizontal: 16, marginTop: 12, borderRadius: 20, overflow: "hidden", position: "relative", borderWidth: 1.5, borderColor: "rgba(201,147,47,0.35)" },
   gridLineH: { position: "absolute", left: 0, right: 0, height: 1, backgroundColor: "rgba(91,141,184,0.15)" },
   gridLineV: { position: "absolute", top: 0, bottom: 0, width: 1, backgroundColor: "rgba(91,141,184,0.15)" },
-  mapLabel: { position: "absolute", top: 10, right: 10, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.8)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
-  mapLabelText: { fontSize: 10, fontFamily: "Poppins_500Medium", color: "#5B8DB8" },
+  mapLabel: { position: "absolute", top: 10, right: 10, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(26,10,14,0.7)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
+  mapLabelText: { fontSize: 10, fontFamily: "Poppins_500Medium", color: CREAM_TEXT },
   mapPin: { position: "absolute", alignItems: "center" },
   pinBubble: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 3, elevation: 4 },
   pinBubbleSelected: { width: 36, height: 36, borderRadius: 18, borderWidth: 3, borderColor: "#fff" },
@@ -403,6 +426,10 @@ const styles = StyleSheet.create({
   nearYouSection: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 120 },
   sectionTitle: { fontSize: 16, fontFamily: "Poppins_700Bold", marginBottom: 14 },
   listContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 120 },
-  emptyState: { borderRadius: 16, padding: 32, alignItems: "center", gap: 10 },
+  emptyState: { borderRadius: 16, borderWidth: 1, padding: 32, alignItems: "center", gap: 10 },
   emptyText: { fontSize: 13, fontFamily: "Poppins_400Regular", textAlign: "center" },
+  /* Wide-web layout */
+  scrollWide: { width: "100%", maxWidth: 1120, alignSelf: "center" },
+  cardsGridWide: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  gridItemWide: { width: "48.8%" },
 });
