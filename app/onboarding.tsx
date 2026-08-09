@@ -29,10 +29,11 @@ const CREAM = "#FFF8F0";
 const INK = "#2A1020";
 const MUTED = "#8A6070";
 
-// Android APK download link shown on the website. Upload the APK as a release
-// asset on GitHub (Releases → New release → attach APK) and this link always
-// points to the newest one.
-const APP_DOWNLOAD_URL = "https://github.com/rangritiii-svg/Rangritii/releases/latest";
+// Android APK download link shown on the website. The APK is published on the
+// PUBLIC releases-only repo (the main code repo is private, so its releases
+// aren't visible to visitors). Upload new versions with:
+//   gh release create vX.Y.Z RangRiti-vX.Y.Z.apk --repo rangritiii-svg/RangRiti-app
+const APP_DOWNLOAD_URL = "https://github.com/rangritiii-svg/RangRiti-app/releases/latest";
 const IS_WEB = Platform.OS === "web";
 
 export default function LandingScreen() {

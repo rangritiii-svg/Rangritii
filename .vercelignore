@@ -1,0 +1,8 @@
+# Not needed for the website/API deployment — keeps uploads small and
+# avoids EBUSY errors when a local Android build is running in parallel
+android
+dist
+dist-android
+.expo
+*.apk
+assets/videos
