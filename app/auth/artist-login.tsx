@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/context/AppContext";
-import { updateArtist } from "@/firebase/firestoreService";
+import { updateArtist, getArtistByPhone } from "@/firebase/firestoreService";
 
 /* RangRiti 2.0 design tokens — kept in sync with app/onboarding.tsx */
 const MAROON = "#4A1020";
@@ -49,7 +49,15 @@ export default function ArtistLoginScreen() {
 
     try {
       const cleanPhone = `+91 ${phone}`;
-      const matchedArtist = artists.find((a) => a.phone === cleanPhone);
+
+      // Step 1: Check the in-memory list (fast, works when Firestore has loaded)
+      let matchedArtist = artists.find((a) => a.phone === cleanPhone);
+
+      // Step 2: Fallback — if not found in memory (Firestore still loading or
+      // fresh session), query Firestore directly so login always works reliably.
+      if (!matchedArtist) {
+        matchedArtist = await getArtistByPhone(cleanPhone);
+      }
 
       if (matchedArtist) {
         if (!showPasswordInput) {

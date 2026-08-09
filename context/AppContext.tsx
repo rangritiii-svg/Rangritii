@@ -69,6 +69,7 @@ export interface Artist {
   upiId?: string; // Artist's own UPI ID (used by admin to pay the artist)
   upiQrPhoto?: string; // Artist's own payment QR image (base64 data URI)
   password?: string; // password for auth login
+  email?: string;    // email collected at registration
 }
 
 export interface Customer {
@@ -641,7 +642,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const registerNewArtist = useCallback(async (artistData: Omit<Artist, "id" | "rating" | "reviewCount" | "reviews" | "status" | "isActive" | "latitude" | "longitude" | "packages" | "strikes"> & { latitude?: number; longitude?: number }): Promise<string> => {
-    const id = "a" + (Date.now() + Math.round(Math.random() * 1000)).toString().substring(8);
+    const id = "a" + Date.now().toString() + Math.random().toString(36).substring(2, 7);
     const newArtist: Artist = {
       ...artistData,
       id,

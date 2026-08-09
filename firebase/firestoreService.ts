@@ -40,6 +40,15 @@ export async function updateArtist(artistId: string, updates: any): Promise<void
   try { await updateDoc(doc(db, ARTISTS_COL, artistId), { ...updates, updatedAt: serverTimestamp() }); }
   catch (e) { console.warn("updateArtist", e); }
 }
+export async function getArtistByPhone(phone: string): Promise<any | null> {
+  try {
+    const q = query(collection(db, ARTISTS_COL), where("phone", "==", phone));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { ...d.data(), id: d.id };
+  } catch (e) { console.warn("getArtistByPhone", e); return null; }
+}
 export function subscribeToArtists(callback: (artists: any[]) => void): Unsubscribe {
   return onSnapshot(collection(db, ARTISTS_COL), (snap) => {
     callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));

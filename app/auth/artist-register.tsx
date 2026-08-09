@@ -47,7 +47,7 @@ export default function ArtistRegisterScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
-  const { setUserProfile, registerNewArtist, language } = useApp();
+  const { setUserProfile, registerNewArtist, artists, language } = useApp();
 
   const params = useLocalSearchParams<{ phone?: string }>();
 
@@ -255,9 +255,22 @@ export default function ArtistRegisterScreen() {
     const userArea = area.trim();
 
     try {
+      // Bug #2 Fix — Duplicate phone guard: prevent re-registering an already-registered phone number
+      const alreadyExists = artists.some((a) => a.phone === userPhone);
+      if (alreadyExists) {
+        setLoading(false);
+        Alert.alert(
+          "Already Registered",
+          "This phone number is already linked to an artist account. Please go back and log in instead.",
+          [{ text: "Go to Login", onPress: () => router.replace("/auth/artist-login") }, { text: "Cancel", style: "cancel" }]
+        );
+        return;
+      }
+
       await registerNewArtist({
         name: fullName.trim(),
         phone: userPhone,
+        email: email.trim(),           // Bug #3 Fix — was missing, now saved to Firestore
         password: password.trim(),
         city: userCity,
         state: state.trim(),
@@ -275,6 +288,8 @@ export default function ArtistRegisterScreen() {
         specialization: `${selectedStyles[0] || "General"} Mehndi Specialist`,
         portfolioImages: regPortfolioImages,
         idCardPhoto: regIdCardImage,
+        idType: idType,                // Bug #4 Fix — was missing, now saved to Firestore
+        idNumber: idNumber.trim(),     // Bug #4 Fix — was missing, now saved to Firestore
         upiId: upiId.trim(),
         upiQrPhoto: regUpiQrImage,
         // Real GPS coordinates when the artist geo-tagged their location

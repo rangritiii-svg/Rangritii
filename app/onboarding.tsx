@@ -29,11 +29,18 @@ const CREAM = "#FFF8F0";
 const INK = "#2A1020";
 const MUTED = "#8A6070";
 
-// Android APK download link shown on the website. The APK is published on the
-// PUBLIC releases-only repo (the main code repo is private, so its releases
-// aren't visible to visitors). Upload new versions with:
+// Android APK direct download link shown on the website.
+// Points to the raw APK file so clicking triggers a download immediately —
+// NOT the GitHub releases page (which requires a GitHub account on some browsers).
+//
+// ⚠️  UPDATE THIS on every new release:
 //   gh release create vX.Y.Z RangRiti-vX.Y.Z.apk --repo rangritiii-svg/RangRiti-app
-const APP_DOWNLOAD_URL = "https://github.com/rangritiii-svg/RangRiti-app/releases/latest";
+//   Then update the URL below to the new version's browser_download_url.
+//
+// TIP: To make this URL permanent across versions, upload the APK as
+// "RangRiti-latest.apk" in every release — then the URL never needs changing:
+//   https://github.com/rangritiii-svg/RangRiti-app/releases/latest/download/RangRiti-latest.apk
+const APP_DOWNLOAD_URL = "https://github.com/rangritiii-svg/RangRiti-app/releases/download/v2.0.0/RangRiti-v2.0.0.apk";
 const IS_WEB = Platform.OS === "web";
 
 export default function LandingScreen() {
