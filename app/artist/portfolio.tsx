@@ -13,6 +13,8 @@ import { useColors } from "@/hooks/useColors";
 import { getTranslation } from "@/constants/locale";
 import { ensureMediaLibraryPermission } from "@/utils/permissions";
 
+import { updateArtist } from "@/firebase/firestoreService";
+
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 48) / 3;
 
@@ -23,6 +25,7 @@ export default function ArtistPortfolioScreen() {
   const isHindi = language === "hi_IN";
 
   const [uploading, setUploading] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Find current artist
   const currentArtist = useMemo(() => {
@@ -32,6 +35,16 @@ export default function ArtistPortfolioScreen() {
   const [images, setImages] = useState<string[]>(
     currentArtist?.portfolioImages || []
   );
+
+  // Sync state when currentArtist finishes loading from Firestore
+  React.useEffect(() => {
+    if (currentArtist && !hasInitialized) {
+      if (currentArtist.portfolioImages && currentArtist.portfolioImages.length > 0) {
+        setImages(currentArtist.portfolioImages);
+      }
+      setHasInitialized(true);
+    }
+  }, [currentArtist, hasInitialized]);
 
   if (!currentArtist) {
     return (
@@ -44,6 +57,16 @@ export default function ArtistPortfolioScreen() {
   }
 
   const handleAddPhoto = async () => {
+    if (images.length >= 12) {
+      Alert.alert(
+        isHindi ? "अधिकतम सीमा पहुँच गई" : "Limit Reached",
+        isHindi
+          ? "आप एक पोर्टफोलियो में अधिकतम 12 तस्वीरें जोड़ सकते हैं।"
+          : "You can add up to 12 portfolio photos."
+      );
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
     // Confirm Storage/Photos permission BEFORE opening the gallery
@@ -54,7 +77,7 @@ export default function ArtistPortfolioScreen() {
       let result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.5,
+        quality: 0.4,
         base64: true,
       });
 
@@ -96,8 +119,6 @@ export default function ArtistPortfolioScreen() {
     setUploading(true);
 
     try {
-      const { updateArtist } = require("@/firebase/firestoreService");
-      
       // Update local context & sync to Firestore
       await updateArtist(currentArtist.id, {
         portfolioImages: images

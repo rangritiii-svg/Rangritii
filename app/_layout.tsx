@@ -9,6 +9,7 @@ import { Animated, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/context/AppContext";
+import { UpdateChecker } from "@/components/UpdateChecker";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -66,6 +67,7 @@ function RootLayoutNav() {
         <Stack.Screen name="auth/customer-login" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="auth/artist-login" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="auth/artist-register" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="auth/complete-profile" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="artist/[id]" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="artist/earnings" options={{ animation: "slide_from_right" }} />
@@ -92,6 +94,8 @@ function RootLayoutNav() {
           </View>
         </View>
       </Animated.View>
+      {/* In-App Automatic Update Checker */}
+      <UpdateChecker />
     </View>
   );
 }

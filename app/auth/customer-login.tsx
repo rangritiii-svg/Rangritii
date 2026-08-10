@@ -175,6 +175,8 @@ export default function CustomerLoginScreen() {
         (c) => c.email && c.email.toLowerCase() === gUser.email
       );
 
+      let needsProfileCompletion = false;
+
       if (existing) {
         await setUserProfile({
           role: "customer",
@@ -189,9 +191,11 @@ export default function CustomerLoginScreen() {
             ? { latitude: existing.latitude, longitude: existing.longitude }
             : {}),
         });
+        if (!existing.city || !existing.state) {
+          needsProfileCompletion = true;
+        }
       } else {
-        // First Google sign-in → create the customer account automatically.
-        // City/state can be filled in later from the Profile screen.
+        // First Google sign-in → create the customer account record with basic details
         addCustomer({
           name: gUser.name,
           phone: "",
@@ -214,10 +218,15 @@ export default function CustomerLoginScreen() {
           ...(gUser.photoUrl ? { photoUrl: gUser.photoUrl } : {}),
           ...(latitude != null && longitude != null ? { latitude, longitude } : {}),
         });
+        needsProfileCompletion = true;
       }
 
       setGoogleLoading(false);
-      router.replace("/(tabs)");
+      if (needsProfileCompletion) {
+        router.replace("/auth/complete-profile");
+      } else {
+        router.replace("/(tabs)");
+      }
     } catch (err: any) {
       setGoogleLoading(false);
       // Don't show an error alert when the user simply closed the popup

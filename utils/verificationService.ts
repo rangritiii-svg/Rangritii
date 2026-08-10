@@ -1,3 +1,5 @@
+import { VERIFICATION_CONFIG } from "@/constants/verificationConfig";
+
 // Always use the production Vercel URL. Fall back to local IP only in dev
 // when BACKEND_URL is explicitly not set (never in a production APK build).
 const PROD_URL = "https://rangritii-api.vercel.app";
