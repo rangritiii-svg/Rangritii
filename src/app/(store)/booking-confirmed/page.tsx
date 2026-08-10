@@ -51,6 +51,14 @@ export default async function BookingConfirmedPage({
       </div>
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">
+        {bookingNumber && (
+          <Link
+            href={`/pay?number=${encodeURIComponent(bookingNumber)}`}
+            className="inline-flex items-center gap-2 rounded-full border-2 border-rani-700 px-7 py-3.5 text-sm font-bold text-rani-700 hover:bg-rani-50"
+          >
+            💳 Payment Karo
+          </Link>
+        )}
         {whatsapp && (
           <a
             href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(

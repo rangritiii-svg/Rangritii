@@ -13,6 +13,8 @@ export type ArtistSelfFields = {
   bio: string;
   profileImage: string;
   portfolioImages: string[];
+  upiId: string;
+  upiQr: string;
 };
 
 export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
@@ -55,6 +57,12 @@ export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
 
   const profileImages = parseImages("profileImage");
   const portfolioImages = parseImages("portfolioImages");
+  const upiQrImages = parseImages("upiQr");
+
+  const upiId = String(formData.get("upiId") ?? "").trim().slice(0, 100);
+  if (upiId && !/^[\w.-]{2,}@[a-zA-Z]{2,}$/.test(upiId)) {
+    throw new Error("UPI ID sahi format mein daalo (jaise name@upi).");
+  }
 
   return {
     name: name.slice(0, 120),
@@ -68,6 +76,8 @@ export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
     bio: String(formData.get("bio") ?? "").trim().slice(0, 2000),
     profileImage: profileImages[0] ?? "",
     portfolioImages: portfolioImages.slice(0, 12),
+    upiId,
+    upiQr: upiQrImages[0] ?? "",
   };
 }
 

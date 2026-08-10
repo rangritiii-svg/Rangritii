@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { isSupabaseConfigured } from "@/lib/config";
 import { parseArtistSelfFields } from "@/lib/artist-form";
-import { getArtistByUserId, updateArtist } from "@/lib/data";
+import { getArtistByUserId, getPlatformSettings, updateArtist } from "@/lib/data";
+import {
+  getBookingById,
+  markPaymentVerified,
+  recordCashPayment,
+  setBookingAmount,
+  submitSettlementUtr,
+} from "@/lib/bookings";
 
 export type AuthResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -61,6 +68,94 @@ export async function signOut(): Promise<void> {
 }
 
 export type UpdateProfileResult = { ok: true } | { ok: false; error: string };
+
+/** Guard: the logged-in user must be the artist who owns this booking. */
+async function requireOwnBooking(bookingId: string) {
+  if (!isSupabaseConfigured()) {
+    // Demo mode has no artist login — these actions are admin/demo-tested only.
+    throw new Error("Artist actions require the database to be connected.");
+  }
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Please log in again.");
+  const artist = await getArtistByUserId(user.id);
+  if (!artist) throw new Error("Artist profile not found.");
+  const booking = await getBookingById(bookingId);
+  if (!booking || booking.artistId !== artist.id) {
+    throw new Error("Yeh booking aapki nahi hai.");
+  }
+  return booking;
+}
+
+type SimpleResult = { ok: true } | { ok: false; error: string };
+
+function fail(e: unknown): SimpleResult {
+  return { ok: false, error: e instanceof Error ? e.message : "Something went wrong." };
+}
+
+/** Artist sets/updates the final agreed amount for their booking. */
+export async function artistSetAmountAction(
+  bookingId: string,
+  amount: number
+): Promise<SimpleResult> {
+  try {
+    await requireOwnBooking(bookingId);
+    const settings = await getPlatformSettings();
+    await setBookingAmount(bookingId, amount, settings.commissionPercent);
+    revalidatePath("/account");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Artist confirms a customer's claimed UPI payment landed in their account. */
+export async function artistVerifyPaymentAction(bookingId: string): Promise<SimpleResult> {
+  try {
+    const booking = await requireOwnBooking(bookingId);
+    if (booking.paymentMethod !== "upi_artist") {
+      throw new Error("Sirf aapko aayi UPI payment aap verify kar sakti ho — baaki admin karega.");
+    }
+    await markPaymentVerified(bookingId);
+    revalidatePath("/account");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Artist records that the customer paid cash at the service. */
+export async function artistRecordCashAction(bookingId: string): Promise<SimpleResult> {
+  try {
+    await requireOwnBooking(bookingId);
+    await recordCashPayment(bookingId);
+    revalidatePath("/account");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Artist submits the UTR of the commission they paid to admin. */
+export async function artistCommissionUtrAction(
+  bookingId: string,
+  utr: string
+): Promise<SimpleResult> {
+  try {
+    const booking = await requireOwnBooking(bookingId);
+    if (booking.paymentMethod === "upi_admin") {
+      throw new Error("Is booking par commission nahi banta — admin aapko payout karega.");
+    }
+    await submitSettlementUtr(bookingId, utr);
+    revalidatePath("/account");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
 
 /** An artist updating their own profile (never approval/slug/identity fields). */
 export async function updateOwnArtistProfile(

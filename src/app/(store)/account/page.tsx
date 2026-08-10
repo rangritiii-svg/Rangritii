@@ -10,13 +10,14 @@ import {
   Phone,
   ShieldCheck,
 } from "lucide-react";
+import { ArtistBookingPayments } from "@/components/ArtistBookingPayments";
 import { ArtistSelfEditor } from "@/components/ArtistSelfEditor";
 import { AuthTabs } from "@/components/AuthTabs";
 import { isSupabaseConfigured } from "@/lib/config";
-import { getArtistByUserId, getStyles } from "@/lib/data";
-import { formatDate, formatEventDate } from "@/lib/format";
+import { getArtistByUserId, getPlatformSettings, getStyles } from "@/lib/data";
+import { formatDate, formatEventDate, formatINR } from "@/lib/format";
 import { getBookingsForArtist, getBookingsForUser } from "@/lib/bookings";
-import type { Booking } from "@/lib/types";
+import type { Booking, PlatformSettings } from "@/lib/types";
 import { signOut } from "./actions";
 
 export const metadata: Metadata = { title: "My Account" };
@@ -29,7 +30,32 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: "bg-rani-100 text-rani-800",
 };
 
-function BookingList({ bookings, forArtist }: { bookings: Booking[]; forArtist?: boolean }) {
+function PaymentChip({ b }: { b: Booking }) {
+  if (b.paymentStatus === "verified")
+    return <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800">Paid ✓</span>;
+  if (b.paymentStatus === "claimed")
+    return <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">Payment verify ho rahi hai</span>;
+  if (b.amount !== null)
+    return (
+      <Link
+        href={`/pay?number=${encodeURIComponent(b.bookingNumber)}`}
+        className="rounded-full bg-rani-700 px-3.5 py-1 text-xs font-bold text-white hover:bg-rani-800"
+      >
+        Pay {formatINR(b.amount)}
+      </Link>
+    );
+  return null;
+}
+
+function BookingList({
+  bookings,
+  forArtist,
+  settings,
+}: {
+  bookings: Booking[];
+  forArtist?: boolean;
+  settings?: PlatformSettings;
+}) {
   if (bookings.length === 0) {
     return (
       <div className="mt-4 rounded-3xl border border-dashed border-cream-300 bg-white py-12 text-center">
@@ -58,13 +84,16 @@ function BookingList({ bookings, forArtist }: { bookings: Booking[]; forArtist?:
               <p className="font-bold text-ink-900">{b.bookingNumber}</p>
               <p className="text-xs text-ink-500">Requested {formatDate(b.createdAt)}</p>
             </div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${
-                STATUS_STYLES[b.status] ?? "bg-cream-200 text-ink-700"
-              }`}
-            >
-              {b.status}
-            </span>
+            <div className="flex items-center gap-2">
+              {!forArtist && <PaymentChip b={b} />}
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${
+                  STATUS_STYLES[b.status] ?? "bg-cream-200 text-ink-700"
+                }`}
+              >
+                {b.status}
+              </span>
+            </div>
           </div>
           <div className="mt-3 grid gap-2 border-t border-cream-200 pt-3 text-sm text-ink-700 sm:grid-cols-2">
             <p className="flex items-center gap-2">
@@ -86,6 +115,13 @@ function BookingList({ bookings, forArtist }: { bookings: Booking[]; forArtist?:
             </p>
             {b.notes && <p className="text-ink-500 sm:col-span-2">📝 {b.notes}</p>}
           </div>
+          {forArtist && (
+            <ArtistBookingPayments
+              booking={b}
+              adminUpi={settings?.upiId ?? ""}
+              adminQr={settings?.upiQr ?? ""}
+            />
+          )}
         </li>
       ))}
     </ul>
@@ -141,11 +177,12 @@ export default async function AccountPage() {
     );
   }
 
-  const [myBookings, artist, styles, profileRes] = await Promise.all([
+  const [myBookings, artist, styles, profileRes, settings] = await Promise.all([
     getBookingsForUser(user.id),
     getArtistByUserId(user.id),
     getStyles(),
     supabase.from("profiles").select("full_name, role").eq("id", user.id).maybeSingle(),
+    getPlatformSettings(),
   ]);
   const profile = profileRes.data;
   const artistBookings = artist ? await getBookingsForArtist(artist.id) : [];
@@ -203,7 +240,7 @@ export default async function AccountPage() {
           <h3 className="mt-8 font-display text-xl font-semibold text-ink-900">
             Booking Requests Received ({artistBookings.length})
           </h3>
-          <BookingList bookings={artistBookings} forArtist />
+          <BookingList bookings={artistBookings} forArtist settings={settings} />
         </section>
       )}
 

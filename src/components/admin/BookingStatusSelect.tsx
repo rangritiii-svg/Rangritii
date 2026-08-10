@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { updateBookingStatusAction } from "@/app/admin/actions";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/types";
 
@@ -15,6 +15,9 @@ export function BookingStatusSelect({
   const router = useRouter();
   const [current, setCurrent] = useState<BookingStatus>(status);
   const [pending, startTransition] = useTransition();
+
+  // stay in sync when the server changes the status (e.g. amount set → confirmed)
+  useEffect(() => setCurrent(status), [status]);
 
   return (
     <select

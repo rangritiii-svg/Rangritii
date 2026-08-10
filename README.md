@@ -21,11 +21,22 @@ Built with **Next.js 15 · React 19 · Tailwind CSS 4 · Supabase · Vercel** �
 - Edit profile anytime from `/account`; see incoming booking requests with customer contact
 - Zero commission — payment directly from customer
 
+**UPI payments with commission tracking**
+- Admin sets platform UPI ID + QR + commission % in `/admin` → Payments
+- Artists add their own UPI + QR in their profile
+- Customer pays via `/pay` (booking number + phone): choose artist's QR or
+  platform's QR, submit the UPI UTR — no gateway fees, no advance to platform
+- If customer paid the **platform**: admin pays artist the payout
+  (amount − commission), artist's QR shown right in the admin panel
+- If customer paid the **artist** (UPI or cash): artist pays admin the
+  commission — admin's QR shown in the artist's account, UTR tracked
+- Every leg is UTR-recorded and verified; double-payment protected
+
 **Admin panel** (`/admin`)
 - Dashboard: artists, pending approvals, bookings at a glance
 - Approve/unapprove artist profiles (one click), full artist CRUD
-- Manage all bookings with status updates (pending → confirmed → completed)
-- Manage style categories
+- Manage all bookings: status, final amount, payment verification, settlements
+- Payment settings (UPI/QR/commission) and style categories
 
 **Two modes**
 - **Demo mode** (no env vars): runs instantly with 8 sample artists in-memory — great for previews.

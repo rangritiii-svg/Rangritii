@@ -2,8 +2,14 @@ import "server-only";
 import { isSupabaseConfigured } from "./config";
 import { demoStore } from "./demo-store";
 import { createClient } from "./supabase/server";
-import type { Booking, BookingStatus } from "./types";
-import { BOOKING_STATUSES } from "./types";
+import type {
+  Booking,
+  BookingStatus,
+  PaymentMethod,
+  PaymentStatus,
+  SettlementStatus,
+} from "./types";
+import { BOOKING_STATUSES, PAYMENT_METHODS } from "./types";
 
 export type BookingDetails = {
   customerName: string;
@@ -30,6 +36,13 @@ type BookingRow = {
   event_type: string;
   notes: string;
   status: string;
+  amount: number | null;
+  commission_amount: number | null;
+  payment_method: string | null;
+  payment_status: string | null;
+  payment_utr: string | null;
+  settlement_status: string | null;
+  settlement_utr: string | null;
   user_id: string | null;
   created_at: string;
 };
@@ -51,6 +64,26 @@ function mapBooking(r: BookingRow): Booking {
     status: (BOOKING_STATUSES as readonly string[]).includes(r.status)
       ? (r.status as BookingStatus)
       : "pending",
+    amount: r.amount === null || r.amount === undefined ? null : Number(r.amount),
+    commissionAmount:
+      r.commission_amount === null || r.commission_amount === undefined
+        ? null
+        : Number(r.commission_amount),
+    paymentMethod: (PAYMENT_METHODS as readonly string[]).includes(r.payment_method ?? "")
+      ? (r.payment_method as PaymentMethod)
+      : null,
+    paymentStatus: (["unpaid", "claimed", "verified"] as const).includes(
+      (r.payment_status ?? "unpaid") as PaymentStatus
+    )
+      ? ((r.payment_status ?? "unpaid") as PaymentStatus)
+      : "unpaid",
+    paymentUtr: r.payment_utr ?? "",
+    settlementStatus: (["na", "pending", "claimed", "settled"] as const).includes(
+      (r.settlement_status ?? "na") as SettlementStatus
+    )
+      ? ((r.settlement_status ?? "na") as SettlementStatus)
+      : "na",
+    settlementUtr: r.settlement_utr ?? "",
     userId: r.user_id,
     createdAt: r.created_at,
   };
@@ -75,6 +108,13 @@ export async function createBooking(
       artistName: artist.name,
       ...details,
       status: "pending",
+      amount: null,
+      commissionAmount: null,
+      paymentMethod: null,
+      paymentStatus: "unpaid",
+      paymentUtr: "",
+      settlementStatus: "na",
+      settlementUtr: "",
       userId,
       createdAt: new Date().toISOString(),
     });
@@ -155,6 +195,269 @@ export async function getBookingsForArtist(artistId: string): Promise<Booking[]>
     .order("created_at", { ascending: false });
   if (error) throw new Error(`Failed to load bookings: ${error.message}`);
   return (data as BookingRow[]).map(mapBooking);
+}
+
+export async function getBookingById(id: string): Promise<Booking | null> {
+  if (!isSupabaseConfigured()) {
+    const b = demoStore().bookings.find((b) => b.id === id);
+    return b ? { ...b } : null;
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? mapBooking(data as BookingRow) : null;
+}
+
+/* ── Payments ──────────────────────────────────────────────────────── */
+
+/** Set the final agreed price; snapshots commission and confirms the booking. */
+export async function setBookingAmount(
+  id: string,
+  amount: number,
+  commissionPercent: number
+): Promise<void> {
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter a valid amount.");
+  const commission = Math.round((amount * commissionPercent) / 100);
+
+  if (!isSupabaseConfigured()) {
+    const b = demoStore().bookings.find((b) => b.id === id);
+    if (!b) throw new Error("Booking not found.");
+    if (b.status === "cancelled") throw new Error("Cancelled booking ka amount set nahi hota.");
+    if (b.paymentStatus === "verified")
+      throw new Error("Payment verify hone ke baad amount change nahi ho sakta.");
+    b.amount = amount;
+    b.commissionAmount = commission;
+    if (b.status === "pending") b.status = "confirmed";
+    return;
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({ amount, commission_amount: commission })
+    .eq("id", id)
+    .neq("status", "cancelled")
+    .neq("payment_status", "verified")
+    .select("id, status")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Amount set nahi hua — booking cancelled ya payment already verified hai.");
+  if (data.status === "pending") {
+    await supabase.from("bookings").update({ status: "confirmed" }).eq("id", id);
+  }
+}
+
+/** Admin/artist confirms the customer's payment was actually received. */
+export async function markPaymentVerified(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const b = demoStore().bookings.find((b) => b.id === id);
+    if (!b) throw new Error("Booking not found.");
+    if (b.paymentStatus !== "claimed")
+      throw new Error("Pehle customer payment claim kare, tabhi verify hoga.");
+    b.paymentStatus = "verified";
+    b.settlementStatus = "pending";
+    return;
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({ payment_status: "verified", settlement_status: "pending" })
+    .eq("id", id)
+    .eq("payment_status", "claimed")
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Verify nahi hua — payment claimed state mein nahi hai.");
+}
+
+/** Artist records that the customer paid in cash at the service. */
+export async function recordCashPayment(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const b = demoStore().bookings.find((b) => b.id === id);
+    if (!b) throw new Error("Booking not found.");
+    if (b.paymentStatus === "verified") throw new Error("Payment already verified.");
+    if (b.amount === null) throw new Error("Pehle amount set karo.");
+    b.paymentMethod = "cash";
+    b.paymentStatus = "verified";
+    b.settlementStatus = "pending";
+    return;
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({
+      payment_method: "cash",
+      payment_status: "verified",
+      settlement_status: "pending",
+    })
+    .eq("id", id)
+    .neq("payment_status", "verified")
+    .not("amount", "is", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Record nahi hua — amount set hai? payment pehle se verified toh nahi?");
+}
+
+/** Artist submits the UTR of their commission payment to admin. */
+export async function submitSettlementUtr(id: string, utr: string): Promise<void> {
+  const cleanUtr = utr.trim().slice(0, 40);
+  if (cleanUtr.length < 4) throw new Error("UTR/reference number sahi se daalo.");
+  if (!isSupabaseConfigured()) {
+    const b = demoStore().bookings.find((b) => b.id === id);
+    if (!b) throw new Error("Booking not found.");
+    if (b.settlementStatus !== "pending" && b.settlementStatus !== "claimed")
+      throw new Error("Is booking par abhi settlement due nahi hai.");
+    b.settlementStatus = "claimed";
+    b.settlementUtr = cleanUtr;
+    return;
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({ settlement_status: "claimed", settlement_utr: cleanUtr })
+    .eq("id", id)
+    .in("settlement_status", ["pending", "claimed"])
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Submit nahi hua — settlement due nahi hai.");
+}
+
+/** Admin marks the second leg (commission/payout) as fully settled. */
+export async function markSettled(id: string, utr?: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const b = demoStore().bookings.find((b) => b.id === id);
+    if (!b) throw new Error("Booking not found.");
+    if (b.settlementStatus === "na") throw new Error("Payment verify hone ke baad hi settle hota hai.");
+    b.settlementStatus = "settled";
+    if (utr) b.settlementUtr = utr.trim().slice(0, 40);
+    return;
+  }
+  const supabase = await createClient();
+  const patch: Record<string, string> = { settlement_status: "settled" };
+  if (utr) patch.settlement_utr = utr.trim().slice(0, 40);
+  const { data, error } = await supabase
+    .from("bookings")
+    .update(patch)
+    .eq("id", id)
+    .neq("settlement_status", "na")
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Settle nahi hua — pehle payment verify karo.");
+}
+
+/* ── Public payment page (no login; booking number + phone required) ── */
+
+export type PaymentInfo = {
+  bookingNumber: string;
+  artistName: string;
+  eventDate: string;
+  status: BookingStatus;
+  amount: number | null;
+  paymentMethod: PaymentMethod | null;
+  paymentStatus: PaymentStatus;
+  artistUpi: string;
+  artistQr: string;
+  adminUpi: string;
+  adminQr: string;
+};
+
+export async function getPaymentInfo(
+  bookingNumber: string,
+  phone: string
+): Promise<PaymentInfo | null> {
+  const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+  if (cleanPhone.length !== 10) return null;
+
+  if (!isSupabaseConfigured()) {
+    const store = demoStore();
+    const b = store.bookings.find(
+      (b) =>
+        b.bookingNumber.toUpperCase() === bookingNumber.trim().toUpperCase() &&
+        b.phone.replace(/\D/g, "").slice(-10) === cleanPhone
+    );
+    if (!b) return null;
+    const artist = store.artists.find((a) => a.id === b.artistId);
+    return {
+      bookingNumber: b.bookingNumber,
+      artistName: b.artistName,
+      eventDate: b.eventDate,
+      status: b.status,
+      amount: b.amount,
+      paymentMethod: b.paymentMethod,
+      paymentStatus: b.paymentStatus,
+      artistUpi: artist?.upiId ?? "",
+      artistQr: artist?.upiQr ?? "",
+      adminUpi: store.settings.upiId,
+      adminQr: store.settings.upiQr,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_payment_info", {
+    p_booking_number: bookingNumber.trim(),
+    p_phone: cleanPhone,
+  });
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  const r = data as Record<string, unknown>;
+  return {
+    bookingNumber: String(r.booking_number ?? ""),
+    artistName: String(r.artist_name ?? ""),
+    eventDate: String(r.event_date ?? ""),
+    status: (r.status ?? "pending") as BookingStatus,
+    amount: r.amount === null || r.amount === undefined ? null : Number(r.amount),
+    paymentMethod: (PAYMENT_METHODS as readonly string[]).includes(String(r.payment_method))
+      ? (String(r.payment_method) as PaymentMethod)
+      : null,
+    paymentStatus: (r.payment_status ?? "unpaid") as PaymentStatus,
+    artistUpi: String(r.artist_upi ?? ""),
+    artistQr: String(r.artist_qr ?? ""),
+    adminUpi: String(r.admin_upi ?? ""),
+    adminQr: String(r.admin_qr ?? ""),
+  };
+}
+
+/** Customer: "maine pay kar diya" — records method + UTR, admin/artist verifies. */
+export async function claimPayment(
+  bookingNumber: string,
+  phone: string,
+  method: "upi_admin" | "upi_artist",
+  utr: string
+): Promise<void> {
+  const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+  const cleanUtr = utr.trim().slice(0, 40);
+  if (cleanPhone.length !== 10) throw new Error("Phone number sahi nahi hai.");
+  if (cleanUtr.length < 4) throw new Error("UTR/transaction reference number daalo.");
+  if (method !== "upi_admin" && method !== "upi_artist") throw new Error("Invalid method.");
+
+  if (!isSupabaseConfigured()) {
+    const b = demoStore().bookings.find(
+      (b) =>
+        b.bookingNumber.toUpperCase() === bookingNumber.trim().toUpperCase() &&
+        b.phone.replace(/\D/g, "").slice(-10) === cleanPhone
+    );
+    if (!b) throw new Error("Booking nahi mili — number aur phone check karo.");
+    if (b.paymentStatus === "verified") throw new Error("Payment already verified hai.");
+    b.paymentMethod = method;
+    b.paymentStatus = "claimed";
+    b.paymentUtr = cleanUtr;
+    return;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("claim_payment", {
+    p_booking_number: bookingNumber.trim(),
+    p_phone: cleanPhone,
+    p_method: method,
+    p_utr: cleanUtr,
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function updateBookingStatus(id: string, status: BookingStatus): Promise<void> {

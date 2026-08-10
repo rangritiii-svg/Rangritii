@@ -9,10 +9,17 @@ import {
   deleteArtist,
   deleteStyle,
   getArtistById,
+  getPlatformSettings,
   updateArtist,
+  updatePlatformSettings,
 } from "@/lib/data";
 import { slugify } from "@/lib/format";
-import { updateBookingStatus } from "@/lib/bookings";
+import {
+  markPaymentVerified,
+  markSettled,
+  setBookingAmount,
+  updateBookingStatus,
+} from "@/lib/bookings";
 import type { ArtistInput, BookingStatus } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -101,6 +108,63 @@ export async function updateBookingStatusAction(
   try {
     await requireAdmin();
     await updateBookingStatus(id, status as BookingStatus);
+    revalidatePath("/admin/bookings");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateSettingsAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const upiId = String(formData.get("upiId") ?? "").trim().slice(0, 100);
+    if (upiId && !/^[\w.-]{2,}@[a-zA-Z]{2,}$/.test(upiId)) {
+      throw new Error("UPI ID sahi format mein daalo (jaise rangritii@upi).");
+    }
+    const commissionPercent = Number(formData.get("commissionPercent"));
+    if (!Number.isFinite(commissionPercent) || commissionPercent < 0 || commissionPercent > 50) {
+      throw new Error("Commission 0 se 50% ke beech rakho.");
+    }
+    const upiQr = String(formData.get("upiQr") ?? "")
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean)[0] ?? "";
+    await updatePlatformSettings({ upiId, upiQr, commissionPercent });
+    revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function setAmountAction(id: string, amount: number): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const settings = await getPlatformSettings();
+    await setBookingAmount(id, amount, settings.commissionPercent);
+    revalidatePath("/admin/bookings");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function verifyPaymentAction(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await markPaymentVerified(id);
+    revalidatePath("/admin/bookings");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function markSettledAction(id: string, utr: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await markSettled(id, utr || undefined);
     revalidatePath("/admin/bookings");
     return { ok: true };
   } catch (e) {

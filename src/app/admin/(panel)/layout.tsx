@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, LayoutDashboard, Palette, Store, Users } from "lucide-react";
+import {
+  CalendarDays,
+  IndianRupee,
+  LayoutDashboard,
+  Palette,
+  Store,
+  Users,
+} from "lucide-react";
 import { getAdminSession } from "@/lib/admin-auth";
 import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
 
@@ -11,6 +18,7 @@ const nav = [
   { href: "/admin/artists", label: "Artists", icon: Users },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarDays },
   { href: "/admin/styles", label: "Styles", icon: Palette },
+  { href: "/admin/settings", label: "Payments", icon: IndianRupee },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

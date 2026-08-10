@@ -1,4 +1,4 @@
-import type { Artist, Booking, Style } from "./types";
+import type { Artist, Booking, PlatformSettings, Style } from "./types";
 import { DEMO_ARTISTS, DEMO_STYLES } from "./demo-data";
 
 /**
@@ -13,6 +13,7 @@ type DemoStore = {
   styles: Style[];
   bookings: Booking[];
   bookingSeq: number;
+  settings: PlatformSettings;
 };
 
 declare global {
@@ -36,6 +37,13 @@ function seedBookings(): Booking[] {
       eventType: "Bridal / Dulhan",
       notes: "Shaadi 21 August ko hai, ek din pehle full bridal chahiye. 4 family members ke liye bhi simple designs.",
       status: "confirmed",
+      amount: 11000,
+      commissionAmount: 1100,
+      paymentMethod: "upi_artist",
+      paymentStatus: "verified",
+      paymentUtr: "425511223344",
+      settlementStatus: "pending",
+      settlementUtr: "",
       userId: null,
       createdAt: "2026-08-06T09:30:00Z",
     },
@@ -53,6 +61,13 @@ function seedBookings(): Booking[] {
       eventType: "Karva Chauth",
       notes: "2 ladies, Arabic style, evening slot preferred.",
       status: "pending",
+      amount: null,
+      commissionAmount: null,
+      paymentMethod: null,
+      paymentStatus: "unpaid",
+      paymentUtr: "",
+      settlementStatus: "na",
+      settlementUtr: "",
       userId: null,
       createdAt: "2026-08-09T14:10:00Z",
     },
@@ -66,6 +81,11 @@ export function demoStore(): DemoStore {
       styles: DEMO_STYLES.map((s) => ({ ...s })),
       bookings: seedBookings(),
       bookingSeq: 5003,
+      settings: {
+        upiId: "rangritii@demoupi",
+        upiQr: "/art/qr-demo.svg",
+        commissionPercent: 10,
+      },
     };
   }
   return globalThis.__rangritiiStore;

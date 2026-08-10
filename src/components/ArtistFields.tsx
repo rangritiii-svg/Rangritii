@@ -104,6 +104,33 @@ export function ArtistFields({
         initial={artist?.portfolioImages ?? []}
         max={12}
       />
+
+      <div className="rounded-2xl border border-marigold-200 bg-marigold-50/50 p-5">
+        <p className="text-sm font-bold text-ink-900">💰 Payment details (UPI)</p>
+        <p className="mt-1 text-xs text-ink-500">
+          Customers isi UPI par aapko payment karengi, aur admin isi par aapka payout
+          bhejega. QR code aapke UPI app (GPay/PhonePe/Paytm) se download karke upload
+          karo.
+        </p>
+        <div className="mt-4 space-y-4">
+          <div>
+            <label className={label} htmlFor="af-upi">Your UPI ID</label>
+            <input
+              id="af-upi"
+              name="upiId"
+              defaultValue={artist?.upiId}
+              className={field}
+              placeholder="yourname@okhdfcbank"
+            />
+          </div>
+          <ImageListInput
+            name="upiQr"
+            label="Your UPI QR code (image)"
+            initial={artist?.upiQr ? [artist.upiQr] : []}
+            single
+          />
+        </div>
+      </div>
     </>
   );
 }

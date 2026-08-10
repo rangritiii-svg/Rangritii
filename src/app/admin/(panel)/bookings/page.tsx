@@ -1,12 +1,18 @@
 import { CalendarDays, MapPin, Phone, User } from "lucide-react";
 import { BookingStatusSelect } from "@/components/admin/BookingStatusSelect";
+import { PaymentAdminPanel } from "@/components/admin/PaymentAdminPanel";
 import { formatDate, formatEventDate } from "@/lib/format";
 import { getBookings } from "@/lib/bookings";
+import { getArtists } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminBookingsPage() {
-  const bookings = await getBookings();
+  const [bookings, artists] = await Promise.all([
+    getBookings(),
+    getArtists({ includeUnapproved: true }),
+  ]);
+  const artistById = new Map(artists.map((a) => [a.id, a]));
 
   return (
     <div>
@@ -68,6 +74,12 @@ export default async function AdminBookingsPage() {
                   </p>
                 </div>
               </div>
+
+              <PaymentAdminPanel
+                booking={b}
+                artistUpi={artistById.get(b.artistId)?.upiId ?? ""}
+                artistQr={artistById.get(b.artistId)?.upiQr ?? ""}
+              />
             </li>
           ))}
         </ul>

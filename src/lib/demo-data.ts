@@ -60,6 +60,12 @@ function portfolio(n: number): string[] {
   return [1, 2, 3, 4].map((i) => `/art/artist-${n}-p${i}.svg`);
 }
 
+/** Demo-only payment details (clearly fake; real ones are uploaded by users). */
+const demoUpi = (handle: string) => ({
+  upiId: `${handle}@demoupi`,
+  upiQr: "/art/qr-demo.svg",
+});
+
 export const DEMO_ARTISTS: Artist[] = [
   {
     id: "a-01",
@@ -76,6 +82,7 @@ export const DEMO_ARTISTS: Artist[] = [
     styles: ["bridal", "traditional", "indo-arabic"],
     profileImage: "/art/artist-1-profile.svg",
     portfolioImages: portfolio(1),
+    ...demoUpi("meera"),
     isApproved: true,
     isActive: true,
     createdAt: "2026-07-01T10:00:00Z",
@@ -95,6 +102,7 @@ export const DEMO_ARTISTS: Artist[] = [
     styles: ["arabic", "indo-arabic", "festive"],
     profileImage: "/art/artist-2-profile.svg",
     portfolioImages: portfolio(2),
+    ...demoUpi("ayesha"),
     isApproved: true,
     isActive: true,
     createdAt: "2026-07-03T10:00:00Z",
@@ -114,6 +122,7 @@ export const DEMO_ARTISTS: Artist[] = [
     styles: ["minimal", "arabic", "festive"],
     profileImage: "/art/artist-3-profile.svg",
     portfolioImages: portfolio(3),
+    ...demoUpi("prachi"),
     isApproved: true,
     isActive: true,
     createdAt: "2026-07-05T10:00:00Z",
@@ -133,6 +142,7 @@ export const DEMO_ARTISTS: Artist[] = [
     styles: ["bridal", "indo-arabic", "arabic"],
     profileImage: "/art/artist-4-profile.svg",
     portfolioImages: portfolio(4),
+    ...demoUpi("farzana"),
     isApproved: true,
     isActive: true,
     createdAt: "2026-07-07T10:00:00Z",
@@ -152,6 +162,7 @@ export const DEMO_ARTISTS: Artist[] = [
     styles: ["traditional", "festive", "bridal"],
     profileImage: "/art/artist-5-profile.svg",
     portfolioImages: portfolio(5),
+    ...demoUpi("kiran"),
     isApproved: true,
     isActive: true,
     createdAt: "2026-07-09T10:00:00Z",
@@ -171,6 +182,7 @@ export const DEMO_ARTISTS: Artist[] = [
     styles: ["bridal", "traditional", "minimal"],
     profileImage: "/art/artist-6-profile.svg",
     portfolioImages: portfolio(6),
+    ...demoUpi("sana"),
     isApproved: true,
     isActive: true,
     createdAt: "2026-07-11T10:00:00Z",
@@ -190,6 +202,7 @@ export const DEMO_ARTISTS: Artist[] = [
     styles: ["arabic", "festive", "bridal"],
     profileImage: "/art/artist-7-profile.svg",
     portfolioImages: portfolio(7),
+    ...demoUpi("divya"),
     isApproved: true,
     isActive: true,
     createdAt: "2026-07-13T10:00:00Z",
@@ -209,6 +222,7 @@ export const DEMO_ARTISTS: Artist[] = [
     styles: ["festive", "arabic", "minimal"],
     profileImage: "/art/artist-8-profile.svg",
     portfolioImages: portfolio(8),
+    ...demoUpi("ritu"),
     isApproved: true,
     isActive: true,
     createdAt: "2026-07-15T10:00:00Z",

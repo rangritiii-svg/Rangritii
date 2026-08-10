@@ -22,9 +22,17 @@ export type Artist = {
   styles: string[]; // style slugs
   profileImage: string;
   portfolioImages: string[];
+  upiId: string;
+  upiQr: string; // QR code image URL
   isApproved: boolean;
   isActive: boolean;
   createdAt: string;
+};
+
+export type PlatformSettings = {
+  upiId: string;
+  upiQr: string; // QR code image URL
+  commissionPercent: number;
 };
 
 export type ArtistInput = Omit<Artist, "id" | "createdAt">;
@@ -48,6 +56,17 @@ export const BOOKING_STATUSES = [
 
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
+/** Who the customer paid. */
+export const PAYMENT_METHODS = ["upi_admin", "upi_artist", "cash"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** Customer-side payment: unpaid → claimed (UTR submitted) → verified. */
+export type PaymentStatus = "unpaid" | "claimed" | "verified";
+
+/** Second leg (commission to admin, or payout to artist):
+ *  na → pending → claimed (UTR submitted) → settled. */
+export type SettlementStatus = "na" | "pending" | "claimed" | "settled";
+
 export type Booking = {
   id: string;
   bookingNumber: string;
@@ -62,6 +81,13 @@ export type Booking = {
   eventType: string;
   notes: string;
   status: BookingStatus;
+  amount: number | null; // final agreed price
+  commissionAmount: number | null; // snapshot when amount is set
+  paymentMethod: PaymentMethod | null;
+  paymentStatus: PaymentStatus;
+  paymentUtr: string;
+  settlementStatus: SettlementStatus;
+  settlementUtr: string;
   userId: string | null;
   createdAt: string;
 };

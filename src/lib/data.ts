@@ -2,7 +2,7 @@ import "server-only";
 import { isSupabaseConfigured } from "./config";
 import { demoStore } from "./demo-store";
 import { createClient } from "./supabase/server";
-import type { Artist, ArtistInput, Style } from "./types";
+import type { Artist, ArtistInput, PlatformSettings, Style } from "./types";
 
 /* ── Row mappers (Supabase snake_case → app camelCase) ─────────────── */
 
@@ -21,6 +21,8 @@ type ArtistRow = {
   styles: string[];
   profile_image: string;
   portfolio_images: string[];
+  upi_id: string;
+  upi_qr: string;
   is_approved: boolean;
   is_active: boolean;
   created_at: string;
@@ -51,6 +53,8 @@ function mapArtist(r: ArtistRow): Artist {
     styles: r.styles ?? [],
     profileImage: r.profile_image ?? "",
     portfolioImages: r.portfolio_images ?? [],
+    upiId: r.upi_id ?? "",
+    upiQr: r.upi_qr ?? "",
     isApproved: r.is_approved,
     isActive: r.is_active,
     createdAt: r.created_at,
@@ -83,6 +87,8 @@ function toArtistRow(input: ArtistInput) {
     styles: input.styles,
     profile_image: input.profileImage,
     portfolio_images: input.portfolioImages,
+    upi_id: input.upiId,
+    upi_qr: input.upiQr,
     is_approved: input.isApproved,
     is_active: input.isActive,
   };
@@ -297,6 +303,8 @@ export async function updateArtist(id: string, input: Partial<ArtistInput>): Pro
     ["styles", "styles"],
     ["profile_image", "profileImage"],
     ["portfolio_images", "portfolioImages"],
+    ["upi_id", "upiId"],
+    ["upi_qr", "upiQr"],
     ["is_approved", "isApproved"],
     ["is_active", "isActive"],
   ] as const) {
@@ -305,6 +313,55 @@ export async function updateArtist(id: string, input: Partial<ArtistInput>): Pro
     }
   }
   const { error } = await supabase.from("artists").update(row).eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/* ── Platform settings (admin UPI, commission) ─────────────────────── */
+
+const DEFAULT_SETTINGS: PlatformSettings = {
+  upiId: "",
+  upiQr: "",
+  commissionPercent: 10,
+};
+
+type SettingsRow = {
+  upi_id: string;
+  upi_qr: string;
+  commission_percent: number;
+};
+
+export async function getPlatformSettings(): Promise<PlatformSettings> {
+  if (!isSupabaseConfigured()) {
+    return { ...demoStore().settings };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("platform_settings")
+    .select("upi_id, upi_qr, commission_percent")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to load settings: ${error.message}`);
+  if (!data) return { ...DEFAULT_SETTINGS };
+  const row = data as SettingsRow;
+  return {
+    upiId: row.upi_id ?? "",
+    upiQr: row.upi_qr ?? "",
+    commissionPercent: Number(row.commission_percent ?? 10),
+  };
+}
+
+export async function updatePlatformSettings(settings: PlatformSettings): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    demoStore().settings = { ...settings };
+    return;
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.from("platform_settings").upsert({
+    id: 1,
+    upi_id: settings.upiId,
+    upi_qr: settings.upiQr,
+    commission_percent: settings.commissionPercent,
+  });
   if (error) throw new Error(error.message);
 }
 
