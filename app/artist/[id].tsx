@@ -242,14 +242,30 @@ export default function ArtistDetailScreen() {
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>{language === "en_IN" ? "Portfolio" : "पोर्टफोलियो"}</Text>
             <View style={styles.galleryGrid}>
-              {((artist.portfolioImages && artist.portfolioImages.length > 0) ? artist.portfolioImages : PORTFOLIO_THUMBNAILS).map((img, idx) => {
-                const isUri = typeof img === "string";
-                return (
-                  <View key={idx} style={[styles.galleryImageWrapper, { width: galleryItemSize, height: galleryItemSize }]}>
-                    <Image source={isUri ? { uri: img } : img} style={styles.galleryImage} resizeMode="cover" />
-                  </View>
-                );
-              })}
+              {(() => {
+                const rawImages = artist.portfolioImages;
+                let validImages: any[] = [];
+                if (Array.isArray(rawImages)) {
+                  validImages = rawImages.filter((img) => {
+                    if (typeof img === "string") {
+                      if (img.startsWith("[") && img.endsWith("]")) return false; // Filter placeholders like [portfolio_image_1]
+                      if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:image/")) return true;
+                      return false;
+                    }
+                    return true;
+                  });
+                }
+                const displayImages = validImages.length > 0 ? validImages : PORTFOLIO_THUMBNAILS;
+
+                return displayImages.map((img, idx) => {
+                  const isUri = typeof img === "string";
+                  return (
+                    <View key={idx} style={[styles.galleryImageWrapper, { width: galleryItemSize, height: galleryItemSize }]}>
+                      <Image source={isUri ? { uri: img } : img} style={styles.galleryImage} resizeMode="cover" />
+                    </View>
+                  );
+                });
+              })()}
             </View>
           </View>
 

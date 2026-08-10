@@ -14,6 +14,7 @@ import { getTranslation } from "@/constants/locale";
 import { ensureMediaLibraryPermission } from "@/utils/permissions";
 
 import { updateArtist } from "@/firebase/firestoreService";
+import { uploadImageToSupabase } from "@/supabase/client";
 
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 48) / 3;
@@ -40,7 +41,10 @@ export default function ArtistPortfolioScreen() {
   React.useEffect(() => {
     if (currentArtist && !hasInitialized) {
       if (currentArtist.portfolioImages && currentArtist.portfolioImages.length > 0) {
-        setImages(currentArtist.portfolioImages);
+        const validOnly = currentArtist.portfolioImages.filter((img) =>
+          typeof img === "string" && !img.startsWith("[") && (img.startsWith("http") || img.startsWith("data:image"))
+        );
+        setImages(validOnly);
       }
       setHasInitialized(true);
     }
@@ -119,9 +123,22 @@ export default function ArtistPortfolioScreen() {
     setUploading(true);
 
     try {
-      // Update local context & sync to Firestore
+      // Upload base64 images to Supabase Storage if needed
+      const finalUrls: string[] = [];
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        if (img.startsWith("data:image")) {
+          const fileName = `artist_${currentArtist.id}_${Date.now()}_${i}.jpg`;
+          const supabaseUrl = await uploadImageToSupabase(img, fileName);
+          finalUrls.push(supabaseUrl || img);
+        } else {
+          finalUrls.push(img);
+        }
+      }
+
+      // Update local context & sync to Database/Firestore
       await updateArtist(currentArtist.id, {
-        portfolioImages: images
+        portfolioImages: finalUrls
       });
 
       // Show alert & exit

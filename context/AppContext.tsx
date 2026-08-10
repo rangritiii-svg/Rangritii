@@ -693,10 +693,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // We strip the large binary fields before saving to Firestore; the admin
     // will see a flag indicating the artist submitted documents, and the full
     // images remain in the in-memory state for the current session.
+    // Clean portfolio images to ensure no invalid string placeholders break image rendering
+    const cleanPortfolioImages = (newArtist.portfolioImages ?? []).filter((img) =>
+      typeof img === "string" && !img.startsWith("[") && (img.startsWith("http") || img.startsWith("data:image"))
+    );
+
     const firestoreDoc: any = {
       ...newArtist,
-      // Replace large base64 data URIs with compact placeholder flags
-      portfolioImages: (newArtist.portfolioImages ?? []).map((_, i) => `[portfolio_image_${i + 1}]`),
+      portfolioImages: cleanPortfolioImages,
       idCardPhoto: newArtist.idCardPhoto ? "[id_card_uploaded]" : "",
       bankDetailsPhoto: newArtist.bankDetailsPhoto ? "[bank_doc_uploaded]" : "",
     };
