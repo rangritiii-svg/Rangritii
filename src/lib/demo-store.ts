@@ -85,10 +85,6 @@ export function demoStore(): DemoStore {
         upiId: "rangritii@demoupi",
         upiQr: "/art/qr-demo.svg",
         commissionPercent: 10,
-        contactPhone: "+91 99250 26318",
-        contactWhatsapp: "919925026318",
-        contactEmail: "rangritii21@gmail.com",
-        contactHours: "Mon–Sat, 10am–7pm",
       },
     };
   }

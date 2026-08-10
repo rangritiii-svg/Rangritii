@@ -207,23 +207,14 @@ create trigger bookings_protect_columns
   before update on public.bookings
   for each row execute function public.protect_booking_columns();
 
--- ── 5. Platform settings (admin UPI, commission, contact info) ───
+-- ── 5. Platform settings (admin UPI + commission) ───────────
 create table if not exists public.platform_settings (
   id int primary key check (id = 1),
   upi_id text not null default '',
   upi_qr text not null default '',
   commission_percent numeric(5,2) not null default 10 check (commission_percent between 0 and 50),
-  contact_phone text not null default '+91 99250 26318',
-  contact_whatsapp text not null default '919925026318',
-  contact_email text not null default 'rangritii21@gmail.com',
-  contact_hours text not null default 'Mon–Sat, 10am–7pm',
   updated_at timestamptz not null default now()
 );
-
-alter table public.platform_settings add column if not exists contact_phone text not null default '+91 99250 26318';
-alter table public.platform_settings add column if not exists contact_whatsapp text not null default '919925026318';
-alter table public.platform_settings add column if not exists contact_email text not null default 'rangritii21@gmail.com';
-alter table public.platform_settings add column if not exists contact_hours text not null default 'Mon–Sat, 10am–7pm';
 
 insert into public.platform_settings (id) values (1) on conflict (id) do nothing;
 
@@ -456,11 +447,10 @@ drop policy if exists "contact_admin_read" on public.contact_messages;
 create policy "contact_admin_read" on public.contact_messages
   for select using (public.is_admin());
 
--- platform settings: public read (for contact details & admin UPI info); admin writes
+-- platform settings: logged-in users read (artists need admin UPI); admin writes
 drop policy if exists "settings_auth_read" on public.platform_settings;
-drop policy if exists "settings_public_read" on public.platform_settings;
-create policy "settings_public_read" on public.platform_settings
-  for select using (true);
+create policy "settings_auth_read" on public.platform_settings
+  for select to authenticated using (true);
 drop policy if exists "settings_admin_update" on public.platform_settings;
 create policy "settings_admin_update" on public.platform_settings
   for update using (public.is_admin());

@@ -131,21 +131,7 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
       .split(/\r?\n/)
       .map((s) => s.trim())
       .filter(Boolean)[0] ?? "";
-
-    const contactPhone = String(formData.get("contactPhone") ?? "").trim().slice(0, 50);
-    const contactWhatsapp = String(formData.get("contactWhatsapp") ?? "").trim().replace(/[^\d]/g, "").slice(0, 20);
-    const contactEmail = String(formData.get("contactEmail") ?? "").trim().slice(0, 100);
-    const contactHours = String(formData.get("contactHours") ?? "").trim().slice(0, 100);
-
-    await updatePlatformSettings({
-      upiId,
-      upiQr,
-      commissionPercent,
-      contactPhone,
-      contactWhatsapp,
-      contactEmail,
-      contactHours,
-    });
+    await updatePlatformSettings({ upiId, upiQr, commissionPercent });
     revalidatePath("/", "layout");
     return { ok: true };
   } catch (e) {

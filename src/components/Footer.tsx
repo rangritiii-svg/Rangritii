@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Instagram, Facebook, Mail, MapPin, Phone } from "lucide-react";
 import { SITE } from "@/lib/config";
-import { getPlatformSettings } from "@/lib/data";
 
 const exploreLinks = [
   { href: "/artists", label: "Find Artists" },
@@ -19,9 +18,7 @@ const serviceLinks = [
   { href: "/contact", label: "Contact Us" },
 ];
 
-export async function Footer() {
-  const settings = await getPlatformSettings();
-
+export function Footer() {
   return (
     <footer className="mt-16 bg-rani-900 text-cream-100">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-4">
@@ -90,14 +87,14 @@ export async function Footer() {
           <ul className="mt-4 space-y-3 text-sm text-cream-200/90">
             <li className="flex items-center gap-2.5">
               <Phone className="h-4 w-4 shrink-0 text-marigold-300" />
-              <a href={`tel:${(settings.contactPhone || SITE.phone).replace(/\s/g, "")}`} className="hover:text-white">
-                {settings.contactPhone || SITE.phone}
+              <a href={`tel:${SITE.phone.replace(/\s/g, "")}`} className="hover:text-white">
+                {SITE.phone}
               </a>
             </li>
             <li className="flex items-center gap-2.5">
               <Mail className="h-4 w-4 shrink-0 text-marigold-300" />
-              <a href={`mailto:${settings.contactEmail || SITE.email}`} className="hover:text-white">
-                {settings.contactEmail || SITE.email}
+              <a href={`mailto:${SITE.email}`} className="hover:text-white">
+                {SITE.email}
               </a>
             </li>
             <li className="flex items-start gap-2.5">
