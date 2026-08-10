@@ -40,7 +40,7 @@ const MUTED = "#8A6070";
 // TIP: To make this URL permanent across versions, upload the APK as
 // "RangRiti-latest.apk" in every release — then the URL never needs changing:
 //   https://github.com/rangritiii-svg/RangRiti-app/releases/latest/download/RangRiti-latest.apk
-const APP_DOWNLOAD_URL = "https://github.com/rangritiii-svg/RangRiti-app/releases/download/v2.0.0/RangRiti-v2.0.0.apk";
+const APP_DOWNLOAD_URL = "https://github.com/rangritiii-svg/RangRiti-app/releases/download/v2.0.1/RangRiti-v2.0.1.apk";
 const IS_WEB = Platform.OS === "web";
 
 export default function LandingScreen() {
