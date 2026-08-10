@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Karla } from "next/font/google";
-import { InstallAppPrompt } from "@/components/InstallAppPrompt";
 import { SavedArtistsProvider } from "@/components/SavedArtistsProvider";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { SITE } from "@/lib/config";
@@ -47,7 +46,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${fraunces.variable} ${karla.variable}`}>
         <SavedArtistsProvider>{children}</SavedArtistsProvider>
-        <InstallAppPrompt />
         <ServiceWorkerRegistrar />
       </body>
     </html>
