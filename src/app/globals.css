@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand palette — "Rang" (colour) inspired: rani maroon, marigold, cream */
+  --color-rani-50: #fdf2f5;
+  --color-rani-100: #f9dfe6;
+  --color-rani-200: #f2bcc9;
+  --color-rani-300: #e68da3;
+  --color-rani-400: #d55a7c;
+  --color-rani-500: #b93a5e;
+  --color-rani-600: #9c2a4d;
+  --color-rani-700: #8b1e3f;
+  --color-rani-800: #6e1832;
+  --color-rani-900: #4f1124;
+  --color-rani-950: #320a17;
+
+  --color-marigold-50: #fdf8ec;
+  --color-marigold-100: #faedcb;
+  --color-marigold-200: #f4da93;
+  --color-marigold-300: #ecc35c;
+  --color-marigold-400: #e3a933;
+  --color-marigold-500: #c9973f;
+  --color-marigold-600: #a8731f;
+  --color-marigold-700: #86561c;
+  --color-marigold-800: #6e451d;
+  --color-marigold-900: #5e3a1d;
+
+  --color-cream-50: #fdfbf7;
+  --color-cream-100: #faf5ee;
+  --color-cream-200: #f3e9db;
+  --color-cream-300: #e9d8c2;
+
+  --color-ink-900: #2b2118;
+  --color-ink-700: #4a3d32;
+  --color-ink-500: #7a6a5c;
+  --color-ink-300: #b3a698;
+
+  --font-display: var(--font-fraunces), "Georgia", serif;
+  --font-body: var(--font-karla), system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-cream-100);
+  color: var(--color-ink-900);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+}
+
+::selection {
+  background: var(--color-rani-200);
+}
+
+/* Hide scrollbar for horizontal category rails */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Subtle paisley-dot texture used on hero/banners */
+.texture-dots {
+  background-image: radial-gradient(rgba(139, 30, 63, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
