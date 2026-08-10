@@ -52,10 +52,10 @@ export default async function JoinPage() {
       content = (
         <div>
           <p className="mb-5 rounded-2xl border border-marigold-200 bg-marigold-50 px-5 py-4 text-sm text-marigold-800">
-            <strong>Step 1:</strong> Pehle apna account banao (ya login karo) — phir
-            artist profile ka form khulega.
+            <strong>Step 1:</strong> Google se ya email se account banao/login karo —
+            phir artist profile ka form khulega.
           </p>
-          <AuthTabs />
+          <AuthTabs next="/join" />
         </div>
       );
     } else {

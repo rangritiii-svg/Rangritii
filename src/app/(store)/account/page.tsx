@@ -171,7 +171,7 @@ export default async function AccountPage() {
           Log in to manage bookings — ya artist ho toh apni profile.
         </p>
         <div className="mt-8">
-          <AuthTabs />
+          <AuthTabs next="/account" />
         </div>
       </div>
     );
