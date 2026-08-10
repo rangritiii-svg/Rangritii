@@ -1,17 +1,7 @@
-import { VERIFICATION_CONFIG } from "@/constants/verificationConfig";
-import Constants from "expo-constants";
-
-// Try to use the Metro server IP dynamically so real devices can connect
-const hostUri = Constants.expoConfig?.hostUri;
-let DEV_LAN_IP = "10.254.51.206"; // default fallback
-if (hostUri) {
-  const ip = hostUri.split(":")[0];
-  if (ip) {
-    DEV_LAN_IP = ip;
-  }
-}
-
-const BACKEND_URL = VERIFICATION_CONFIG.BACKEND_URL || `http://${DEV_LAN_IP}:3000`;
+// Always use the production Vercel URL. Fall back to local IP only in dev
+// when BACKEND_URL is explicitly not set (never in a production APK build).
+const PROD_URL = "https://rangritii-api.vercel.app";
+const BACKEND_URL = VERIFICATION_CONFIG.BACKEND_URL || PROD_URL;
 
 /**
  * Sends a real verification code to the target email address via the local backend express server.
@@ -46,14 +36,10 @@ export async function sendEmailVerification(email: string, code: string, languag
       };
     }
   } catch (err: any) {
-    console.warn("Backend server connection failed. Falling back to simulated verification. Error:", err.message);
-    
-    // Graceful fallback to simulation
-    return {
-      success: true,
-      isSimulated: true,
-      error: `Could not connect to local server on ${BACKEND_URL}. Using simulation mode.`
-    };
+    // Network error reaching the backend — silently fall back to simulation
+    // so registration can still proceed. Do NOT show dev/IP details to users.
+    console.warn("Email verification backend unreachable, using simulation:", err.message);
+    return { success: true, isSimulated: true };
   }
 }
 

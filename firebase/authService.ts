@@ -8,17 +8,10 @@ import { VERIFICATION_CONFIG } from "@/constants/verificationConfig";
 import Constants from "expo-constants";
 import { Alert } from "react-native";
 
-// Resolve local development LAN IP so real devices can connect to the dev server
-const hostUri = Constants.expoConfig?.hostUri;
-let DEV_LAN_IP = "10.254.51.206"; // fallback
-if (hostUri) {
-  const ip = hostUri.split(":")[0];
-  if (ip) {
-    DEV_LAN_IP = ip;
-  }
-}
-
-const BACKEND_URL = VERIFICATION_CONFIG.BACKEND_URL || `http://${DEV_LAN_IP}:3000`;
+// Always point at the production Vercel API. The local-IP fallback was only
+// useful during early development and caused confusing errors in production APKs.
+const PROD_URL = "https://rangritii-api.vercel.app";
+const BACKEND_URL = VERIFICATION_CONFIG.BACKEND_URL || PROD_URL;
 
 /**
  * The opaque challenge returned by sendPhoneOtp and passed back to
