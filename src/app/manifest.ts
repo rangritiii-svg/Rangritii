@@ -3,7 +3,7 @@ import { SITE } from "@/lib/config";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: `${SITE.name} — Ethnic Wear`,
+    name: `${SITE.name} — Mehandi Artists & Booking`,
     short_name: SITE.name,
     description: SITE.description,
     start_url: "/",
