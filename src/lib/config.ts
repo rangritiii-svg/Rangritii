@@ -7,14 +7,12 @@ export function isSupabaseConfigured(): boolean {
 
 export const SITE = {
   name: "Rangritii",
-  tagline: "Rang jo aapki kahaani kahe",
+  tagline: "Mehandi ka rang, aapki kahaani",
   description:
-    "Stylish cotton kurtis, co-ord sets, kurta sets & ethnic wear — premium quality, latest designs, honest prices.",
+    "India's mehandi platform — apne sheher ke best mehandi artists dhundo, portfolio dekho, aur ghar baithe booking karo. Bridal, Arabic, festive — har style ke verified artists.",
   phone: "+91 99250 26318",
   whatsapp: "919925026318",
   email: "rangritii21@gmail.com",
   instagram: "https://www.instagram.com/rangritii",
   facebook: "https://www.facebook.com/rangritii",
-  freeShippingAbove: 999,
-  shippingFee: 79,
 } as const;

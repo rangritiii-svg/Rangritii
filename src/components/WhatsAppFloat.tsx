@@ -4,7 +4,7 @@ export function WhatsAppFloat() {
   return (
     <a
       href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(
-        "Hi Rangritii! I have a question about an outfit."
+        "Hi Rangritii! Mujhe mehandi artist book karni hai."
       )}`}
       target="_blank"
       rel="noopener noreferrer"

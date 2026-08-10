@@ -2,20 +2,20 @@ import Link from "next/link";
 import { Instagram, Facebook, Mail, MapPin, Phone } from "lucide-react";
 import { SITE } from "@/lib/config";
 
-const shopLinks = [
-  { href: "/shop", label: "Shop All" },
-  { href: "/shop?filter=new", label: "New Arrivals" },
-  { href: "/shop?filter=bestsellers", label: "Bestsellers" },
-  { href: "/shop?category=party-wear", label: "Party Wear" },
-  { href: "/shop?category=plus-size", label: "Plus Size" },
+const exploreLinks = [
+  { href: "/artists", label: "Find Artists" },
+  { href: "/artists?style=bridal", label: "Bridal Mehandi" },
+  { href: "/artists?style=arabic", label: "Arabic Mehandi" },
+  { href: "/join", label: "Join as Artist" },
+  { href: "/saved", label: "Saved Artists" },
 ];
 
 const serviceLinks = [
-  { href: "/policies/shipping-policy", label: "Shipping Policy" },
-  { href: "/policies/refund-policy", label: "Refund & Returns" },
+  { href: "/policies/cancellation-policy", label: "Cancellation Policy" },
   { href: "/policies/privacy-policy", label: "Privacy Policy" },
   { href: "/policies/terms-of-service", label: "Terms of Service" },
-  { href: "/policies/size-guide", label: "Size Guide" },
+  { href: "/about", label: "About Us" },
+  { href: "/contact", label: "Contact Us" },
 ];
 
 export function Footer() {
@@ -51,9 +51,11 @@ export function Footer() {
         </div>
 
         <div>
-          <p className="text-sm font-bold uppercase tracking-widest text-marigold-300">Shop</p>
+          <p className="text-sm font-bold uppercase tracking-widest text-marigold-300">
+            Explore
+          </p>
           <ul className="mt-4 space-y-2.5">
-            {shopLinks.map((l) => (
+            {exploreLinks.map((l) => (
               <li key={l.label}>
                 <Link href={l.href} className="text-sm text-cream-200/90 transition hover:text-white">
                   {l.label}
@@ -65,7 +67,7 @@ export function Footer() {
 
         <div>
           <p className="text-sm font-bold uppercase tracking-widest text-marigold-300">
-            Customer Care
+            Support
           </p>
           <ul className="mt-4 space-y-2.5">
             {serviceLinks.map((l) => (
@@ -97,11 +99,11 @@ export function Footer() {
             </li>
             <li className="flex items-start gap-2.5">
               <MapPin className="h-4 w-4 shrink-0 translate-y-0.5 text-marigold-300" />
-              <span>Shipping across India 🇮🇳</span>
+              <span>Artists across India 🇮🇳</span>
             </li>
           </ul>
           <p className="mt-5 rounded-xl bg-white/5 px-4 py-3 text-xs leading-relaxed text-cream-200/80">
-            Cash on Delivery available · Free shipping on orders above ₹{SITE.freeShippingAbove}
+            Verified artists · Free booking requests · Pay artist directly after service
           </p>
         </div>
       </div>

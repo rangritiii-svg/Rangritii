@@ -8,14 +8,13 @@ import {
   Heart,
   Menu,
   Search,
-  ShoppingBag,
+  Sparkles,
   User,
   X,
 } from "lucide-react";
-import { useCart } from "./CartProvider";
-import { useWishlist } from "./WishlistProvider";
+import { useSavedArtists } from "./SavedArtistsProvider";
 
-type NavCategory = { name: string; slug: string };
+type NavStyle = { name: string; slug: string };
 
 function Badge({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -37,7 +36,7 @@ function SearchForm({ onDone }: { onDone: () => void }) {
       onSubmit={(e) => {
         e.preventDefault();
         const query = q.trim();
-        router.push(query ? `/shop?q=${encodeURIComponent(query)}` : "/shop");
+        router.push(query ? `/artists?q=${encodeURIComponent(query)}` : "/artists");
         onDone();
       }}
     >
@@ -45,9 +44,9 @@ function SearchForm({ onDone }: { onDone: () => void }) {
         autoFocus
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search kurtis, co-ord sets, party wear…"
+        placeholder="Search artist, city ya style…"
         className="w-full rounded-full border border-cream-300 bg-white px-5 py-2.5 text-sm outline-none focus:border-rani-400"
-        aria-label="Search products"
+        aria-label="Search artists"
       />
       <button
         type="submit"
@@ -60,9 +59,8 @@ function SearchForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-export function Header({ categories }: { categories: NavCategory[] }) {
-  const { count: cartCount } = useCart();
-  const { count: wishCount } = useWishlist();
+export function Header({ styles }: { styles: NavStyle[] }) {
+  const { count: savedCount } = useSavedArtists();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
@@ -101,27 +99,29 @@ export function Header({ categories }: { categories: NavCategory[] }) {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-7 lg:flex" aria-label="Main">
-          <Link href="/shop" className={navLink}>Shop All</Link>
-          <Link href="/shop?filter=new" className={navLink}>New In</Link>
-          <Link href="/shop?filter=bestsellers" className={navLink}>Bestsellers</Link>
+          <Link href="/artists" className={navLink}>Find Artists</Link>
           <div className="group relative">
             <button className={`${navLink} flex items-center gap-1`}>
-              Categories <ChevronDown className="h-3.5 w-3.5" />
+              Styles <ChevronDown className="h-3.5 w-3.5" />
             </button>
-            <div className="invisible absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 pt-3 opacity-0 transition-all group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+            <div className="invisible absolute left-1/2 top-full z-50 w-60 -translate-x-1/2 pt-3 opacity-0 transition-all group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
               <div className="overflow-hidden rounded-2xl border border-cream-300 bg-white py-2 shadow-xl shadow-rani-900/10">
-                {categories.map((c) => (
+                {styles.map((s) => (
                   <Link
-                    key={c.slug}
-                    href={`/shop?category=${c.slug}`}
+                    key={s.slug}
+                    href={`/artists?style=${s.slug}`}
                     className="block px-5 py-2.5 text-sm text-ink-700 hover:bg-cream-100 hover:text-rani-700"
                   >
-                    {c.name}
+                    {s.name}
                   </Link>
                 ))}
               </div>
             </div>
           </div>
+          <Link href="/#how-it-works" className={navLink}>How it Works</Link>
+          <Link href="/join" className={`${navLink} inline-flex items-center gap-1.5`}>
+            <Sparkles className="h-3.5 w-3.5 text-marigold-600" /> Join as Artist
+          </Link>
           <Link href="/about" className={navLink}>About</Link>
           <Link href="/contact" className={navLink}>Contact</Link>
         </nav>
@@ -143,20 +143,18 @@ export function Header({ categories }: { categories: NavCategory[] }) {
             <User className="h-5 w-5" />
           </Link>
           <Link
-            href="/wishlist"
+            href="/saved"
             className="relative rounded-lg p-2 text-ink-700 hover:bg-cream-200"
-            aria-label="Wishlist"
+            aria-label="Saved artists"
           >
             <Heart className="h-5 w-5" />
-            <Badge count={wishCount} />
+            <Badge count={savedCount} />
           </Link>
           <Link
-            href="/cart"
-            className="relative rounded-lg p-2 text-ink-700 hover:bg-cream-200"
-            aria-label="Cart"
+            href="/artists"
+            className="hidden rounded-full bg-rani-700 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-rani-800 sm:block"
           >
-            <ShoppingBag className="h-5 w-5" />
-            <Badge count={cartCount} />
+            Book Mehandi
           </Link>
         </div>
       </div>
@@ -193,9 +191,9 @@ export function Header({ categories }: { categories: NavCategory[] }) {
             </div>
             <nav className="flex flex-col px-3 py-3" aria-label="Mobile">
               {[
-                { href: "/shop", label: "Shop All" },
-                { href: "/shop?filter=new", label: "New In" },
-                { href: "/shop?filter=bestsellers", label: "Bestsellers" },
+                { href: "/artists", label: "Find Artists" },
+                { href: "/#how-it-works", label: "How it Works" },
+                { href: "/join", label: "Join as Artist ✨" },
               ].map((l) => (
                 <Link
                   key={l.label}
@@ -206,15 +204,15 @@ export function Header({ categories }: { categories: NavCategory[] }) {
                 </Link>
               ))}
               <p className="mt-3 px-4 text-xs font-semibold uppercase tracking-widest text-ink-500">
-                Categories
+                Styles
               </p>
-              {categories.map((c) => (
+              {styles.map((s) => (
                 <Link
-                  key={c.slug}
-                  href={`/shop?category=${c.slug}`}
+                  key={s.slug}
+                  href={`/artists?style=${s.slug}`}
                   className="rounded-xl px-4 py-2.5 text-[15px] text-ink-700 hover:bg-cream-200"
                 >
-                  {c.name}
+                  {s.name}
                 </Link>
               ))}
               <div className="mt-3 border-t border-cream-300 pt-3">

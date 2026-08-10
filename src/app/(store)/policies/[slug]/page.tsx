@@ -6,112 +6,68 @@ type Section = { heading: string; body: string[] };
 type Policy = { title: string; intro: string; sections: Section[] };
 
 const POLICIES: Record<string, Policy> = {
-  "shipping-policy": {
-    title: "Shipping Policy",
-    intro: "We ship across India with trusted courier partners.",
+  "cancellation-policy": {
+    title: "Cancellation Policy",
+    intro: "Plans badalte hain — hum samajhte hain. Simple rules:",
     sections: [
       {
-        heading: "Timelines",
+        heading: "Customer cancellation",
         body: [
-          "Orders are dispatched within 24–48 working hours.",
-          "Metro cities: 2–4 working days after dispatch. Rest of India: 4–7 working days.",
-          "You will receive tracking details on WhatsApp/SMS once your order ships.",
+          "Booking request confirm hone se pehle kabhi bhi free cancel kar sakte ho.",
+          "Confirm hone ke baad, event se kam se kam 48 hours pehle artist ko WhatsApp/call par bata dein.",
+          "Rangritii par booking request free hai — koi advance Rangritii ko nahi diya jata, isliye platform refund ka sawaal hi nahi.",
+          "Agar aapne artist ko koi advance diya hai, uska refund artist ki apni policy ke hisaab se hoga — confirm karte waqt puch lein.",
         ],
       },
       {
-        heading: "Charges",
+        heading: "Artist cancellation",
         body: [
-          `Free shipping on all orders above ₹${SITE.freeShippingAbove}.`,
-          `Orders below ₹${SITE.freeShippingAbove} carry a flat ₹${SITE.shippingFee} shipping fee.`,
-          "Cash on Delivery is available at no extra charge.",
-        ],
-      },
-    ],
-  },
-  "refund-policy": {
-    title: "Refund & Return Policy",
-    intro: "Didn't love it? No stress — returns are easy.",
-    sections: [
-      {
-        heading: "7-day easy returns",
-        body: [
-          "Raise a return/exchange request within 7 days of delivery via WhatsApp or email.",
-          "Products must be unused, unwashed, with original tags intact.",
-          "Party wear with detachable embellishments is eligible only for size exchange.",
-        ],
-      },
-      {
-        heading: "Refunds",
-        body: [
-          "Once the pickup passes quality check, refunds are processed within 5–7 working days.",
-          "COD orders are refunded to your UPI/bank account; prepaid orders to the original payment method.",
+          "Agar artist confirm karke cancel karti hai, toh hum aapko turant doosri available artist dhundhne mein help karenge.",
+          "Baar-baar cancel karne wali artists ki profile suspend ho sakti hai.",
         ],
       },
     ],
   },
   "privacy-policy": {
     title: "Privacy Policy",
-    intro: "Your data belongs to you. Here is exactly what we do with it.",
+    intro: "Aapka data aapka hai. Hum kya collect karte hain aur kyun:",
     sections: [
       {
         heading: "What we collect",
         body: [
-          "Order details: name, phone, email and delivery address — used only to fulfil your order.",
-          "Account details if you sign up: email and the orders linked to your account.",
+          "Booking details: naam, phone, address aur event info — sirf artist tak booking pahunchane ke liye.",
+          "Account details agar sign up karo: email aur aapki bookings.",
+          "Artist profiles: jo details artist khud publish ke liye deti hain (naam, city, portfolio, WhatsApp).",
         ],
       },
       {
         heading: "What we never do",
         body: [
-          "We never sell your personal data to anyone.",
-          "We never store card/UPI details — payments (when enabled) are handled by secure payment gateways.",
-          "You can ask us to delete your data anytime by writing to " + SITE.email + ".",
+          "Hum aapka personal data kisi ko bechte nahi.",
+          "Aapka phone/address sirf usi artist ko dikhta hai jise aapne booking bheji hai.",
+          "Data delete karwana ho toh " + SITE.email + " par likh do — 7 din mein ho jayega.",
         ],
       },
     ],
   },
   "terms-of-service": {
     title: "Terms of Service",
-    intro: "The short, human version of our terms.",
+    intro: "Short & human version:",
     sections: [
       {
-        heading: "Orders & pricing",
+        heading: "Platform ka role",
         body: [
-          "All prices are in INR and inclusive of taxes.",
-          "We may cancel orders due to stock errors or unserviceable pincodes — you will be informed and refunded in full.",
-          "Product colours may vary slightly due to screen settings and photography lighting.",
+          "Rangritii customers aur independent mehandi artists ko connect karta hai — service khud artist deti hai.",
+          "Price, timing aur design ki final baat customer aur artist ke beech hoti hai; payment seedha artist ko.",
+          "Hum profiles verify karte hain, par service quality ki final zimmedari artist ki hai. Koi dikkat ho toh humein zaroor batao — hum action lete hain.",
         ],
       },
       {
         heading: "Fair use",
         body: [
-          "Content on this site (images, text, designs) belongs to Rangritii and cannot be reused without permission.",
-          "Abusive or fraudulent activity (fake COD orders, chargebacks) may lead to blocked service.",
-        ],
-      },
-    ],
-  },
-  "size-guide": {
-    title: "Size Guide",
-    intro: "Measure a well-fitting kurta of yours and match it below (all in inches).",
-    sections: [
-      {
-        heading: "Standard sizes",
-        body: [
-          "S — Bust 36 · Waist 32 · Hip 38",
-          "M — Bust 38 · Waist 34 · Hip 40",
-          "L — Bust 40 · Waist 36 · Hip 42",
-          "XL — Bust 42 · Waist 38 · Hip 44",
-          "XXL — Bust 44 · Waist 40 · Hip 46",
-        ],
-      },
-      {
-        heading: "Curve (plus) sizes",
-        body: [
-          "3XL — Bust 46 · Waist 42 · Hip 48",
-          "4XL — Bust 48 · Waist 44 · Hip 50",
-          "5XL — Bust 50 · Waist 46 · Hip 52",
-          "Between sizes? Size up for a relaxed fit, or WhatsApp us — we love helping you find the right fit.",
+          "Fake bookings, spam ya galat contact details par account block ho sakta hai.",
+          "Artists apne hi kaam ki photos portfolio mein daalein — doosron ke designs chori karna ban ka reason hai.",
+          "Portfolio content Rangritii promotional use kar sakta hai (artist ke credit ke saath).",
         ],
       },
     ],

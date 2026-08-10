@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Karla } from "next/font/google";
-import { CartProvider } from "@/components/CartProvider";
-import { WishlistProvider } from "@/components/WishlistProvider";
+import { SavedArtistsProvider } from "@/components/SavedArtistsProvider";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { SITE } from "@/lib/config";
 import "./globals.css";
@@ -20,7 +19,7 @@ const karla = Karla({
 
 export const metadata: Metadata = {
   title: {
-    default: `${SITE.name} — Kurtis, Co-ord Sets & Ethnic Wear`,
+    default: `${SITE.name} — Book Mehandi Artists Near You`,
     template: `%s — ${SITE.name}`,
   },
   description: SITE.description,
@@ -46,9 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${fraunces.variable} ${karla.variable}`}>
-        <CartProvider>
-          <WishlistProvider>{children}</WishlistProvider>
-        </CartProvider>
+        <SavedArtistsProvider>{children}</SavedArtistsProvider>
         <ServiceWorkerRegistrar />
       </body>
     </html>

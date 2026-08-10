@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { isSupabaseConfigured } from "@/lib/config";
+import { parseArtistSelfFields } from "@/lib/artist-form";
+import { getArtistByUserId, updateArtist } from "@/lib/data";
 
 export type AuthResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -56,4 +58,37 @@ export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/account");
+}
+
+export type UpdateProfileResult = { ok: true } | { ok: false; error: string };
+
+/** An artist updating their own profile (never approval/slug/identity fields). */
+export async function updateOwnArtistProfile(
+  formData: FormData
+): Promise<UpdateProfileResult> {
+  try {
+    if (!isSupabaseConfigured()) {
+      return { ok: false, error: "Database not connected." };
+    }
+    const { createClient } = await import("@/lib/supabase/server");
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Please log in again." };
+
+    const artist = await getArtistByUserId(user.id);
+    if (!artist) return { ok: false, error: "Artist profile not found." };
+
+    const fields = parseArtistSelfFields(formData);
+    await updateArtist(artist.id, fields);
+    revalidatePath("/account");
+    revalidatePath(`/artist/${artist.slug}`);
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Something went wrong.",
+    };
+  }
 }

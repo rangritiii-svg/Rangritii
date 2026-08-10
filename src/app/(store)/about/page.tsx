@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Heart, Leaf, Palette } from "lucide-react";
+import { ArrowRight, HandHeart, Palette, ShieldCheck } from "lucide-react";
 import { SITE } from "@/lib/config";
 
 export const metadata: Metadata = { title: "About Us" };
@@ -17,10 +17,11 @@ export default function AboutPage() {
             {SITE.tagline}
           </h1>
           <p className="mt-5 leading-relaxed text-ink-500">
-            Rangritii began with a simple belief — that everyday ethnic wear should feel as
-            special as festive wear, without the festive price tag. We work directly with
-            fabric makers and karigars to bring you kurtis, co-ord sets and party looks in
-            colours that celebrate who you are.
+            Rangritii ek simple soch se shuru hua — har sheher mein kamaal ki mehandi
+            artists hain, lekin unhe dhundhna mushkil hai. Aur artists ke paas hunar hai,
+            par naye customers tak pahunchne ka zariya nahi. Rangritii dono ko milata
+            hai: customers ko verified artists ke real portfolios, aur artists ko bina
+            commission ke seedhi bookings.
           </p>
         </div>
       </section>
@@ -29,18 +30,18 @@ export default function AboutPage() {
         {[
           {
             icon: Palette,
-            title: "Rang first",
-            text: "Every collection starts with colour — shades picked from Indian streets, seasons and celebrations.",
+            title: "Kalakaari first",
+            text: "Har artist ka asli portfolio — jo dikhta hai wahi milta hai. Design dekho, phir chuno.",
           },
           {
-            icon: Leaf,
-            title: "Fabric you can breathe in",
-            text: "Pure cottons, soft rayons and airy georgettes — chosen for Indian weather, tested by real wear.",
+            icon: ShieldCheck,
+            title: "Verified & safe",
+            text: "Har profile team se approve hoti hai. Contact details check, portfolio check.",
           },
           {
-            icon: Heart,
-            title: "Style for every body",
-            text: "Sizes S to 5XL, cuts designed on real bodies. Fashion is for everyone, full stop.",
+            icon: HandHeart,
+            title: "Artist ka haq",
+            text: "Zero commission. Payment seedha artist ko — unki mehnat, unki kamai.",
           },
         ].map(({ icon: Icon, title, text }) => (
           <div key={title} className="rounded-3xl border border-cream-300 bg-white p-7">
@@ -55,18 +56,26 @@ export default function AboutPage() {
 
       <section className="mx-auto max-w-3xl px-4 pb-16 text-center sm:px-6">
         <h2 className="font-display text-2xl font-semibold text-ink-900">
-          From our parivaar to yours
+          Shaadi ho ya Karva Chauth — rang humara, kahaani aapki
         </h2>
         <p className="mt-3 text-ink-500">
-          Thousands of women across India wear Rangritii to work, weddings and everything in
-          between. We would love to dress your story too.
+          Har booking ke saath ek celebration judta hai. Humein khushi hai ki hum uska
+          hissa hain.
         </p>
-        <Link
-          href="/shop"
-          className="mt-7 inline-flex items-center gap-2 rounded-full bg-rani-700 px-7 py-3.5 text-sm font-bold text-white hover:bg-rani-800"
-        >
-          Explore the Collection <ArrowRight className="h-4 w-4" />
-        </Link>
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
+          <Link
+            href="/artists"
+            className="inline-flex items-center gap-2 rounded-full bg-rani-700 px-7 py-3.5 text-sm font-bold text-white hover:bg-rani-800"
+          >
+            Find Your Artist <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/join"
+            className="inline-flex items-center gap-2 rounded-full border-2 border-rani-700 px-7 py-3.5 text-sm font-bold text-rani-700 hover:bg-rani-50"
+          >
+            Join as Artist
+          </Link>
+        </div>
       </section>
     </div>
   );

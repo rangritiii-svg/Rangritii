@@ -1,4 +1,4 @@
-export type Category = {
+export type Style = {
   id: string;
   name: string;
   slug: string;
@@ -7,86 +7,61 @@ export type Category = {
   sortOrder: number;
 };
 
-export type Product = {
+export type Artist = {
   id: string;
+  userId: string | null;
   name: string;
   slug: string;
-  description: string;
-  price: number;
-  compareAtPrice: number | null;
-  categorySlug: string;
-  images: string[];
-  sizes: string[];
-  fabric: string;
-  stock: number;
-  isNew: boolean;
-  isBestseller: boolean;
+  bio: string;
+  city: string;
+  area: string;
+  whatsapp: string;
+  experienceYears: number;
+  priceMin: number;
+  priceMax: number;
+  styles: string[]; // style slugs
+  profileImage: string;
+  portfolioImages: string[];
+  isApproved: boolean;
   isActive: boolean;
   createdAt: string;
 };
 
-export type CartItem = {
-  productId: string;
-  slug: string;
-  name: string;
-  price: number;
-  image: string;
-  size: string;
-  quantity: number;
-};
+export type ArtistInput = Omit<Artist, "id" | "createdAt">;
 
-export const ORDER_STATUSES = [
+export const EVENT_TYPES = [
+  "Bridal / Dulhan",
+  "Engagement / Sagai",
+  "Karva Chauth",
+  "Teej / Festival",
+  "Party / Guest",
+  "Baby Shower / Godh Bharai",
+  "Other",
+] as const;
+
+export const BOOKING_STATUSES = [
   "pending",
   "confirmed",
-  "shipped",
-  "delivered",
+  "completed",
   "cancelled",
 ] as const;
 
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
-export type OrderItem = {
+export type Booking = {
   id: string;
-  productId: string;
-  productName: string;
-  price: number;
-  size: string;
-  quantity: number;
-  image: string;
-};
-
-export type Order = {
-  id: string;
-  orderNumber: string;
+  bookingNumber: string;
+  artistId: string;
+  artistName: string;
   customerName: string;
-  email: string;
   phone: string;
+  email: string;
   address: string;
   city: string;
-  state: string;
-  pincode: string;
-  paymentMethod: "cod";
-  status: OrderStatus;
-  subtotal: number;
-  shippingFee: number;
-  total: number;
-  items: OrderItem[];
+  eventDate: string; // yyyy-mm-dd
+  eventType: string;
+  notes: string;
+  status: BookingStatus;
   userId: string | null;
   createdAt: string;
-};
-
-export type ProductInput = {
-  name: string;
-  slug: string;
-  description: string;
-  price: number;
-  compareAtPrice: number | null;
-  categorySlug: string;
-  images: string[];
-  sizes: string[];
-  fabric: string;
-  stock: number;
-  isNew: boolean;
-  isBestseller: boolean;
-  isActive: boolean;
 };

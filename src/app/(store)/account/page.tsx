@@ -1,10 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Database, LogOut, Package, ShieldCheck } from "lucide-react";
+import {
+  BadgeCheck,
+  CalendarDays,
+  Clock,
+  Database,
+  LogOut,
+  Palette,
+  Phone,
+  ShieldCheck,
+} from "lucide-react";
+import { ArtistSelfEditor } from "@/components/ArtistSelfEditor";
 import { AuthTabs } from "@/components/AuthTabs";
 import { isSupabaseConfigured } from "@/lib/config";
-import { formatDate, formatINR } from "@/lib/format";
-import { getOrdersForUser } from "@/lib/orders";
+import { getArtistByUserId, getStyles } from "@/lib/data";
+import { formatDate, formatEventDate } from "@/lib/format";
+import { getBookingsForArtist, getBookingsForUser } from "@/lib/bookings";
+import type { Booking } from "@/lib/types";
 import { signOut } from "./actions";
 
 export const metadata: Metadata = { title: "My Account" };
@@ -13,10 +25,72 @@ export const dynamic = "force-dynamic";
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-marigold-100 text-marigold-800",
   confirmed: "bg-blue-100 text-blue-800",
-  shipped: "bg-purple-100 text-purple-800",
-  delivered: "bg-green-100 text-green-800",
+  completed: "bg-green-100 text-green-800",
   cancelled: "bg-rani-100 text-rani-800",
 };
+
+function BookingList({ bookings, forArtist }: { bookings: Booking[]; forArtist?: boolean }) {
+  if (bookings.length === 0) {
+    return (
+      <div className="mt-4 rounded-3xl border border-dashed border-cream-300 bg-white py-12 text-center">
+        <p className="text-ink-500">
+          {forArtist
+            ? "Abhi koi booking request nahi aayi."
+            : "No bookings yet — apni pehli mehandi book karo!"}
+        </p>
+        {!forArtist && (
+          <Link
+            href="/artists"
+            className="mt-4 inline-block rounded-full bg-rani-700 px-6 py-3 text-sm font-bold text-white hover:bg-rani-800"
+          >
+            Find Artists
+          </Link>
+        )}
+      </div>
+    );
+  }
+  return (
+    <ul className="mt-4 space-y-4">
+      {bookings.map((b) => (
+        <li key={b.id} className="rounded-3xl border border-cream-300 bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-ink-900">{b.bookingNumber}</p>
+              <p className="text-xs text-ink-500">Requested {formatDate(b.createdAt)}</p>
+            </div>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${
+                STATUS_STYLES[b.status] ?? "bg-cream-200 text-ink-700"
+              }`}
+            >
+              {b.status}
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 border-t border-cream-200 pt-3 text-sm text-ink-700 sm:grid-cols-2">
+            <p className="flex items-center gap-2">
+              <Palette className="h-4 w-4 text-rani-700" />
+              {forArtist ? b.customerName : b.artistName}
+            </p>
+            <p className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-rani-700" />
+              {formatEventDate(b.eventDate)} · {b.eventType}
+            </p>
+            {forArtist && (
+              <p className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-rani-700" />
+                <a href={`tel:${b.phone}`} className="hover:text-rani-700">{b.phone}</a>
+              </p>
+            )}
+            <p className="text-ink-500 sm:col-span-2">
+              📍 {b.address}, {b.city}
+            </p>
+            {b.notes && <p className="text-ink-500 sm:col-span-2">📝 {b.notes}</p>}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default async function AccountPage() {
   if (!isSupabaseConfigured()) {
@@ -27,15 +101,12 @@ export default async function AccountPage() {
           Demo mode chal raha hai
         </h1>
         <p className="mx-auto mt-3 max-w-md text-ink-500">
-          Customer accounts unlock once Supabase is connected (2-minute setup — see the
-          project README). Shopping, cart aur checkout abhi bhi fully working hain!
+          Accounts (customer & artist login) Supabase connect hone par unlock hote hain.
+          Browsing aur booking abhi bhi fully working hai!
         </p>
         <div className="mx-auto mt-8 max-w-sm rounded-3xl border border-cream-300 bg-white p-6 text-left">
           <p className="flex items-center gap-2 text-sm font-bold text-ink-900">
             <ShieldCheck className="h-4 w-4 text-rani-700" /> Admin panel demo
-          </p>
-          <p className="mt-2 text-sm text-ink-500">
-            Store manager ho? Admin panel try karo:
           </p>
           <Link
             href="/admin/login"
@@ -61,7 +132,7 @@ export default async function AccountPage() {
           Welcome back
         </h1>
         <p className="mt-2 text-center text-ink-500">
-          Log in to track orders and check out faster.
+          Log in to manage bookings — ya artist ho toh apni profile.
         </p>
         <div className="mt-8">
           <AuthTabs />
@@ -70,19 +141,21 @@ export default async function AccountPage() {
     );
   }
 
-  const orders = await getOrdersForUser(user.id);
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [myBookings, artist, styles, profileRes] = await Promise.all([
+    getBookingsForUser(user.id),
+    getArtistByUserId(user.id),
+    getStyles(),
+    supabase.from("profiles").select("full_name, role").eq("id", user.id).maybeSingle(),
+  ]);
+  const profile = profileRes.data;
+  const artistBookings = artist ? await getBookingsForArtist(artist.id) : [];
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-semibold text-ink-900 sm:text-4xl">
-            Namaste, {profile?.full_name || user.email} 👋
+            Namaste, {artist?.name || profile?.full_name || user.email} 👋
           </h1>
           <p className="mt-1 text-sm text-ink-500">{user.email}</p>
         </div>
@@ -103,58 +176,60 @@ export default async function AccountPage() {
         </div>
       </div>
 
-      <h2 className="mt-10 flex items-center gap-2 font-display text-2xl font-semibold text-ink-900">
-        <Package className="h-5 w-5 text-rani-700" /> My Orders
-      </h2>
+      {/* ── Artist section ── */}
+      {artist && (
+        <section className="mt-10">
+          <h2 className="flex items-center gap-2 font-display text-2xl font-semibold text-ink-900">
+            <Palette className="h-5 w-5 text-rani-700" /> My Artist Profile
+          </h2>
+          {artist.isApproved ? (
+            <p className="mt-3 flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-5 py-3.5 text-sm font-medium text-green-800">
+              <BadgeCheck className="h-4.5 w-4.5" />
+              Profile approved & live!{" "}
+              <Link href={`/artist/${artist.slug}`} className="font-bold underline">
+                View public profile
+              </Link>
+            </p>
+          ) : (
+            <p className="mt-3 flex items-center gap-2 rounded-2xl border border-marigold-200 bg-marigold-50 px-5 py-3.5 text-sm font-medium text-marigold-800">
+              <Clock className="h-4.5 w-4.5" />
+              Profile review mein hai — approval 24–48 hours mein ho jayega.
+            </p>
+          )}
+          <div className="mt-4">
+            <ArtistSelfEditor artist={artist} styles={styles} />
+          </div>
 
-      {orders.length === 0 ? (
-        <div className="mt-6 rounded-3xl border border-dashed border-cream-300 bg-white py-16 text-center">
-          <p className="text-ink-500">No orders yet — your first Rangritii look awaits.</p>
+          <h3 className="mt-8 font-display text-xl font-semibold text-ink-900">
+            Booking Requests Received ({artistBookings.length})
+          </h3>
+          <BookingList bookings={artistBookings} forArtist />
+        </section>
+      )}
+
+      {/* ── Customer bookings ── */}
+      <section className="mt-10">
+        <h2 className="flex items-center gap-2 font-display text-2xl font-semibold text-ink-900">
+          <CalendarDays className="h-5 w-5 text-rani-700" /> My Bookings
+        </h2>
+        <BookingList bookings={myBookings} />
+      </section>
+
+      {!artist && (
+        <div className="mt-10 rounded-3xl border border-cream-300 bg-white p-6 text-center">
+          <p className="font-display text-xl font-semibold text-ink-900">
+            Mehandi artist ho?
+          </p>
+          <p className="mt-1 text-sm text-ink-500">
+            Free profile banao aur apne sheher se bookings pao.
+          </p>
           <Link
-            href="/shop"
-            className="mt-5 inline-block rounded-full bg-rani-700 px-6 py-3 text-sm font-bold text-white hover:bg-rani-800"
+            href="/join"
+            className="mt-4 inline-block rounded-full bg-rani-700 px-6 py-3 text-sm font-bold text-white hover:bg-rani-800"
           >
-            Shop Now
+            Join as Artist
           </Link>
         </div>
-      ) : (
-        <ul className="mt-6 space-y-4">
-          {orders.map((order) => (
-            <li key={order.id} className="rounded-3xl border border-cream-300 bg-white p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-bold text-ink-900">{order.orderNumber}</p>
-                  <p className="text-xs text-ink-500">{formatDate(order.createdAt)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${
-                      STATUS_STYLES[order.status] ?? "bg-cream-200 text-ink-700"
-                    }`}
-                  >
-                    {order.status}
-                  </span>
-                  <span className="font-bold text-rani-800">{formatINR(order.total)}</span>
-                </div>
-              </div>
-              <ul className="mt-4 space-y-2 border-t border-cream-200 pt-4">
-                {order.items.map((item) => (
-                  <li key={item.id} className="flex items-center gap-3 text-sm">
-                    {item.image && (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={item.image} alt="" className="h-12 w-9 rounded-lg object-cover" />
-                    )}
-                    <span className="flex-1 text-ink-700">
-                      {item.productName}
-                      {item.size && ` · ${item.size}`} × {item.quantity}
-                    </span>
-                    <span className="font-semibold">{formatINR(item.price * item.quantity)}</span>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
       )}
     </div>
   );

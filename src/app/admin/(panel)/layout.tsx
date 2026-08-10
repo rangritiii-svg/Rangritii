@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FolderTree, LayoutDashboard, Package, ShoppingCart, Store } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Palette, Store, Users } from "lucide-react";
 import { getAdminSession } from "@/lib/admin-auth";
 import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
 
@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 
 const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/admin/categories", label: "Categories", icon: FolderTree },
+  { href: "/admin/artists", label: "Artists", icon: Users },
+  { href: "/admin/bookings", label: "Bookings", icon: CalendarDays },
+  { href: "/admin/styles", label: "Styles", icon: Palette },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

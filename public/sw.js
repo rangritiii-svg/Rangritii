@@ -1,11 +1,11 @@
 /* Rangritii service worker — cache-first for static assets, network-first for pages. */
-const CACHE = "rangritii-v1";
+const CACHE = "rangritii-v2";
 const STATIC_DESTINATIONS = ["style", "script", "font", "image"];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(["/", "/shop", "/icons/icon-192.png"]))
+    caches.open(CACHE).then((cache) => cache.addAll(["/", "/artists", "/icons/icon-192.png"]))
   );
 });
 
@@ -23,8 +23,8 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  // Never cache admin, account, checkout or API traffic.
-  if (/^\/(admin|account|checkout|api)/.test(url.pathname)) return;
+  // Never cache admin, account, booking or API traffic.
+  if (/^\/(admin|account|book|join|api)/.test(url.pathname)) return;
 
   if (STATIC_DESTINATIONS.includes(request.destination)) {
     // Cache-first for assets
