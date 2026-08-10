@@ -122,15 +122,93 @@ export async function createStyle(input: Omit<Style, "id">): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export async function deleteStyle(id: string): Promise<void> {
+export async function updateStyle(id: string, input: Omit<Style, "id">): Promise<void> {
   if (!isSupabaseConfigured()) {
     const store = demoStore();
-    store.styles = store.styles.filter((s) => s.id !== id);
+    const idx = store.styles.findIndex((s) => s.id === id);
+    if (idx === -1) throw new Error("Style not found.");
+    const oldSlug = store.styles[idx].slug;
+    if (store.styles.some((s) => s.slug === input.slug && s.id !== id)) {
+      throw new Error("Is slug ki style pehle se hai.");
+    }
+    store.styles[idx] = { ...input, id };
+    // keep artist references in sync when the slug changes
+    if (oldSlug !== input.slug) {
+      for (const a of store.artists) {
+        a.styles = a.styles.map((s) => (s === oldSlug ? input.slug : s));
+      }
+    }
     return;
   }
   const supabase = await createClient();
+  const { data: existing, error: readError } = await supabase
+    .from("styles")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) throw new Error(readError.message);
+  if (!existing) throw new Error("Style not found.");
+
+  const { error } = await supabase
+    .from("styles")
+    .update({
+      name: input.name,
+      slug: input.slug,
+      description: input.description,
+      image: input.image,
+      sort_order: input.sortOrder,
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  if (existing.slug !== input.slug) {
+    const { data: artists } = await supabase
+      .from("artists")
+      .select("id, styles")
+      .contains("styles", [existing.slug]);
+    for (const a of artists ?? []) {
+      await supabase
+        .from("artists")
+        .update({ styles: (a.styles as string[]).map((s) => (s === existing.slug ? input.slug : s)) })
+        .eq("id", a.id);
+    }
+  }
+}
+
+/** Deletes a style and detaches it from every artist that referenced it. */
+export async function deleteStyle(id: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const store = demoStore();
+    const style = store.styles.find((s) => s.id === id);
+    if (!style) return;
+    store.styles = store.styles.filter((s) => s.id !== id);
+    for (const a of store.artists) {
+      a.styles = a.styles.filter((s) => s !== style.slug);
+    }
+    return;
+  }
+  const supabase = await createClient();
+  const { data: style, error: readError } = await supabase
+    .from("styles")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) throw new Error(readError.message);
+  if (!style) return;
+
   const { error } = await supabase.from("styles").delete().eq("id", id);
   if (error) throw new Error(error.message);
+
+  const { data: artists } = await supabase
+    .from("artists")
+    .select("id, styles")
+    .contains("styles", [style.slug]);
+  for (const a of artists ?? []) {
+    await supabase
+      .from("artists")
+      .update({ styles: (a.styles as string[]).filter((s) => s !== style.slug) })
+      .eq("id", a.id);
+  }
 }
 
 /* ── Artists ───────────────────────────────────────────────────────── */

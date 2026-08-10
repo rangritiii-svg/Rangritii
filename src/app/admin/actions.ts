@@ -12,6 +12,7 @@ import {
   getPlatformSettings,
   updateArtist,
   updatePlatformSettings,
+  updateStyle,
 } from "@/lib/data";
 import { slugify } from "@/lib/format";
 import {
@@ -172,20 +173,44 @@ export async function markSettledAction(id: string, utr: string): Promise<Action
   }
 }
 
+function parseStyle(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("Style name is required.");
+  const slug = slugify(String(formData.get("slug") ?? "").trim() || name);
+  const sortOrder = Number(formData.get("sortOrder") ?? 0) || 0;
+  // image comes from ImageListInput (newline-separated hidden input)
+  const image =
+    String(formData.get("image") ?? "")
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean)[0] ?? "";
+  return {
+    name: name.slice(0, 100),
+    slug,
+    description: String(formData.get("description") ?? "").trim().slice(0, 300),
+    image: image.slice(0, 500),
+    sortOrder,
+  };
+}
+
 export async function createStyleAction(formData: FormData): Promise<ActionResult> {
   try {
     await requireAdmin();
-    const name = String(formData.get("name") ?? "").trim();
-    if (!name) throw new Error("Style name is required.");
-    const slug = slugify(String(formData.get("slug") ?? "").trim() || name);
-    const sortOrder = Number(formData.get("sortOrder") ?? 0) || 0;
-    await createStyle({
-      name: name.slice(0, 100),
-      slug,
-      description: String(formData.get("description") ?? "").trim().slice(0, 300),
-      image: String(formData.get("image") ?? "").trim().slice(0, 500),
-      sortOrder,
-    });
+    await createStyle(parseStyle(formData));
+    revalidatePath("/", "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function updateStyleAction(
+  id: string,
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await updateStyle(id, parseStyle(formData));
     revalidatePath("/", "layout");
     return { ok: true };
   } catch (e) {
