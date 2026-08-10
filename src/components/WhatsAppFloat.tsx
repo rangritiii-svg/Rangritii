@@ -1,9 +1,13 @@
 import { SITE } from "@/lib/config";
+import { getPlatformSettings } from "@/lib/data";
 
-export function WhatsAppFloat() {
+export async function WhatsAppFloat() {
+  const settings = await getPlatformSettings();
+  const waNumber = settings.contactWhatsapp || SITE.whatsapp;
+
   return (
     <a
-      href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(
+      href={`https://wa.me/${waNumber}?text=${encodeURIComponent(
         "Hi Rangritii! Mujhe mehandi artist book karni hai."
       )}`}
       target="_blank"

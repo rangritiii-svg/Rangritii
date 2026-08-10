@@ -1,5 +1,5 @@
 import "server-only";
-import { isSupabaseConfigured } from "./config";
+import { isSupabaseConfigured, SITE } from "./config";
 import { demoStore } from "./demo-store";
 import { createClient } from "./supabase/server";
 import type { Artist, ArtistInput, PlatformSettings, Style } from "./types";
@@ -400,22 +400,30 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   upiId: "",
   upiQr: "",
   commissionPercent: 10,
+  contactPhone: SITE.phone,
+  contactWhatsapp: SITE.whatsapp,
+  contactEmail: SITE.email,
+  contactHours: "Mon–Sat, 10am–7pm",
 };
 
 type SettingsRow = {
   upi_id: string;
   upi_qr: string;
   commission_percent: number;
+  contact_phone?: string;
+  contact_whatsapp?: string;
+  contact_email?: string;
+  contact_hours?: string;
 };
 
 export async function getPlatformSettings(): Promise<PlatformSettings> {
   if (!isSupabaseConfigured()) {
-    return { ...demoStore().settings };
+    return { ...DEFAULT_SETTINGS, ...demoStore().settings };
   }
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("platform_settings")
-    .select("upi_id, upi_qr, commission_percent")
+    .select("upi_id, upi_qr, commission_percent, contact_phone, contact_whatsapp, contact_email, contact_hours")
     .eq("id", 1)
     .maybeSingle();
   if (error) throw new Error(`Failed to load settings: ${error.message}`);
@@ -425,6 +433,10 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     upiId: row.upi_id ?? "",
     upiQr: row.upi_qr ?? "",
     commissionPercent: Number(row.commission_percent ?? 10),
+    contactPhone: row.contact_phone || SITE.phone,
+    contactWhatsapp: row.contact_whatsapp || SITE.whatsapp,
+    contactEmail: row.contact_email || SITE.email,
+    contactHours: row.contact_hours || "Mon–Sat, 10am–7pm",
   };
 }
 
@@ -439,6 +451,10 @@ export async function updatePlatformSettings(settings: PlatformSettings): Promis
     upi_id: settings.upiId,
     upi_qr: settings.upiQr,
     commission_percent: settings.commissionPercent,
+    contact_phone: settings.contactPhone,
+    contact_whatsapp: settings.contactWhatsapp,
+    contact_email: settings.contactEmail,
+    contact_hours: settings.contactHours,
   });
   if (error) throw new Error(error.message);
 }
