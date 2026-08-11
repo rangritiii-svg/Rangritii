@@ -1,8 +1,8 @@
 import "server-only";
-import { isSupabaseConfigured } from "./config";
+import { isSupabaseConfigured, SITE } from "./config";
 import { demoStore } from "./demo-store";
 import { createClient } from "./supabase/server";
-import type { Artist, ArtistInput, PlatformSettings, Style } from "./types";
+import type { Artist, ArtistInput, ContactMessage, PlatformSettings, Style } from "./types";
 
 /* ── Row mappers (Supabase snake_case → app camelCase) ─────────────── */
 
@@ -400,22 +400,32 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   upiId: "",
   upiQr: "",
   commissionPercent: 10,
+  contactPhone: SITE.phone,
+  contactWhatsapp: SITE.whatsapp,
+  contactEmail: SITE.email,
+  contactHours: "Mon–Sat, 10am–7pm",
 };
 
 type SettingsRow = {
   upi_id: string;
   upi_qr: string;
   commission_percent: number;
+  contact_phone?: string;
+  contact_whatsapp?: string;
+  contact_email?: string;
+  contact_hours?: string;
 };
 
 export async function getPlatformSettings(): Promise<PlatformSettings> {
   if (!isSupabaseConfigured()) {
-    return { ...demoStore().settings };
+    return { ...DEFAULT_SETTINGS, ...demoStore().settings };
   }
   const supabase = await createClient();
+  // select("*") so the read keeps working even before the contact_* column
+  // migration has been run on the database.
   const { data, error } = await supabase
     .from("platform_settings")
-    .select("upi_id, upi_qr, commission_percent")
+    .select("*")
     .eq("id", 1)
     .maybeSingle();
   if (error) throw new Error(`Failed to load settings: ${error.message}`);
@@ -425,6 +435,10 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     upiId: row.upi_id ?? "",
     upiQr: row.upi_qr ?? "",
     commissionPercent: Number(row.commission_percent ?? 10),
+    contactPhone: row.contact_phone || SITE.phone,
+    contactWhatsapp: row.contact_whatsapp || SITE.whatsapp,
+    contactEmail: row.contact_email || SITE.email,
+    contactHours: row.contact_hours || "Mon–Sat, 10am–7pm",
   };
 }
 
@@ -439,8 +453,33 @@ export async function updatePlatformSettings(settings: PlatformSettings): Promis
     upi_id: settings.upiId,
     upi_qr: settings.upiQr,
     commission_percent: settings.commissionPercent,
+    contact_phone: settings.contactPhone,
+    contact_whatsapp: settings.contactWhatsapp,
+    contact_email: settings.contactEmail,
+    contact_hours: settings.contactHours,
   });
   if (error) throw new Error(error.message);
+}
+
+/* ── Contact messages (admin inbox) ────────────────────────────────── */
+
+export async function getContactMessages(): Promise<ContactMessage[]> {
+  if (!isSupabaseConfigured()) {
+    return [...demoStore().messages];
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select("id, name, email, message, created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Failed to load messages: ${error.message}`);
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    name: row.name ?? "",
+    email: row.email ?? "",
+    message: row.message ?? "",
+    createdAt: row.created_at ?? "",
+  }));
 }
 
 export async function deleteArtist(id: string): Promise<void> {

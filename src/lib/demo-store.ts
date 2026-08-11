@@ -1,4 +1,4 @@
-import type { Artist, Booking, PlatformSettings, Style } from "./types";
+import type { Artist, Booking, ContactMessage, PlatformSettings, Style } from "./types";
 import { DEMO_ARTISTS, DEMO_STYLES } from "./demo-data";
 
 /**
@@ -14,6 +14,7 @@ type DemoStore = {
   bookings: Booking[];
   bookingSeq: number;
   settings: PlatformSettings;
+  messages: ContactMessage[];
 };
 
 declare global {
@@ -85,7 +86,21 @@ export function demoStore(): DemoStore {
         upiId: "rangritii@demoupi",
         upiQr: "/art/qr-demo.svg",
         commissionPercent: 10,
+        contactPhone: "+91 99250 26318",
+        contactWhatsapp: "919925026318",
+        contactEmail: "rangritii21@gmail.com",
+        contactHours: "Mon–Sat, 10am–7pm",
       },
+      messages: [
+        {
+          id: "m-demo-1",
+          name: "Ritika Jain",
+          email: "ritika@example.com",
+          message:
+            "Hi! Mujhe apni behen ki shaadi ke liye Udaipur mein bridal mehandi artist chahiye, 2 October ke liye. Kya aap help kar sakte ho?",
+          createdAt: "2026-08-08T11:20:00Z",
+        },
+      ],
     };
   }
   return globalThis.__rangritiiStore;

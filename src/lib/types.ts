@@ -33,6 +33,18 @@ export type PlatformSettings = {
   upiId: string;
   upiQr: string; // QR code image URL
   commissionPercent: number;
+  contactPhone: string;
+  contactWhatsapp: string;
+  contactEmail: string;
+  contactHours: string;
+};
+
+export type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: string;
 };
 
 export type ArtistInput = Omit<Artist, "id" | "createdAt">;

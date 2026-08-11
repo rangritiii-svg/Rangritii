@@ -2,9 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   CalendarDays,
-  IndianRupee,
+  Inbox,
   LayoutDashboard,
   Palette,
+  SlidersHorizontal,
   Store,
   Users,
 } from "lucide-react";
@@ -18,7 +19,8 @@ const nav = [
   { href: "/admin/artists", label: "Artists", icon: Users },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarDays },
   { href: "/admin/styles", label: "Styles", icon: Palette },
-  { href: "/admin/settings", label: "Payments", icon: IndianRupee },
+  { href: "/admin/messages", label: "Messages", icon: Inbox },
+  { href: "/admin/settings", label: "Settings", icon: SlidersHorizontal },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

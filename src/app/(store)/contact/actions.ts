@@ -14,7 +14,15 @@ export async function sendMessage(formData: FormData): Promise<ContactResult> {
   if (message.length < 5) return { ok: false, error: "Please write a short message." };
 
   if (!isSupabaseConfigured()) {
-    // Demo mode: accept the message without persistence.
+    // Demo mode: keep in the in-memory store so Admin → Messages shows it.
+    const { demoStore } = await import("@/lib/demo-store");
+    demoStore().messages.unshift({
+      id: `m-${Date.now()}`,
+      name: name.slice(0, 120),
+      email: email.slice(0, 200),
+      message: message.slice(0, 2000),
+      createdAt: new Date().toISOString(),
+    });
     return { ok: true };
   }
 
