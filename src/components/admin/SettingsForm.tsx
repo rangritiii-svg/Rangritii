@@ -39,7 +39,7 @@ export function SettingsForm({ settings }: { settings: PlatformSettings }) {
           Contact Us & Support Details
         </h2>
         <p className="text-xs text-ink-500">
-          Yeh details website ke Contact Us page, Footer, aur WhatsApp float button par dikhengi.
+          These details appear on the website&apos;s Contact Us page, footer, and WhatsApp float button.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -52,7 +52,7 @@ export function SettingsForm({ settings }: { settings: PlatformSettings }) {
               className={field}
               placeholder="+91 99250 26318"
             />
-            <p className="mt-1 text-[11px] text-ink-500">Call us link & Contact page par dikhega.</p>
+            <p className="mt-1 text-[11px] text-ink-500">Shown in the Call Us link and on the Contact page.</p>
           </div>
 
           <div>
@@ -64,7 +64,7 @@ export function SettingsForm({ settings }: { settings: PlatformSettings }) {
               className={field}
               placeholder="919925026318"
             />
-            <p className="mt-1 text-[11px] text-ink-500">Direct wa.me chat link ke liye (digits only).</p>
+            <p className="mt-1 text-[11px] text-ink-500">Used for the direct wa.me chat link (digits only).</p>
           </div>
         </div>
 
@@ -79,7 +79,7 @@ export function SettingsForm({ settings }: { settings: PlatformSettings }) {
               className={field}
               placeholder="rangritii21@gmail.com"
             />
-            <p className="mt-1 text-[11px] text-ink-500">Email us link ke liye.</p>
+            <p className="mt-1 text-[11px] text-ink-500">Used for the Email Us link.</p>
           </div>
 
           <div>
@@ -91,7 +91,7 @@ export function SettingsForm({ settings }: { settings: PlatformSettings }) {
               className={field}
               placeholder="Mon–Sat, 10am–7pm"
             />
-            <p className="mt-1 text-[11px] text-ink-500">Contact card par & Call details ke neeche dikhega.</p>
+            <p className="mt-1 text-[11px] text-ink-500">Shown on the contact card, below the call details.</p>
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@ export function SettingsForm({ settings }: { settings: PlatformSettings }) {
             placeholder="rangritii@okhdfcbank"
           />
           <p className="mt-1.5 text-xs text-ink-500">
-            Yeh UPI customers ko payment page par aur artists ko commission bharne ke liye dikhega.
+            This UPI ID is shown to customers on the payment page and to artists for paying commission.
           </p>
         </div>
 
@@ -137,7 +137,7 @@ export function SettingsForm({ settings }: { settings: PlatformSettings }) {
             className={field}
           />
           <p className="mt-1.5 text-xs text-ink-500">
-            Har booking ke final amount par yeh % commission banega.
+            This percentage is charged as commission on each booking&apos;s final amount.
           </p>
         </div>
       </div>

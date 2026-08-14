@@ -1,6 +1,6 @@
 -- ============================================================
 -- Google login helper (run once in SQL Editor)
--- Google se aane wale users ka naam bhi profile mein save hoga.
+-- Saves the name of users signing in with Google to their profile.
 -- ============================================================
 
 create or replace function public.handle_new_user()
@@ -15,7 +15,7 @@ begin
     new.id,
     coalesce(
       new.raw_user_meta_data ->> 'full_name',
-      new.raw_user_meta_data ->> 'name',  -- Google login deta hai 'name'
+      new.raw_user_meta_data ->> 'name',  -- Google login provides 'name'
       ''
     )
   )

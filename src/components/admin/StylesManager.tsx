@@ -103,7 +103,7 @@ export function StylesManager({
           </tbody>
         </table>
         <p className="border-t border-cream-100 px-5 py-3 text-xs text-ink-500">
-          Note: style delete karne par wo artists ki profiles se bhi apne aap hat jayegi.
+          Note: deleting a style also removes it automatically from artist profiles.
         </p>
       </div>
 
@@ -150,7 +150,7 @@ export function StylesManager({
           <div className="sm:col-span-2">
             <ImageListInput
               name="image"
-              label="Style image (upload ya URL)"
+              label="Style image (upload or URL)"
               initial={editing?.image ? [editing.image] : []}
               single
             />

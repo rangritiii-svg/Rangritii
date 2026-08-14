@@ -44,7 +44,7 @@ function SearchForm({ onDone }: { onDone: () => void }) {
         autoFocus
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search artist, city ya style…"
+        placeholder="Search artist, city or style…"
         className="w-full rounded-full border border-cream-300 bg-white px-5 py-2.5 text-sm outline-none focus:border-rani-400"
         aria-label="Search artists"
       />

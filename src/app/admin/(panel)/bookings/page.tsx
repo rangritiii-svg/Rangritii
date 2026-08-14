@@ -22,7 +22,7 @@ export default async function AdminBookingsPage() {
 
       {bookings.length === 0 ? (
         <div className="mt-6 rounded-3xl border border-dashed border-cream-300 bg-white py-16 text-center text-ink-500">
-          No bookings yet. Customer requests yahan dikhengi.
+          No bookings yet. Customer requests will appear here.
         </div>
       ) : (
         <ul className="mt-6 space-y-4">

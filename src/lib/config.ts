@@ -7,9 +7,9 @@ export function isSupabaseConfigured(): boolean {
 
 export const SITE = {
   name: "Rangritii",
-  tagline: "Mehandi ka rang, aapki kahaani",
+  tagline: "The colour of mehandi, the story of you",
   description:
-    "India's mehandi platform — apne sheher ke best mehandi artists dhundo, portfolio dekho, aur ghar baithe booking karo. Bridal, Arabic, festive — har style ke verified artists.",
+    "India's mehandi platform — discover the best mehandi artists in your city, browse their portfolios, and book from the comfort of your home. Verified artists for every style — bridal, Arabic, and festive.",
   phone: "+91 99250 26318",
   whatsapp: "919925026318",
   email: "rangritii21@gmail.com",

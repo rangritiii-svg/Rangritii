@@ -34,7 +34,7 @@ function PaymentChip({ b }: { b: Booking }) {
   if (b.paymentStatus === "verified")
     return <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800">Paid ✓</span>;
   if (b.paymentStatus === "claimed")
-    return <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">Payment verify ho rahi hai</span>;
+    return <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800">Payment being verified</span>;
   if (b.amount !== null)
     return (
       <Link
@@ -61,8 +61,8 @@ function BookingList({
       <div className="mt-4 rounded-3xl border border-dashed border-cream-300 bg-white py-12 text-center">
         <p className="text-ink-500">
           {forArtist
-            ? "Abhi koi booking request nahi aayi."
-            : "No bookings yet — apni pehli mehandi book karo!"}
+            ? "No booking requests have come in yet."
+            : "No bookings yet — book your first mehandi!"}
         </p>
         {!forArtist && (
           <Link
@@ -134,11 +134,11 @@ export default async function AccountPage() {
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <Database className="mx-auto h-14 w-14 text-ink-300" />
         <h1 className="mt-5 font-display text-3xl font-semibold text-ink-900">
-          Demo mode chal raha hai
+          You&apos;re in demo mode
         </h1>
         <p className="mx-auto mt-3 max-w-md text-ink-500">
-          Accounts (customer & artist login) Supabase connect hone par unlock hote hain.
-          Browsing aur booking abhi bhi fully working hai!
+          Accounts (customer & artist login) unlock once Supabase is connected.
+          Browsing and booking are still fully working!
         </p>
         <div className="mx-auto mt-8 max-w-sm rounded-3xl border border-cream-300 bg-white p-6 text-left">
           <p className="flex items-center gap-2 text-sm font-bold text-ink-900">
@@ -168,7 +168,7 @@ export default async function AccountPage() {
           Welcome back
         </h1>
         <p className="mt-2 text-center text-ink-500">
-          Log in to manage bookings — ya artist ho toh apni profile.
+          Log in to manage bookings — or your profile if you&apos;re an artist.
         </p>
         <div className="mt-8">
           <AuthTabs next="/account" />
@@ -230,7 +230,7 @@ export default async function AccountPage() {
           ) : (
             <p className="mt-3 flex items-center gap-2 rounded-2xl border border-marigold-200 bg-marigold-50 px-5 py-3.5 text-sm font-medium text-marigold-800">
               <Clock className="h-4.5 w-4.5" />
-              Profile review mein hai — approval 24–48 hours mein ho jayega.
+              Profile is under review — you&apos;ll be approved within 24–48 hours.
             </p>
           )}
           <div className="mt-4">
@@ -255,10 +255,10 @@ export default async function AccountPage() {
       {!artist && (
         <div className="mt-10 rounded-3xl border border-cream-300 bg-white p-6 text-center">
           <p className="font-display text-xl font-semibold text-ink-900">
-            Mehandi artist ho?
+            Are you a mehandi artist?
           </p>
           <p className="mt-1 text-sm text-ink-500">
-            Free profile banao aur apne sheher se bookings pao.
+            Create a free profile and get bookings from your city.
           </p>
           <Link
             href="/join"

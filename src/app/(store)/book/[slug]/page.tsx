@@ -41,7 +41,7 @@ export default async function BookPage({ params }: { params: Promise<Params> }) 
         Book {artist.name}
       </h1>
       <p className="mt-1 text-sm text-ink-500">
-        Booking request free hai — artist aapko confirm karegi.
+        Booking requests are free — the artist will confirm with you.
       </p>
 
       <div className="mt-7 grid gap-8 lg:grid-cols-[340px_1fr]">

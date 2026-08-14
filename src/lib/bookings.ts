@@ -226,9 +226,9 @@ export async function setBookingAmount(
   if (!isSupabaseConfigured()) {
     const b = demoStore().bookings.find((b) => b.id === id);
     if (!b) throw new Error("Booking not found.");
-    if (b.status === "cancelled") throw new Error("Cancelled booking ka amount set nahi hota.");
+    if (b.status === "cancelled") throw new Error("You cannot set an amount on a cancelled booking.");
     if (b.paymentStatus === "verified")
-      throw new Error("Payment verify hone ke baad amount change nahi ho sakta.");
+      throw new Error("The amount cannot be changed after the payment has been verified.");
     b.amount = amount;
     b.commissionAmount = commission;
     if (b.status === "pending") b.status = "confirmed";
@@ -244,7 +244,7 @@ export async function setBookingAmount(
     .select("id, status")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Amount set nahi hua — booking cancelled ya payment already verified hai.");
+  if (!data) throw new Error("Amount not set — the booking is cancelled or the payment is already verified.");
   if (data.status === "pending") {
     await supabase.from("bookings").update({ status: "confirmed" }).eq("id", id);
   }
@@ -256,7 +256,7 @@ export async function markPaymentVerified(id: string): Promise<void> {
     const b = demoStore().bookings.find((b) => b.id === id);
     if (!b) throw new Error("Booking not found.");
     if (b.paymentStatus !== "claimed")
-      throw new Error("Pehle customer payment claim kare, tabhi verify hoga.");
+      throw new Error("The customer needs to claim the payment before it can be verified.");
     b.paymentStatus = "verified";
     b.settlementStatus = "pending";
     return;
@@ -270,7 +270,7 @@ export async function markPaymentVerified(id: string): Promise<void> {
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Verify nahi hua — payment claimed state mein nahi hai.");
+  if (!data) throw new Error("Could not verify — the payment is not in the claimed state.");
 }
 
 /** Artist records that the customer paid in cash at the service. */
@@ -279,7 +279,7 @@ export async function recordCashPayment(id: string): Promise<void> {
     const b = demoStore().bookings.find((b) => b.id === id);
     if (!b) throw new Error("Booking not found.");
     if (b.paymentStatus === "verified") throw new Error("Payment already verified.");
-    if (b.amount === null) throw new Error("Pehle amount set karo.");
+    if (b.amount === null) throw new Error("Set the amount first.");
     b.paymentMethod = "cash";
     b.paymentStatus = "verified";
     b.settlementStatus = "pending";
@@ -299,18 +299,18 @@ export async function recordCashPayment(id: string): Promise<void> {
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Record nahi hua — amount set hai? payment pehle se verified toh nahi?");
+  if (!data) throw new Error("Could not record — is the amount set, and is the payment not already verified?");
 }
 
 /** Artist submits the UTR of their commission payment to admin. */
 export async function submitSettlementUtr(id: string, utr: string): Promise<void> {
   const cleanUtr = utr.trim().slice(0, 40);
-  if (cleanUtr.length < 4) throw new Error("UTR/reference number sahi se daalo.");
+  if (cleanUtr.length < 4) throw new Error("Please enter a valid UTR/reference number.");
   if (!isSupabaseConfigured()) {
     const b = demoStore().bookings.find((b) => b.id === id);
     if (!b) throw new Error("Booking not found.");
     if (b.settlementStatus !== "pending" && b.settlementStatus !== "claimed")
-      throw new Error("Is booking par abhi settlement due nahi hai.");
+      throw new Error("No settlement is due on this booking yet.");
     b.settlementStatus = "claimed";
     b.settlementUtr = cleanUtr;
     return;
@@ -324,7 +324,7 @@ export async function submitSettlementUtr(id: string, utr: string): Promise<void
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Submit nahi hua — settlement due nahi hai.");
+  if (!data) throw new Error("Could not submit — no settlement is due.");
 }
 
 /** Admin marks the second leg (commission/payout) as fully settled. */
@@ -332,7 +332,7 @@ export async function markSettled(id: string, utr?: string): Promise<void> {
   if (!isSupabaseConfigured()) {
     const b = demoStore().bookings.find((b) => b.id === id);
     if (!b) throw new Error("Booking not found.");
-    if (b.settlementStatus === "na") throw new Error("Payment verify hone ke baad hi settle hota hai.");
+    if (b.settlementStatus === "na") throw new Error("Settlement is only possible after the payment is verified.");
     b.settlementStatus = "settled";
     if (utr) b.settlementUtr = utr.trim().slice(0, 40);
     return;
@@ -348,7 +348,7 @@ export async function markSettled(id: string, utr?: string): Promise<void> {
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Settle nahi hua — pehle payment verify karo.");
+  if (!data) throw new Error("Could not settle — verify the payment first.");
 }
 
 /* ── Public payment page (no login; booking number + phone required) ── */
@@ -423,7 +423,7 @@ export async function getPaymentInfo(
   };
 }
 
-/** Customer: "maine pay kar diya" — records method + UTR, admin/artist verifies. */
+/** Customer: "I have paid" — records method + UTR, admin/artist verifies. */
 export async function claimPayment(
   bookingNumber: string,
   phone: string,
@@ -432,8 +432,8 @@ export async function claimPayment(
 ): Promise<void> {
   const cleanPhone = phone.replace(/\D/g, "").slice(-10);
   const cleanUtr = utr.trim().slice(0, 40);
-  if (cleanPhone.length !== 10) throw new Error("Phone number sahi nahi hai.");
-  if (cleanUtr.length < 4) throw new Error("UTR/transaction reference number daalo.");
+  if (cleanPhone.length !== 10) throw new Error("Please enter a valid phone number.");
+  if (cleanUtr.length < 4) throw new Error("Please enter the UTR/transaction reference number.");
   if (method !== "upi_admin" && method !== "upi_artist") throw new Error("Invalid method.");
 
   if (!isSupabaseConfigured()) {
@@ -442,8 +442,8 @@ export async function claimPayment(
         b.bookingNumber.toUpperCase() === bookingNumber.trim().toUpperCase() &&
         b.phone.replace(/\D/g, "").slice(-10) === cleanPhone
     );
-    if (!b) throw new Error("Booking nahi mili — number aur phone check karo.");
-    if (b.paymentStatus === "verified") throw new Error("Payment already verified hai.");
+    if (!b) throw new Error("Booking not found — check the booking number and phone.");
+    if (b.paymentStatus === "verified") throw new Error("This payment is already verified.");
     b.paymentMethod = method;
     b.paymentStatus = "claimed";
     b.paymentUtr = cleanUtr;

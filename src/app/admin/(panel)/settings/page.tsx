@@ -13,7 +13,7 @@ export default async function AdminSettingsPage() {
         <SlidersHorizontal className="h-7 w-7 text-rani-700" /> Platform Settings
       </h1>
       <p className="mt-2 text-sm text-ink-500">
-        Apne store ke Contact Details (WhatsApp, Call hours, Email) aur Payment Settings (UPI ID, QR code, Commission rate) yahan se control & update karo.
+        Manage and update your store&apos;s contact details (WhatsApp, call hours, email) and payment settings (UPI ID, QR code, commission rate) from here.
       </p>
       <div className="mt-6">
         <SettingsForm settings={settings} />

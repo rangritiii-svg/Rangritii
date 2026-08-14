@@ -15,12 +15,12 @@ export async function lookupBooking(
   phone: string
 ): Promise<LookupResult> {
   try {
-    if (!bookingNumber.trim()) return { ok: false, error: "Booking number daalo." };
+    if (!bookingNumber.trim()) return { ok: false, error: "Please enter your booking number." };
     const info = await getPaymentInfo(bookingNumber, phone);
     if (!info) {
       return {
         ok: false,
-        error: "Booking nahi mili — number aur wahi phone number check karo jo booking mein diya tha.",
+        error: "Booking not found — check the number and use the same phone number you gave while booking.",
       };
     }
     return { ok: true, info };

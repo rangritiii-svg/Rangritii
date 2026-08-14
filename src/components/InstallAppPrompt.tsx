@@ -70,9 +70,9 @@ export function InstallAppPrompt() {
             className="h-11 w-11 shrink-0 rounded-xl shadow-sm"
           />
           <div>
-            <p className="text-sm font-bold text-ink-900">Rangritii App Install Karo</p>
+            <p className="text-sm font-bold text-ink-900">Install the Rangritii App</p>
             <p className="text-xs text-ink-500">
-              Website se hamesha synced — booking, payment, sab kuch app mein
+              Always synced with the website — bookings, payments, everything in the app
             </p>
           </div>
         </div>
@@ -97,11 +97,11 @@ export function InstallAppPrompt() {
       {isIOS && !deferredPrompt && (
         <div className="mt-3 rounded-xl bg-cream-100/80 p-2.5 text-[11px] leading-relaxed text-ink-700">
           <p className="flex items-center gap-1.5 font-semibold text-rani-800">
-            <Share className="h-3.5 w-3.5 text-rani-700" /> iPhone par install karne ke liye:
+            <Share className="h-3.5 w-3.5 text-rani-700" /> To install on iPhone:
           </p>
           <p className="mt-1 text-ink-600">
-            Browser menu par <strong>Share</strong> icon tap karo, phir{" "}
-            <strong>&apos;Add to Home Screen&apos;</strong> chuno.
+            Tap the <strong>Share</strong> icon in your browser menu, then choose{" "}
+            <strong>&apos;Add to Home Screen&apos;</strong>.
           </p>
         </div>
       )}

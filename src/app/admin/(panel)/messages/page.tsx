@@ -14,13 +14,13 @@ export default async function AdminMessagesPage() {
         <span className="text-lg text-ink-500">({messages.length})</span>
       </h1>
       <p className="mt-2 text-sm text-ink-500">
-        Contact Us page se aaye customer messages yahan dikhte hain. Reply karne ke liye
-        email link par click karo.
+        Customer messages sent from the Contact Us page appear here. Click the email
+        link to reply.
       </p>
 
       {messages.length === 0 ? (
         <div className="mt-6 rounded-3xl border border-dashed border-cream-300 bg-white py-16 text-center text-ink-500">
-          No messages yet. Contact form submissions yahan dikhengi.
+          No messages yet. Contact form submissions will appear here.
         </div>
       ) : (
         <ul className="mt-6 space-y-4">

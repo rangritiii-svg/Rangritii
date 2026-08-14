@@ -21,10 +21,10 @@ export default function SavedArtistsPage() {
       <div className="mx-auto max-w-4xl px-4 py-20 text-center">
         <Heart className="mx-auto h-14 w-14 text-ink-300" />
         <h1 className="mt-5 font-display text-3xl font-semibold text-ink-900">
-          Koi saved artist nahi
+          No saved artists yet
         </h1>
         <p className="mt-2 text-ink-500">
-          Kisi bhi artist par ♥ dabao — yahan compare karne ke liye save ho jayengi.
+          Tap the ♥ on any artist — they&apos;ll be saved here for you to compare.
         </p>
         <Link
           href="/artists"

@@ -39,14 +39,14 @@ function GoogleButton({ next }: { next: string }) {
       if (oauthError) {
         setError(
           oauthError.message.toLowerCase().includes("provider")
-            ? "Google login abhi enable nahi hua hai — email/password se login karo."
+            ? "Google login isn't enabled yet — please log in with email/password."
             : oauthError.message
         );
         setLoading(false);
       }
-      // success par browser Google par redirect ho jata hai
+      // on success the browser redirects to Google
     } catch {
-      setError("Google login shuru nahi ho paya — email/password try karo.");
+      setError("Couldn't start Google login — try email/password instead.");
       setLoading(false);
     }
   }
@@ -60,7 +60,7 @@ function GoogleButton({ next }: { next: string }) {
         className="flex w-full items-center justify-center gap-3 rounded-full border border-cream-300 bg-white py-3.5 text-sm font-bold text-ink-900 transition hover:border-rani-300 hover:shadow-sm disabled:cursor-wait disabled:opacity-60"
       >
         <GoogleIcon />
-        {loading ? "Google khul raha hai…" : "Continue with Google"}
+        {loading ? "Opening Google…" : "Continue with Google"}
       </button>
       {error && (
         <p className="mt-3 rounded-xl border border-rani-200 bg-rani-50 px-4 py-3 text-sm font-medium text-rani-800">
@@ -76,7 +76,7 @@ function AuthTabsInner({ next = "/account" }: { next?: string }) {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<"login" | "register">("login");
   const [error, setError] = useState(
-    searchParams.get("auth_error") ? "Google login poora nahi hua — dobara try karo." : ""
+    searchParams.get("auth_error") ? "Google login didn't complete — please try again." : ""
   );
   const [info, setInfo] = useState("");
   const [pending, startTransition] = useTransition();
@@ -106,7 +106,7 @@ function AuthTabsInner({ next = "/account" }: { next?: string }) {
           <div className="my-5 flex items-center gap-3">
             <span className="h-px flex-1 bg-cream-300" />
             <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">
-              ya email se
+              or with email
             </span>
             <span className="h-px flex-1 bg-cream-300" />
           </div>

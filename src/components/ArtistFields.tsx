@@ -59,7 +59,7 @@ export function ArtistFields({
       </div>
 
       <div>
-        <p className={label}>Styles aap karti ho * (jitne apply hote hain chuno)</p>
+        <p className={label}>Styles you offer * (select all that apply)</p>
         <div className="flex flex-wrap gap-3">
           {styles.map((s) => (
             <label
@@ -87,20 +87,20 @@ export function ArtistFields({
           rows={4}
           defaultValue={artist?.bio}
           className={field}
-          placeholder="Apne experience, specialities aur service ke baare mein batao — customers yahi padh ke book karti hain."
+          placeholder="Tell us about your experience, specialities and services — this is what customers read before booking."
         />
       </div>
 
       <ImageListInput
         name="profileImage"
-        label="Profile photo (aapki ya aapke best design ki)"
+        label="Profile photo (of you or your best design)"
         initial={artist?.profileImage ? [artist.profileImage] : []}
         single
       />
 
       <ImageListInput
         name="portfolioImages"
-        label="Portfolio photos (apne best designs — 4 se 12 photos)"
+        label="Portfolio photos (your best designs — 4 to 12 photos)"
         initial={artist?.portfolioImages ?? []}
         max={12}
       />
@@ -108,9 +108,9 @@ export function ArtistFields({
       <div className="rounded-2xl border border-marigold-200 bg-marigold-50/50 p-5">
         <p className="text-sm font-bold text-ink-900">💰 Payment details (UPI)</p>
         <p className="mt-1 text-xs text-ink-500">
-          Customers isi UPI par aapko payment karengi, aur admin isi par aapka payout
-          bhejega. QR code aapke UPI app (GPay/PhonePe/Paytm) se download karke upload
-          karo.
+          Customers will pay you on this UPI, and the admin will send your payouts
+          here too. Download your QR code from your UPI app (GPay/PhonePe/Paytm)
+          and upload it.
         </p>
         <div className="mt-4 space-y-4">
           <div>

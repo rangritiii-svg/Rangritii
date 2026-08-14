@@ -19,11 +19,11 @@ export default async function BookingConfirmedPage({
     <div className="mx-auto max-w-2xl px-4 py-20 text-center">
       <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
       <h1 className="mt-6 font-display text-4xl font-semibold text-ink-900">
-        Booking request bhej di! 🎉
+        Booking request sent! 🎉
       </h1>
       <p className="mt-3 text-ink-500">
-        {artistName ? `${artistName} ko aapki request mil gayi hai.` : "Artist ko aapki request mil gayi hai."}{" "}
-        Confirmation ke liye artist aapko call/WhatsApp karegi.
+        {artistName ? `${artistName} has received your request.` : "The artist has received your request."}{" "}
+        She&apos;ll call or WhatsApp you to confirm.
       </p>
 
       <div className="mt-8 rounded-3xl border border-cream-300 bg-white p-6">
@@ -42,11 +42,11 @@ export default async function BookingConfirmedPage({
           )}
           <div className="flex justify-between">
             <dt className="text-ink-500">Payment</dt>
-            <dd className="font-semibold text-ink-900">Service ke baad, seedha artist ko</dd>
+            <dd className="font-semibold text-ink-900">After the service, directly to the artist</dd>
           </div>
         </dl>
         <p className="mt-5 rounded-xl bg-cream-100 px-4 py-3 text-xs leading-relaxed text-ink-500">
-          Booking number save kar lo. Koi dikkat ho toh humein WhatsApp karo: {SITE.phone}
+          Save your booking number. If anything comes up, WhatsApp us at {SITE.phone}
         </p>
       </div>
 
@@ -56,13 +56,13 @@ export default async function BookingConfirmedPage({
             href={`/pay?number=${encodeURIComponent(bookingNumber)}`}
             className="inline-flex items-center gap-2 rounded-full border-2 border-rani-700 px-7 py-3.5 text-sm font-bold text-rani-700 hover:bg-rani-50"
           >
-            💳 Payment Karo
+            💳 Make Payment
           </Link>
         )}
         {whatsapp && (
           <a
             href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(
-              `Hi${artistName ? ` ${artistName}` : ""}! Maine Rangritii par booking request bheji hai (${bookingNumber}). Please confirm kar dijiye.`
+              `Hi${artistName ? ` ${artistName}` : ""}! I've sent a booking request on Rangritii (${bookingNumber}). Could you please confirm it?`
             )}`}
             target="_blank"
             rel="noopener noreferrer"

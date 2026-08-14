@@ -30,13 +30,13 @@ export default async function HomePage() {
               <Sparkles className="h-3.5 w-3.5" /> India&apos;s mehandi platform
             </p>
             <h1 className="mt-5 font-display text-4xl font-semibold leading-tight text-ink-900 sm:text-5xl lg:text-6xl">
-              Haathon mein <span className="italic text-rani-700">rang</span>,
+              <span className="italic text-rani-700">Color</span> on your hands,
               <br />
-              dil mein <span className="italic text-marigold-600">khushiyaan</span>.
+              <span className="italic text-marigold-600">joy</span> in your heart.
             </h1>
             <p className="mt-5 max-w-md text-base leading-relaxed text-ink-500">
-              Apne sheher ke best mehandi artists — portfolio dekho, style chuno, aur
-              shaadi se Karva Chauth tak har occasion ke liye ghar baithe book karo.
+              The best mehandi artists in your city — browse portfolios, pick your
+              style, and book from home for every occasion, weddings to Karva Chauth.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -84,9 +84,9 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-6 text-center sm:px-6 lg:grid-cols-4">
           {[
             { icon: BadgeCheck, text: "Verified artists only" },
-            { icon: Wallet, text: "Booking request FREE hai" },
-            { icon: MapPin, text: "Apne sheher mein dhundo" },
-            { icon: CalendarCheck, text: "Date pehle se lock karo" },
+            { icon: Wallet, text: "Booking requests are 100% free" },
+            { icon: MapPin, text: "Search in your own city" },
+            { icon: CalendarCheck, text: "Lock your date in advance" },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center justify-center gap-2.5 text-sm text-ink-700">
               <Icon className="h-5 w-5 shrink-0 text-rani-700" />
@@ -104,7 +104,7 @@ export default async function HomePage() {
               Browse by style
             </p>
             <h2 className="mt-1 font-display text-3xl font-semibold text-ink-900">
-              Har occasion ka design
+              A design for every occasion
             </h2>
           </div>
           <Link
@@ -140,28 +140,28 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-widest text-marigold-600">
-              Kaise kaam karta hai
+              How it works
             </p>
             <h2 className="mt-1 font-display text-3xl font-semibold text-ink-900">
-              3 easy steps mein booking
+              Book in 3 easy steps
             </h2>
           </div>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
             {[
               {
                 step: "1",
-                title: "Artist dhundo",
-                text: "Apna sheher aur pasandida style chuno, portfolios compare karo.",
+                title: "Find your artist",
+                text: "Pick your city and favorite style, then compare portfolios.",
               },
               {
                 step: "2",
-                title: "Date book karo",
-                text: "Event date, occasion aur address ke saath free booking request bhejo.",
+                title: "Book your date",
+                text: "Send a free booking request with your event date, occasion, and address.",
               },
               {
                 step: "3",
-                title: "Mehandi lagwao",
-                text: "Artist confirm karke aapke ghar aayegi. Payment seedha artist ko, service ke baad.",
+                title: "Get your mehandi",
+                text: "The artist confirms and comes to your home. Pay the artist directly, after the service.",
               },
             ].map((s) => (
               <div
@@ -212,14 +212,14 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
         <div className="texture-dots relative overflow-hidden rounded-3xl bg-rani-800 px-6 py-12 text-center sm:px-12 sm:py-16">
           <p className="text-xs font-bold uppercase tracking-widest text-marigold-300">
-            Mehandi artist ho?
+            Are you a mehandi artist?
           </p>
           <h2 className="mx-auto mt-3 max-w-xl font-display text-3xl font-semibold text-white sm:text-4xl">
-            Apna portfolio dikhao, apne sheher se bookings pao
+            Show off your portfolio, get bookings from your city
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-cream-200/90">
-            Registration bilkul free hai. Profile approve hote hi customers aap tak
-            pahunchenge — bina kisi commission ke.
+            Registration is completely free. Once your profile is approved,
+            customers come straight to you — with zero commission.
           </p>
           <Link
             href="/join"
@@ -234,10 +234,10 @@ export default async function HomePage() {
       <section className="border-t border-cream-300 bg-white py-14">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <h2 className="font-display text-3xl font-semibold text-ink-900">
-            Join the Rangritii parivaar
+            Join the Rangritii family
           </h2>
           <p className="mt-3 text-ink-500">
-            Seasonal offers, design inspiration aur naye artists ki updates WhatsApp par.
+            Seasonal offers, design inspiration, and new artist updates on WhatsApp.
           </p>
           <a
             href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(

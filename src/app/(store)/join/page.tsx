@@ -11,10 +11,10 @@ export const metadata: Metadata = { title: "Join as Artist" };
 export const dynamic = "force-dynamic";
 
 const PERKS = [
-  { icon: Users, title: "Naye customers", text: "Aapke sheher ki brides & families seedha aap tak." },
-  { icon: IndianRupee, title: "Zero commission", text: "Booking free, payment 100% aapka — koi cut nahi." },
-  { icon: Megaphone, title: "Free portfolio page", text: "Apne designs ka professional online portfolio." },
-  { icon: BadgeCheck, title: "Verified badge", text: "Approval ke baad trust badge — zyada bookings." },
+  { icon: Users, title: "New customers", text: "Brides & families in your city, straight to you." },
+  { icon: IndianRupee, title: "Zero commission", text: "Bookings are free, payment is 100% yours — no cut." },
+  { icon: Megaphone, title: "Free portfolio page", text: "A professional online portfolio of your designs." },
+  { icon: BadgeCheck, title: "Verified badge", text: "A trust badge after approval — more bookings." },
 ];
 
 export default async function JoinPage() {
@@ -27,11 +27,11 @@ export default async function JoinPage() {
       <div className="rounded-3xl border border-cream-300 bg-white p-8 text-center">
         <Database className="mx-auto h-12 w-12 text-ink-300" />
         <h2 className="mt-4 font-display text-2xl font-semibold text-ink-900">
-          Demo mode chal raha hai
+          You&apos;re in demo mode
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-ink-500">
-          Artist registration ke liye database (Supabase) connect hona zaroori hai.
-          Demo mein admin panel se artists add karke dekh sakte ho.
+          Artist registration needs the database (Supabase) to be connected.
+          In the demo, you can try adding artists from the admin panel.
         </p>
         <Link
           href="/admin/login"
@@ -52,8 +52,8 @@ export default async function JoinPage() {
       content = (
         <div>
           <p className="mb-5 rounded-2xl border border-marigold-200 bg-marigold-50 px-5 py-4 text-sm text-marigold-800">
-            <strong>Step 1:</strong> Google se ya email se account banao/login karo —
-            phir artist profile ka form khulega.
+            <strong>Step 1:</strong> Sign up or log in with Google or email —
+            then the artist profile form will open.
           </p>
           <AuthTabs next="/join" />
         </div>
@@ -64,8 +64,8 @@ export default async function JoinPage() {
       content = (
         <div className="rounded-3xl border border-cream-300 bg-white p-6 sm:p-8">
           <p className="mb-5 rounded-2xl border border-marigold-200 bg-marigold-50 px-5 py-4 text-sm text-marigold-800">
-            <strong>Step 2:</strong> Apni artist profile bharo. Approval 24–48 hours mein
-            ho jata hai.
+            <strong>Step 2:</strong> Fill in your artist profile. Approval usually takes
+            24–48 hours.
           </p>
           <JoinForm styles={styles} />
         </div>
@@ -81,11 +81,11 @@ export default async function JoinPage() {
             For mehandi artists
           </p>
           <h1 className="mt-3 font-display text-4xl font-semibold text-ink-900 sm:text-5xl">
-            Apna hunar, aapki pehchaan
+            Your art, your identity
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-ink-500">
-            Rangritii par free profile banao, apne best designs dikhao, aur apne sheher
-            se seedhi bookings pao — bina kisi commission ke.
+            Create a free profile on Rangritii, show off your best designs, and get
+            direct bookings from your city — with zero commission.
           </p>
         </div>
       </section>

@@ -8,7 +8,7 @@ export async function WhatsAppFloat() {
   return (
     <a
       href={`https://wa.me/${waNumber}?text=${encodeURIComponent(
-        "Hi Rangritii! Mujhe mehandi artist book karni hai."
+        "Hi Rangritii! I'd like to book a mehandi artist."
       )}`}
       target="_blank"
       rel="noopener noreferrer"

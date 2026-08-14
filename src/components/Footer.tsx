@@ -112,7 +112,7 @@ export async function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10 py-5 text-center text-xs text-cream-200/70">
-        © {new Date().getFullYear()} {SITE.name}. Crafted with rang & pyaar.
+        © {new Date().getFullYear()} {SITE.name}. Crafted with colour & love.
       </div>
     </footer>
   );

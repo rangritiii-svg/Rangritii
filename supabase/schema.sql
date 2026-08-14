@@ -35,7 +35,7 @@ begin
     new.id,
     coalesce(
       new.raw_user_meta_data ->> 'full_name',
-      new.raw_user_meta_data ->> 'name',  -- Google login deta hai 'name'
+      new.raw_user_meta_data ->> 'name',  -- Google login provides 'name'
       ''
     )
   )
@@ -359,7 +359,7 @@ begin
       and payment_status <> 'verified'
       and status <> 'cancelled';
   if not found then
-    raise exception 'Booking nahi mili, cancelled hai, ya payment already verified hai';
+    raise exception 'Booking not found, cancelled, or the payment is already verified';
   end if;
 
   update public.bookings

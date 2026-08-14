@@ -83,7 +83,7 @@ export function BookingForm({
         </div>
       </div>
       <div>
-        <label className={label} htmlFor="address">Address (jahan mehandi lagni hai) *</label>
+        <label className={label} htmlFor="address">Address (where the mehandi will be done) *</label>
         <textarea id="address" name="address" required rows={3} className={field} placeholder="Flat 12, Rose Villa, MG Road, near City Mall" />
       </div>
       <div>
@@ -92,9 +92,9 @@ export function BookingForm({
       </div>
       <div>
         <label className={label} htmlFor="notes">
-          Notes (kitne logon ke liye, konsa design, timing…)
+          Notes (how many people, which design, timing…)
         </label>
-        <textarea id="notes" name="notes" rows={3} className={field} placeholder="e.g. Dulhan + 4 family members, evening 5 baje ke baad" />
+        <textarea id="notes" name="notes" rows={3} className={field} placeholder="e.g. Bride + 4 family members, evening after 5 pm" />
       </div>
 
       {error && (
@@ -112,8 +112,8 @@ export function BookingForm({
         {pending ? "Sending request…" : "Send Booking Request (FREE)"}
       </button>
       <p className="text-center text-xs text-ink-500">
-        Koi advance payment nahi — artist confirm karegi, payment service ke baad seedha
-        artist ko.
+        No advance payment — the artist will confirm, and you pay the artist directly
+        after the service.
       </p>
     </form>
   );

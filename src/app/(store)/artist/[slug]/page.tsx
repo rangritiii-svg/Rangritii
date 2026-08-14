@@ -136,7 +136,7 @@ export default async function ArtistProfilePage({ params }: { params: Promise<Pa
             {artist.whatsapp && (
               <a
                 href={`https://wa.me/${artist.whatsapp}?text=${encodeURIComponent(
-                  `Hi ${artist.name}! Aapka profile Rangritii par dekha — mehandi booking ke liye baat karni thi.`
+                  `Hi ${artist.name}! I saw your profile on Rangritii — I'd like to talk about a mehandi booking.`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -177,7 +177,7 @@ export default async function ArtistProfilePage({ params }: { params: Promise<Pa
       {others.length > 0 && (
         <section className="mt-16">
           <h2 className="font-display text-2xl font-semibold text-ink-900">
-            Aur artists in {artist.city}
+            More artists in {artist.city}
           </h2>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
             {others.map((a) => (

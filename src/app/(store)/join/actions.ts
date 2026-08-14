@@ -13,7 +13,7 @@ export async function submitArtistProfile(formData: FormData): Promise<JoinResul
       return {
         ok: false,
         error:
-          "Artist registration ke liye database connect hona zaroori hai. (Demo mode mein admin panel se artists add kar sakte ho.)",
+          "Artist registration needs the database to be connected. (In demo mode, you can add artists from the admin panel.)",
       };
     }
 
@@ -22,11 +22,11 @@ export async function submitArtistProfile(formData: FormData): Promise<JoinResul
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return { ok: false, error: "Pehle login karo, phir profile submit karo." };
+    if (!user) return { ok: false, error: "Please log in first, then submit your profile." };
 
     const existing = await getArtistByUserId(user.id);
     if (existing) {
-      return { ok: false, error: "Aapki artist profile pehle se bani hui hai — account page dekho." };
+      return { ok: false, error: "You already have an artist profile — check your account page." };
     }
 
     const fields = parseArtistSelfFields(formData);

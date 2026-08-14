@@ -11,8 +11,8 @@ export default async function ContactPage() {
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <h1 className="font-display text-4xl font-semibold text-ink-900">Contact Us</h1>
       <p className="mt-2 max-w-lg text-ink-500">
-        Booking mein help chahiye, artist ke baare mein sawaal hai, ya khud artist ho?
-        We answer fast — WhatsApp is quickest.
+        Need help with a booking, have a question about an artist, or are you an
+        artist yourself? We answer fast — WhatsApp is quickest.
       </p>
 
       <div className="mt-9 grid gap-8 md:grid-cols-[340px_1fr]">

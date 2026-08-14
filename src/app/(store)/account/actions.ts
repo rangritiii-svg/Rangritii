@@ -85,7 +85,7 @@ async function requireOwnBooking(bookingId: string) {
   if (!artist) throw new Error("Artist profile not found.");
   const booking = await getBookingById(bookingId);
   if (!booking || booking.artistId !== artist.id) {
-    throw new Error("Yeh booking aapki nahi hai.");
+    throw new Error("This booking doesn't belong to you.");
   }
   return booking;
 }
@@ -117,7 +117,7 @@ export async function artistVerifyPaymentAction(bookingId: string): Promise<Simp
   try {
     const booking = await requireOwnBooking(bookingId);
     if (booking.paymentMethod !== "upi_artist") {
-      throw new Error("Sirf aapko aayi UPI payment aap verify kar sakti ho — baaki admin karega.");
+      throw new Error("You can only verify UPI payments made directly to you — the admin handles the rest.");
     }
     await markPaymentVerified(bookingId);
     revalidatePath("/account");
@@ -147,7 +147,7 @@ export async function artistCommissionUtrAction(
   try {
     const booking = await requireOwnBooking(bookingId);
     if (booking.paymentMethod === "upi_admin") {
-      throw new Error("Is booking par commission nahi banta — admin aapko payout karega.");
+      throw new Error("No commission is due on this booking — the admin will pay you out.");
     }
     await submitSettlementUtr(bookingId, utr);
     revalidatePath("/account");

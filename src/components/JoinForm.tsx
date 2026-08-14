@@ -18,12 +18,12 @@ export function JoinForm({ styles }: { styles: Style[] }) {
       <div className="py-10 text-center">
         <CheckCircle2 className="mx-auto h-14 w-14 text-green-600" />
         <h2 className="mt-4 font-display text-2xl font-semibold text-ink-900">
-          Profile submit ho gayi! 🎉
+          Profile submitted! 🎉
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-ink-500">
-          Humari team 24–48 hours mein review karke approve kar degi. Approve hote hi
-          aapki profile customers ko dikhne lagegi. Status aap apne account page par dekh
-          sakti ho.
+          Our team will review and approve it within 24–48 hours. As soon as it&apos;s
+          approved, your profile will be visible to customers. You can check the status
+          on your account page.
         </p>
         <button
           onClick={() => router.push("/account")}

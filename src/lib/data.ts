@@ -141,7 +141,7 @@ export async function updateStyle(id: string, input: Omit<Style, "id">): Promise
     if (idx === -1) throw new Error("Style not found.");
     const oldSlug = store.styles[idx].slug;
     if (store.styles.some((s) => s.slug === input.slug && s.id !== id)) {
-      throw new Error("Is slug ki style pehle se hai.");
+      throw new Error("A style with this slug already exists.");
     }
     store.styles[idx] = { ...input, id };
     // keep artist references in sync when the slug changes

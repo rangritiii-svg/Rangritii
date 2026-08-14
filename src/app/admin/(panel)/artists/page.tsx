@@ -31,8 +31,8 @@ export default async function AdminArtistsPage() {
 
       {pendingCount > 0 && (
         <p className="mt-4 rounded-2xl border border-marigold-200 bg-marigold-50 px-5 py-3.5 text-sm font-medium text-marigold-800">
-          ⏳ {pendingCount} artist{pendingCount > 1 ? "s" : ""} approval ka wait kar rahi
-          hain — list mein sabse upar hain.
+          ⏳ {pendingCount} artist{pendingCount > 1 ? "s" : ""} awaiting approval —
+          shown at the top of the list.
         </p>
       )}
 

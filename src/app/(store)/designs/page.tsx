@@ -3,52 +3,52 @@ import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Mehandi Design Gallery — Har Style ke Designs",
+  title: "Mehandi Design Gallery — Designs for Every Style",
   description:
-    "Bridal, Arabic, Indo-Arabic, Traditional, Minimal aur Festive — har mehandi style ke designs ek jagah dekho aur apne style ke artists book karo.",
+    "Bridal, Arabic, Indo-Arabic, Traditional, Minimal, and Festive — explore designs from every mehandi style in one place and book artists who create yours.",
 };
 
 const DESIGN_TYPES = [
   {
     slug: "bridal",
     name: "Bridal / Dulhan",
-    hindi: "Shaadi ka sabse khaas rang",
-    text: "Full-coverage design — baarik jaal, palm mandala, ungliyon par ladder work aur wrist band. Dulhan ke haathon ki shaan, jo mehendi ki raat ko yaadgar bana de.",
-    best: "Shaadi · Sagai · Anniversary",
+    hindi: "The wedding's most special color",
+    text: "Full-coverage design — fine net work, a palm mandala, ladder work on the fingers, and a wrist band. The pride of a bride's hands, making the mehandi night unforgettable.",
+    best: "Wedding · Engagement · Anniversary",
   },
   {
     slug: "arabic",
     name: "Arabic",
-    hindi: "Bold bel, khula design",
-    text: "Ek statement diagonal bel — bade phool, lambi pattiyan aur khoob saari khali jagah. Jaldi lagti hai, door se hi classy dikhti hai.",
+    hindi: "Bold vines, open design",
+    text: "One statement diagonal vine — big florals, long leaves, and plenty of open space. Quick to apply, and it looks classy even from across the room.",
     best: "Party · Eid · Guest look",
   },
   {
     slug: "indo-arabic",
     name: "Indo-Arabic",
-    hindi: "Do duniyaon ka sangam",
-    text: "Indian baariki aur Arabic boldness ka mix — center mandala, ambi (paisley) pairs aur alternate ungliyon par bel. Bharaa-bharaa bhi, modern bhi.",
+    hindi: "Where two worlds meet",
+    text: "Indian intricacy meets Arabic boldness — a center mandala, paisley pairs, and vines on alternating fingers. Rich and full, yet modern.",
     best: "Engagement · Reception · Festivals",
   },
   {
     slug: "traditional",
     name: "Traditional / Rajasthani",
-    hindi: "Parampara ki kahaani",
-    text: "Mor (peacock), ambi aur checkered patterns — Rajasthani gharanon ki puraani kala. Har motif ka apna matlab, har haath par ek kahaani.",
-    best: "Teej · Gangaur · Shubh avsar",
+    hindi: "A story of tradition",
+    text: "Peacocks, paisleys, and checkered patterns — the age-old art of Rajasthani households. Every motif has a meaning, every hand tells a story.",
+    best: "Teej · Gangaur · Auspicious days",
   },
   {
     slug: "minimal",
     name: "Minimal / Modern",
-    hindi: "Kam mein zyada",
-    text: "Ek delicate ring mandala, dot chains aur dipped fingertips — bas itna hi. Aaj kal ki brides aur working women ki pehli pasand.",
+    hindi: "Less is more",
+    text: "A delicate ring mandala, dot chains, and dipped fingertips — nothing more. The first choice of today's brides and working women.",
     best: "Office · Brunch · Modern bride",
   },
   {
     slug: "festive",
     name: "Festive / Party",
-    hindi: "Har khushi ke liye",
-    text: "Knuckle line par phool-chain, chhota mandala aur latakte jhumka drops — na zyada heavy, na bilkul halka. Tyohaar ke liye perfect.",
+    hindi: "For every celebration",
+    text: "A floral chain along the knuckles, a small mandala, and dangling jhumka drops — not too heavy, not too light. Perfect for the festive season.",
     best: "Karva Chauth · Diwali · Raksha Bandhan",
   },
 ];
@@ -63,11 +63,11 @@ export default function DesignsPage() {
             <Sparkles className="h-3.5 w-3.5" /> Design Gallery
           </p>
           <h1 className="mt-4 font-display text-4xl font-semibold text-ink-900 sm:text-5xl">
-            Har type ki mehandi, <span className="italic text-rani-700">ek jagah</span>
+            Every style of mehandi, <span className="italic text-rani-700">one place</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-ink-500">
-            Pehle design pasand karo, phir wahi style banane waale artists ko book
-            karo — bridal se minimal tak, sab kuch yahan hai.
+            Fall in love with a design first, then book the artists who create that
+            very style — from bridal to minimal, it&apos;s all here.
           </p>
         </div>
       </section>
@@ -96,7 +96,7 @@ export default function DesignsPage() {
                 href={`/artists?style=${t.slug}`}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-rani-700 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-rani-800"
               >
-                Is style ke artists <ArrowRight className="h-3.5 w-3.5" />
+                Artists for this style <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
@@ -127,11 +127,11 @@ export default function DesignsPage() {
       <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
         <div className="texture-dots overflow-hidden rounded-3xl bg-rani-800 px-6 py-12 text-center sm:px-12">
           <h2 className="mx-auto max-w-xl font-display text-3xl font-semibold text-white">
-            Design pasand aa gaya?
+            Found a design you love?
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-cream-200/90">
-            Apne sheher ke verified artists dekho aur free booking request bhejo —
-            artist aapke ghar aakar wahi jadoo utaar degi.
+            Browse verified artists in your city and send a free booking request —
+            the artist will come to your home and recreate the magic.
           </p>
           <Link
             href="/artists"

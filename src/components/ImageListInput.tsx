@@ -51,13 +51,13 @@ export function ImageListInput({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setError("Upload ke liye login zaroori hai — ya niche URL paste karo.");
+        setError("You need to be logged in to upload — or paste a URL below.");
         return;
       }
       for (const file of Array.from(files).slice(0, limit)) {
         if (!file.type.startsWith("image/")) continue;
         if (file.size > 5 * 1024 * 1024) {
-          setError("Har photo 5MB se chhoti honi chahiye.");
+          setError("Each photo must be under 5MB.");
           continue;
         }
         const path = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
@@ -72,7 +72,7 @@ export function ImageListInput({
         addUrl(pub.publicUrl);
       }
     } catch {
-      setError("Upload mein dikkat aayi — URL paste karke try karo.");
+      setError("Something went wrong while uploading — try pasting a URL.");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -138,7 +138,7 @@ export function ImageListInput({
             <input
               value={manual}
               onChange={(e) => setManual(e.target.value)}
-              placeholder="…ya image URL paste karo"
+              placeholder="…or paste an image URL"
               className="w-full rounded-full border border-cream-300 bg-white px-4 py-2.5 text-xs outline-none focus:border-rani-400"
             />
             <button

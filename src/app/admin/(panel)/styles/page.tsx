@@ -17,8 +17,8 @@ export default async function AdminStylesPage() {
     <div>
       <h1 className="font-display text-3xl font-semibold text-ink-900">Styles</h1>
       <p className="mt-1 text-sm text-ink-500">
-        Style ka naam, image (upload bhi kar sakte ho) aur order edit karo — ya nayi add
-        karo.
+        Edit a style&apos;s name, image (uploads supported), and sort order — or add a
+        new one.
       </p>
       <div className="mt-6">
         <StylesManager styles={styles} artistCounts={artistCounts} />

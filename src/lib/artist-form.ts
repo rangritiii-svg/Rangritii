@@ -23,7 +23,7 @@ export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
 
   const whatsapp = String(formData.get("whatsapp") ?? "").replace(/\D/g, "");
   if (whatsapp && (whatsapp.length < 10 || whatsapp.length > 13)) {
-    throw new Error("WhatsApp number should be 10 digits (ya 91 ke saath 12).");
+    throw new Error("WhatsApp number should be 10 digits (or 12 with the 91 prefix).");
   }
 
   const city = String(formData.get("city") ?? "").trim();
@@ -40,14 +40,14 @@ export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
     throw new Error("Enter valid prices.");
   }
   if (priceMax > 0 && priceMax < priceMin) {
-    throw new Error("Maximum price minimum se kam nahi ho sakta.");
+    throw new Error("Maximum price cannot be less than the minimum price.");
   }
 
   const styles = formData
     .getAll("styles")
     .map((s) => String(s).trim())
     .filter(Boolean);
-  if (styles.length === 0) throw new Error("Kam se kam ek style chuno.");
+  if (styles.length === 0) throw new Error("Please choose at least one style.");
 
   const parseImages = (field: string) =>
     String(formData.get(field) ?? "")
@@ -61,7 +61,7 @@ export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
 
   const upiId = String(formData.get("upiId") ?? "").trim().slice(0, 100);
   if (upiId && !/^[\w.-]{2,}@[a-zA-Z]{2,}$/.test(upiId)) {
-    throw new Error("UPI ID sahi format mein daalo (jaise name@upi).");
+    throw new Error("Please enter the UPI ID in a valid format (e.g. name@upi).");
   }
 
   return {

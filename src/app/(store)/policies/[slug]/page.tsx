@@ -8,44 +8,44 @@ type Policy = { title: string; intro: string; sections: Section[] };
 const POLICIES: Record<string, Policy> = {
   "cancellation-policy": {
     title: "Cancellation Policy",
-    intro: "Plans badalte hain — hum samajhte hain. Simple rules:",
+    intro: "Plans change — we get it. Here are the simple rules:",
     sections: [
       {
         heading: "Customer cancellation",
         body: [
-          "Booking request confirm hone se pehle kabhi bhi free cancel kar sakte ho.",
-          "Confirm hone ke baad, event se kam se kam 48 hours pehle artist ko WhatsApp/call par bata dein.",
-          "Rangritii par booking request free hai — koi advance Rangritii ko nahi diya jata, isliye platform refund ka sawaal hi nahi.",
-          "Agar aapne artist ko koi advance diya hai, uska refund artist ki apni policy ke hisaab se hoga — confirm karte waqt puch lein.",
+          "You can cancel free of charge any time before your booking request is confirmed.",
+          "After confirmation, please let the artist know on WhatsApp or by call at least 48 hours before the event.",
+          "Booking requests on Rangritii are free — no advance is ever paid to Rangritii, so there is nothing for the platform to refund.",
+          "If you paid the artist an advance, its refund follows the artist's own policy — do ask about it when confirming.",
         ],
       },
       {
         heading: "Artist cancellation",
         body: [
-          "Agar artist confirm karke cancel karti hai, toh hum aapko turant doosri available artist dhundhne mein help karenge.",
-          "Baar-baar cancel karne wali artists ki profile suspend ho sakti hai.",
+          "If an artist cancels after confirming, we'll immediately help you find another available artist.",
+          "Artists who cancel repeatedly may have their profiles suspended.",
         ],
       },
     ],
   },
   "privacy-policy": {
     title: "Privacy Policy",
-    intro: "Aapka data aapka hai. Hum kya collect karte hain aur kyun:",
+    intro: "Your data is yours. Here's what we collect and why:",
     sections: [
       {
         heading: "What we collect",
         body: [
-          "Booking details: naam, phone, address aur event info — sirf artist tak booking pahunchane ke liye.",
-          "Account details agar sign up karo: email aur aapki bookings.",
-          "Artist profiles: jo details artist khud publish ke liye deti hain (naam, city, portfolio, WhatsApp).",
+          "Booking details: your name, phone, address and event info — used only to deliver your booking to the artist.",
+          "Account details if you sign up: your email and your bookings.",
+          "Artist profiles: the details artists themselves share for publishing (name, city, portfolio, WhatsApp).",
         ],
       },
       {
         heading: "What we never do",
         body: [
-          "Hum aapka personal data kisi ko bechte nahi.",
-          "Aapka phone/address sirf usi artist ko dikhta hai jise aapne booking bheji hai.",
-          "Data delete karwana ho toh " + SITE.email + " par likh do — 7 din mein ho jayega.",
+          "We never sell your personal data to anyone.",
+          "Your phone/address is visible only to the artist you sent a booking to.",
+          "Want your data deleted? Write to " + SITE.email + " — it's done within 7 days.",
         ],
       },
     ],
@@ -55,19 +55,19 @@ const POLICIES: Record<string, Policy> = {
     intro: "Short & human version:",
     sections: [
       {
-        heading: "Platform ka role",
+        heading: "The platform's role",
         body: [
-          "Rangritii customers aur independent mehandi artists ko connect karta hai — service khud artist deti hai.",
-          "Price, timing aur design ki final baat customer aur artist ke beech hoti hai; payment seedha artist ko.",
-          "Hum profiles verify karte hain, par service quality ki final zimmedari artist ki hai. Koi dikkat ho toh humein zaroor batao — hum action lete hain.",
+          "Rangritii connects customers with independent mehandi artists — the service itself is provided by the artist.",
+          "The final price, timing and design are agreed between the customer and the artist; payment goes directly to the artist.",
+          "We verify profiles, but final responsibility for service quality rests with the artist. If anything goes wrong, do tell us — we take action.",
         ],
       },
       {
         heading: "Fair use",
         body: [
-          "Fake bookings, spam ya galat contact details par account block ho sakta hai.",
-          "Artists apne hi kaam ki photos portfolio mein daalein — doosron ke designs chori karna ban ka reason hai.",
-          "Portfolio content Rangritii promotional use kar sakta hai (artist ke credit ke saath).",
+          "Fake bookings, spam or false contact details can get an account blocked.",
+          "Artists should only upload photos of their own work — stealing others' designs is grounds for a ban.",
+          "Rangritii may use portfolio content for promotion (with credit to the artist).",
         ],
       },
     ],

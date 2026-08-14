@@ -46,7 +46,7 @@ function QrCard({
         <img src={qr} alt={`${title} QR code`} className="mx-auto mt-3 h-40 w-40 rounded-xl object-contain" />
       )}
       <p className="mt-3 rounded-lg bg-cream-100 px-3 py-2 text-center text-sm font-bold text-ink-900">
-        {upi || "UPI ID available nahi"}
+        {upi || "UPI ID not available"}
       </p>
     </button>
   );
@@ -92,11 +92,11 @@ function PayInner() {
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
         <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
         <h1 className="mt-6 font-display text-3xl font-semibold text-ink-900">
-          Payment note kar li! ✅
+          Payment noted! ✅
         </h1>
         <p className="mt-3 text-ink-500">
-          Aapka UTR record ho gaya. {method === "upi_admin" ? "Team" : "Artist"} payment
-          receive hote hi verify kar degi — uske baad booking pakki.
+          Your UTR has been recorded. The {method === "upi_admin" ? "team" : "artist"} will
+          verify it as soon as the payment arrives — then your booking is locked in.
         </p>
       </div>
     );
@@ -108,7 +108,7 @@ function PayInner() {
         <IndianRupee className="h-8 w-8 text-rani-700" /> Booking Payment
       </h1>
       <p className="mt-2 text-sm text-ink-500">
-        Booking number aur wahi mobile number daalo jo booking karte waqt diya tha.
+        Enter your booking number and the same mobile number you used while booking.
       </p>
 
       <div className="mt-6 rounded-3xl border border-cream-300 bg-white p-6">
@@ -144,7 +144,7 @@ function PayInner() {
           disabled={pending}
           className="mt-4 inline-flex items-center gap-2 rounded-full bg-rani-700 px-6 py-3 text-sm font-bold text-white hover:bg-rani-800 disabled:cursor-wait disabled:opacity-60"
         >
-          <Search className="h-4 w-4" /> {pending && !info ? "Dhundh rahe…" : "Find My Booking"}
+          <Search className="h-4 w-4" /> {pending && !info ? "Searching…" : "Find My Booking"}
         </button>
       </div>
 
@@ -168,7 +168,7 @@ function PayInner() {
                 </span>
               ) : (
                 <span className="rounded-full bg-marigold-100 px-3 py-1.5 text-xs font-bold text-marigold-800">
-                  Amount abhi confirm nahi hua
+                  Amount not confirmed yet
                 </span>
               )}
             </div>
@@ -178,13 +178,13 @@ function PayInner() {
             <>
               <div>
                 <p className="text-sm font-bold text-ink-900">
-                  Kahan pay karna chahoge? (dono sahi hain)
+                  Where would you like to pay? (both work)
                 </p>
                 <div className="mt-3 flex flex-col gap-4 sm:flex-row">
                   {(info.artistUpi || info.artistQr) && (
                     <QrCard
-                      title={`${info.artistName} ko pay karo`}
-                      subtitle="Seedha artist ke UPI par"
+                      title={`Pay ${info.artistName}`}
+                      subtitle="Straight to the artist's UPI"
                       upi={info.artistUpi}
                       qr={info.artistQr}
                       selected={method === "upi_artist"}
@@ -193,8 +193,8 @@ function PayInner() {
                   )}
                   {(info.adminUpi || info.adminQr) && (
                     <QrCard
-                      title="Rangritii ko pay karo"
-                      subtitle="Platform ke UPI par (artist ko payout ho jayega)"
+                      title="Pay Rangritii"
+                      subtitle="To the platform's UPI (the artist gets paid out)"
                       upi={info.adminUpi}
                       qr={info.adminQr}
                       selected={method === "upi_admin"}
@@ -204,8 +204,8 @@ function PayInner() {
                 </div>
                 {!info.artistUpi && !info.artistQr && !info.adminUpi && !info.adminQr && (
                   <p className="mt-3 rounded-xl border border-marigold-200 bg-marigold-50 px-4 py-3 text-sm text-marigold-800">
-                    Payment details abhi set nahi hui — thodi der baad try karo ya WhatsApp
-                    par contact karo.
+                    Payment details aren&apos;t set up yet — please try again in a bit or
+                    reach us on WhatsApp.
                   </p>
                 )}
               </div>
@@ -214,10 +214,10 @@ function PayInner() {
                 <div className="rounded-3xl border border-cream-300 bg-white p-6">
                   <p className="flex items-center gap-2 text-sm font-bold text-ink-900">
                     <ShieldCheck className="h-4 w-4 text-rani-700" />
-                    Pay karne ke baad UTR/transaction ID yahan daalo
+                    After paying, enter your UTR/transaction ID here
                   </p>
                   <p className="mt-1 text-xs text-ink-500">
-                    UPI app mein payment ki detail mein 12-digit UTR number milta hai.
+                    You&apos;ll find the 12-digit UTR number in your UPI app&apos;s payment details.
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <input
@@ -231,7 +231,7 @@ function PayInner() {
                       disabled={pending || utr.trim().length < 4}
                       className="inline-flex items-center gap-2 rounded-full bg-rani-700 px-6 py-3 text-sm font-bold text-white hover:bg-rani-800 disabled:opacity-50"
                     >
-                      <BadgeCheck className="h-4 w-4" /> Maine pay kar diya
+                      <BadgeCheck className="h-4 w-4" /> I&apos;ve paid
                     </button>
                   </div>
                 </div>
@@ -241,8 +241,8 @@ function PayInner() {
 
           {info.paymentStatus === "claimed" && (
             <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-              Aapki payment claim record hai — verification ka wait hai. Galti se dobara
-              pay mat karna!
+              Your payment claim is recorded — verification is pending. Please don&apos;t
+              pay again by mistake!
             </p>
           )}
         </div>

@@ -153,10 +153,10 @@ export default async function ArtistsPage({
       {/* Grid */}
       {artists.length === 0 ? (
         <div className="mt-16 rounded-3xl border border-dashed border-cream-300 bg-white py-20 text-center">
-          <p className="font-display text-2xl text-ink-900">Koi artist nahi mila 😔</p>
+          <p className="font-display text-2xl text-ink-900">No artists found 😔</p>
           <p className="mt-2 text-sm text-ink-500">
-            Filter badal ke dekho, ya humein WhatsApp karo — hum aapke liye artist
-            dhundh denge.
+            Try changing the filters, or WhatsApp us — we&apos;ll find an artist
+            for you.
           </p>
           <Link
             href="/artists"

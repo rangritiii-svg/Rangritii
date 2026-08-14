@@ -121,11 +121,11 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
     await requireAdmin();
     const upiId = String(formData.get("upiId") ?? "").trim().slice(0, 100);
     if (upiId && !/^[\w.-]{2,}@[a-zA-Z]{2,}$/.test(upiId)) {
-      throw new Error("UPI ID sahi format mein daalo (jaise rangritii@upi).");
+      throw new Error("Enter the UPI ID in a valid format (e.g. rangritii@upi).");
     }
     const commissionPercent = Number(formData.get("commissionPercent"));
     if (!Number.isFinite(commissionPercent) || commissionPercent < 0 || commissionPercent > 50) {
-      throw new Error("Commission 0 se 50% ke beech rakho.");
+      throw new Error("Commission must be between 0 and 50%.");
     }
     const upiQr = String(formData.get("upiQr") ?? "")
       .split(/\r?\n/)

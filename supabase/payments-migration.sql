@@ -1,7 +1,7 @@
 -- ============================================================
 -- Rangritii — UPI PAYMENTS UPGRADE (migration)
--- Pehle se chal rahe database par run karo (schema.sql ke baad).
--- Fresh project? Sirf schema.sql kaafi hai (usme sab included hai).
+-- Run this on an already-live database (after schema.sql).
+-- Fresh project? schema.sql alone is enough (it includes all of this).
 -- ============================================================
 
 -- ── 1. Platform settings (admin UPI + commission) ───────────
@@ -161,7 +161,7 @@ begin
       and payment_status <> 'verified'
       and status <> 'cancelled';
   if not found then
-    raise exception 'Booking nahi mili, cancelled hai, ya payment already verified hai';
+    raise exception 'Booking not found, cancelled, or the payment is already verified';
   end if;
 
   update public.bookings

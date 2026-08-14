@@ -36,7 +36,7 @@ function seedBookings(): Booking[] {
       city: "Jaipur",
       eventDate: "2026-08-20",
       eventType: "Bridal / Dulhan",
-      notes: "Shaadi 21 August ko hai, ek din pehle full bridal chahiye. 4 family members ke liye bhi simple designs.",
+      notes: "The wedding is on 21 August — need full bridal mehandi a day before. Simple designs for 4 family members as well.",
       status: "confirmed",
       amount: 11000,
       commissionAmount: 1100,
@@ -97,7 +97,7 @@ export function demoStore(): DemoStore {
           name: "Ritika Jain",
           email: "ritika@example.com",
           message:
-            "Hi! Mujhe apni behen ki shaadi ke liye Udaipur mein bridal mehandi artist chahiye, 2 October ke liye. Kya aap help kar sakte ho?",
+            "Hi! I'm looking for a bridal mehandi artist in Udaipur for my sister's wedding on 2 October. Could you help?",
           createdAt: "2026-08-08T11:20:00Z",
         },
       ],

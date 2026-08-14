@@ -1,9 +1,9 @@
 export function AnnouncementBar() {
   const messages = [
-    "Booking requests bilkul FREE hain",
-    "Verified mehandi artists — portfolio dekh ke chuno",
-    "Bridal se party tak, har style available",
-    "Artist? Free mein register karo aur bookings pao",
+    "Booking requests are completely FREE",
+    "Verified mehandi artists — browse portfolios and choose",
+    "From bridal to party, every style available",
+    "Artist? Register for free and get bookings",
   ];
   const line = messages.map((m) => `${m}  ✦  `).join("");
   return (

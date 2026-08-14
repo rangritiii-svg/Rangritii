@@ -67,7 +67,7 @@ export function ArtistBookingPayments({
             disabled={pending || !amount}
             className="rounded-full bg-rani-700 px-4 py-2 text-xs font-bold text-white hover:bg-rani-800 disabled:opacity-50"
           >
-            {booking.amount === null ? "Amount set karo (confirm hoga)" : "Update amount"}
+            {booking.amount === null ? "Set amount (confirms booking)" : "Update amount"}
           </button>
         </div>
       )}
@@ -87,20 +87,20 @@ export function ArtistBookingPayments({
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {booking.paymentStatus === "unpaid" && booking.amount !== null && (
           <>
-            <span className={`${chip} bg-cream-200 text-ink-700`}>Customer ne abhi pay nahi kiya</span>
+            <span className={`${chip} bg-cream-200 text-ink-700`}>Customer hasn&apos;t paid yet</span>
             <button
               onClick={() => run(() => artistRecordCashAction(booking.id))}
               disabled={pending}
               className="rounded-full border border-cream-300 bg-white px-4 py-2 text-xs font-bold text-ink-700 hover:border-rani-300 disabled:opacity-50"
             >
-              Cash mila — record karo
+              Received cash — record it
             </button>
           </>
         )}
         {booking.paymentStatus === "claimed" && (
           <>
             <span className={`${chip} bg-blue-100 text-blue-800`}>
-              Customer says PAID ({booking.paymentMethod === "upi_admin" ? "admin ko" : "aapko"})
+              Customer says PAID ({booking.paymentMethod === "upi_admin" ? "to admin" : "to you"})
               {booking.paymentUtr && ` · UTR: ${booking.paymentUtr}`}
             </span>
             {booking.paymentMethod === "upi_artist" && (
@@ -109,7 +109,7 @@ export function ArtistBookingPayments({
                 disabled={pending}
                 className="inline-flex items-center gap-1 rounded-full bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50"
               >
-                <BadgeCheck className="h-3.5 w-3.5" /> Payment mili — verify
+                <BadgeCheck className="h-3.5 w-3.5" /> Payment received — verify
               </button>
             )}
           </>
@@ -130,7 +130,7 @@ export function ArtistBookingPayments({
           </p>
           {booking.settlementStatus === "claimed" ? (
             <span className={`${chip} mt-2 inline-block bg-blue-100 text-blue-800`}>
-              Aapne UTR bhej diya ({booking.settlementUtr}) — admin verify karega
+              You sent the UTR ({booking.settlementUtr}) — admin will verify
             </span>
           ) : (
             <div className="mt-2 space-y-3">
@@ -148,7 +148,7 @@ export function ArtistBookingPayments({
                   )}
                   <div>
                     <p className="text-xs text-ink-500">Admin UPI</p>
-                    <p className="font-bold text-ink-900">{adminUpi || "Admin ne UPI set nahi kiya"}</p>
+                    <p className="font-bold text-ink-900">{adminUpi || "Admin hasn't set a UPI yet"}</p>
                   </div>
                 </div>
               )}
@@ -156,7 +156,7 @@ export function ArtistBookingPayments({
                 <input
                   value={utr}
                   onChange={(e) => setUtr(e.target.value)}
-                  placeholder="Commission payment ka UTR"
+                  placeholder="UTR of commission payment"
                   className="w-52 rounded-full border border-cream-300 bg-white px-4 py-2 text-xs outline-none focus:border-rani-400"
                 />
                 <button
@@ -164,7 +164,7 @@ export function ArtistBookingPayments({
                   disabled={pending || !utr}
                   className="rounded-full bg-rani-700 px-4 py-2 text-xs font-bold text-white hover:bg-rani-800 disabled:opacity-50"
                 >
-                  Commission pay kar diya
+                  I&apos;ve paid the commission
                 </button>
               </div>
             </div>
@@ -176,12 +176,12 @@ export function ArtistBookingPayments({
       {booking.paymentStatus === "verified" && booking.paymentMethod === "upi_admin" && (
         <p className="mt-2 text-xs text-ink-500">
           {booking.settlementStatus === "settled"
-            ? `Admin ne aapka payout bhej diya ✓${booking.settlementUtr ? ` (UTR: ${booking.settlementUtr})` : ""}`
-            : `Customer ne admin ko pay kiya — admin aapko ${
+            ? `Admin has sent your payout ✓${booking.settlementUtr ? ` (UTR: ${booking.settlementUtr})` : ""}`
+            : `Customer paid the admin — the admin will send you ${
                 booking.amount !== null && booking.commissionAmount !== null
                   ? formatINR(booking.amount - booking.commissionAmount)
-                  : "payout"
-              } bhejega.`}
+                  : "your payout"
+              }.`}
         </p>
       )}
 

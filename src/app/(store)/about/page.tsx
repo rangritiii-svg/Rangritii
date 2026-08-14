@@ -17,11 +17,11 @@ export default function AboutPage() {
             {SITE.tagline}
           </h1>
           <p className="mt-5 leading-relaxed text-ink-500">
-            Rangritii ek simple soch se shuru hua — har sheher mein kamaal ki mehandi
-            artists hain, lekin unhe dhundhna mushkil hai. Aur artists ke paas hunar hai,
-            par naye customers tak pahunchne ka zariya nahi. Rangritii dono ko milata
-            hai: customers ko verified artists ke real portfolios, aur artists ko bina
-            commission ke seedhi bookings.
+            Rangritii began with a simple thought — every city has incredible mehandi
+            artists, but they are hard to find. And artists have the talent, but no
+            way to reach new customers. Rangritii brings the two together: real
+            portfolios of verified artists for customers, and direct, commission-free
+            bookings for artists.
           </p>
         </div>
       </section>
@@ -30,18 +30,18 @@ export default function AboutPage() {
         {[
           {
             icon: Palette,
-            title: "Kalakaari first",
-            text: "Har artist ka asli portfolio — jo dikhta hai wahi milta hai. Design dekho, phir chuno.",
+            title: "Artistry first",
+            text: "Every artist's real portfolio — what you see is what you get. Browse the designs, then choose.",
           },
           {
             icon: ShieldCheck,
             title: "Verified & safe",
-            text: "Har profile team se approve hoti hai. Contact details check, portfolio check.",
+            text: "Every profile is approved by our team. Contact details checked, portfolio checked.",
           },
           {
             icon: HandHeart,
-            title: "Artist ka haq",
-            text: "Zero commission. Payment seedha artist ko — unki mehnat, unki kamai.",
+            title: "Artists keep it all",
+            text: "Zero commission. Payment goes straight to the artist — their craft, their earnings.",
           },
         ].map(({ icon: Icon, title, text }) => (
           <div key={title} className="rounded-3xl border border-cream-300 bg-white p-7">
@@ -56,11 +56,11 @@ export default function AboutPage() {
 
       <section className="mx-auto max-w-3xl px-4 pb-16 text-center sm:px-6">
         <h2 className="font-display text-2xl font-semibold text-ink-900">
-          Shaadi ho ya Karva Chauth — rang humara, kahaani aapki
+          A wedding or Karva Chauth — our color, your story
         </h2>
         <p className="mt-3 text-ink-500">
-          Har booking ke saath ek celebration judta hai. Humein khushi hai ki hum uska
-          hissa hain.
+          Behind every booking there is a celebration. We are honored to be a part
+          of it.
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Link

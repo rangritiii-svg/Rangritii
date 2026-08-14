@@ -97,7 +97,7 @@ export function PaymentAdminPanel({
           }`}
         >
           {booking.paymentStatus === "unpaid" && "Customer: not paid yet"}
-          {booking.paymentStatus === "claimed" && "Customer says PAID — verify karo"}
+          {booking.paymentStatus === "claimed" && "Customer says PAID — needs verification"}
           {booking.paymentStatus === "verified" && "Payment verified"}
         </span>
         {booking.paymentMethod && (
@@ -114,7 +114,7 @@ export function PaymentAdminPanel({
             disabled={pending}
             className="inline-flex items-center gap-1 rounded-full bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50"
           >
-            <BadgeCheck className="h-3.5 w-3.5" /> Payment mili — verify
+            <BadgeCheck className="h-3.5 w-3.5" /> Payment received — verify
           </button>
         )}
       </div>
@@ -125,7 +125,7 @@ export function PaymentAdminPanel({
           {paidToAdmin ? (
             <div className="text-sm">
               <p className="font-semibold text-ink-900">
-                Artist ko payout dena hai:{" "}
+                Payout due to artist:{" "}
                 <span className="text-rani-800">{payout !== null ? formatINR(payout) : "—"}</span>{" "}
                 <span className="text-xs text-ink-500">(amount − commission)</span>
               </p>
@@ -166,7 +166,7 @@ export function PaymentAdminPanel({
                   )}
                   <div className="text-sm">
                     <p className="text-xs text-ink-500">Artist UPI</p>
-                    <p className="font-bold text-ink-900">{artistUpi || "UPI ID nahi diya"}</p>
+                    <p className="font-bold text-ink-900">{artistUpi || "No UPI ID provided"}</p>
                   </div>
                 </div>
               )}
@@ -174,7 +174,7 @@ export function PaymentAdminPanel({
           ) : (
             <div className="text-sm">
               <p className="font-semibold text-ink-900">
-                Artist se commission lena hai:{" "}
+                Commission due from artist:{" "}
                 <span className="text-rani-800">
                   {booking.commissionAmount !== null ? formatINR(booking.commissionAmount) : "—"}
                 </span>
@@ -182,7 +182,7 @@ export function PaymentAdminPanel({
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {booking.settlementStatus === "pending" && (
                   <span className={`${chip} bg-marigold-100 text-marigold-800`}>
-                    Artist ne abhi pay nahi kiya
+                    Artist has not paid yet
                   </span>
                 )}
                 {booking.settlementStatus === "claimed" && (
@@ -195,7 +195,7 @@ export function PaymentAdminPanel({
                       disabled={pending}
                       className="inline-flex items-center gap-1 rounded-full bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50"
                     >
-                      <BadgeCheck className="h-3.5 w-3.5" /> Commission mila — settle
+                      <BadgeCheck className="h-3.5 w-3.5" /> Commission received — settle
                     </button>
                   </>
                 )}
