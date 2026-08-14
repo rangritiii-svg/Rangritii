@@ -1,5 +1,6 @@
 // Generates PWA PNG icons (192/512/180) with pure Node — no dependencies.
-// Draws the Rangritii mark: maroon rounded square, marigold diamond, cream bindi.
+// Draws the Rangritii mark: maroon rounded square, marigold mandala flower, cream bindi.
+// The 180px apple-touch-icon is full-bleed (iOS rounds corners itself).
 // Run: node scripts/generate-icons.mjs  (output: public/icons/*.png)
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -14,26 +15,45 @@ const MAROON = [139, 30, 63, 255];
 const GOLD = [201, 151, 63, 255];
 const CREAM = [253, 251, 247, 255];
 
-function makeIcon(size) {
+function makeIcon(size, fullBleed = false) {
   const px = new Uint8Array(size * size * 4);
   const c = size / 2;
   const r = size * 0.22; // corner radius
-  const dOuter = size * 0.30; // diamond half-diagonal
-  const dInner = size * 0.215;
-  const bindi = size * 0.09;
+  const flowerR = size * 0.335; // 8-petal mandala rose
+  const heartR = size * 0.155; // inner deep-maroon rose
+  const bindi = size * 0.062;
+  const dotRingR = size * 0.425;
+  const dotR = size * 0.024;
+  const DEEP = [92, 16, 39, 255];
+
+  // precompute the 12 dot-ring centers
+  const dots = Array.from({ length: 12 }, (_, i) => {
+    const a = (i * Math.PI) / 6;
+    return [c + dotRingR * Math.cos(a), c + dotRingR * Math.sin(a)];
+  });
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const i = (y * size + x) * 4;
-      // rounded-rect test
-      const dx = Math.max(Math.abs(x - c) - (c - r), 0);
-      const dy = Math.max(Math.abs(y - c) - (c - r), 0);
-      if (dx * dx + dy * dy > r * r) continue; // transparent corner
+      if (!fullBleed) {
+        // rounded-rect test → transparent corner
+        const dx = Math.max(Math.abs(x - c) - (c - r), 0);
+        const dy = Math.max(Math.abs(y - c) - (c - r), 0);
+        if (dx * dx + dy * dy > r * r) continue;
+      }
       let col = MAROON;
-      const man = Math.abs(x - c) + Math.abs(y - c); // manhattan distance → diamond
-      if (man < dOuter && man > dInner) col = GOLD;
       const dist = Math.hypot(x - c, y - c);
+      const theta = Math.atan2(y - c, x - c);
+      // gold rose: r(θ) with 8 lobes
+      if (dist < flowerR * (0.6 + 0.4 * Math.cos(8 * theta))) col = GOLD;
+      // deep inner rose, offset half a petal
+      if (dist < heartR * (0.62 + 0.38 * Math.cos(8 * theta + Math.PI))) col = DEEP;
+      // cream bindi centre
       if (dist < bindi) col = CREAM;
+      // cream dot ring
+      for (const [dx2, dy2] of dots) {
+        if (Math.hypot(x - dx2, y - dy2) < dotR) { col = CREAM; break; }
+      }
       px[i] = col[0]; px[i + 1] = col[1]; px[i + 2] = col[2]; px[i + 3] = col[3];
     }
   }
@@ -84,6 +104,6 @@ function encodePng(w, h, rgba) {
 
 for (const size of [192, 512, 180]) {
   const name = size === 180 ? "apple-touch-icon.png" : `icon-${size}.png`;
-  writeFileSync(join(outDir, name), makeIcon(size));
+  writeFileSync(join(outDir, name), makeIcon(size, size === 180));
   console.log(`Wrote public/icons/${name}`);
 }

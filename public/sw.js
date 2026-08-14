@@ -1,5 +1,5 @@
 /* Rangritii service worker — cache-first for static assets, network-first for pages. */
-const CACHE = "rangritii-v2";
+const CACHE = "rangritii-v3";
 const STATIC_DESTINATIONS = ["style", "script", "font", "image"];
 
 self.addEventListener("install", (event) => {

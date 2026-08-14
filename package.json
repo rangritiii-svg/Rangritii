@@ -2,7 +2,7 @@
   "name": "rangritii",
   "version": "1.0.0",
   "private": true,
-  "description": "Rangritii — stylish cotton kurtis, co-ord sets & ethnic wear. Next.js + Supabase storefront with admin panel.",
+  "description": "Rangritii — India's mehandi platform. Find mehandi artists, view portfolios, book at home. Next.js + Supabase with admin panel and installable PWA.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
