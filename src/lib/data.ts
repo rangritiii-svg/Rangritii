@@ -38,6 +38,14 @@ type StyleRow = {
 };
 
 function mapArtist(r: ArtistRow): Artist {
+  let profileImage = r.profile_image ?? "";
+  if (profileImage.endsWith(".svg") && profileImage.includes("/art/")) {
+    profileImage = profileImage.replace(".svg", ".jpg");
+  }
+  const portfolioImages = (r.portfolio_images ?? []).map((img) =>
+    img.endsWith(".svg") && img.includes("/art/") ? img.replace(".svg", ".jpg") : img
+  );
+
   return {
     id: r.id,
     userId: r.user_id,
@@ -51,8 +59,8 @@ function mapArtist(r: ArtistRow): Artist {
     priceMin: Number(r.price_min ?? 0),
     priceMax: Number(r.price_max ?? 0),
     styles: r.styles ?? [],
-    profileImage: r.profile_image ?? "",
-    portfolioImages: r.portfolio_images ?? [],
+    profileImage,
+    portfolioImages,
     upiId: r.upi_id ?? "",
     upiQr: r.upi_qr ?? "",
     isApproved: r.is_approved,
@@ -62,12 +70,16 @@ function mapArtist(r: ArtistRow): Artist {
 }
 
 function mapStyle(r: StyleRow): Style {
+  let image = r.image ?? "";
+  if (image.endsWith(".svg") && image.includes("/art/")) {
+    image = image.replace(".svg", ".jpg");
+  }
   return {
     id: r.id,
     name: r.name,
     slug: r.slug,
     description: r.description ?? "",
-    image: r.image ?? "",
+    image,
     sortOrder: r.sort_order,
   };
 }
