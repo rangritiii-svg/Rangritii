@@ -50,7 +50,7 @@ export default function SavedArtistsPage() {
             <Link href={`/artist/${item.slug}`} className="block overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={item.image || "/art/artist-1-profile.svg"}
+                src={item.image || "/art/artist-1-profile.jpg"}
                 alt={item.name}
                 className="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-105"
               />

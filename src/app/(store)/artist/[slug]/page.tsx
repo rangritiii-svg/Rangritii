@@ -62,7 +62,7 @@ export default async function ArtistProfilePage({ params }: { params: Promise<Pa
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={artist.profileImage || "/art/artist-1-profile.svg"}
+              src={artist.profileImage || "/art/artist-1-profile.jpg"}
               alt={`${artist.name} — mehandi artist`}
               className="aspect-[3/4] w-full rounded-3xl object-cover shadow-lg shadow-rani-900/10"
             />

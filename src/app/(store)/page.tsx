@@ -59,7 +59,7 @@ export default async function HomePage() {
             <div className="space-y-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/art/artist-1-profile.svg"
+                src="/art/artist-1-profile.jpg"
                 alt="Bridal mehandi design"
                 className="w-full rounded-3xl shadow-xl shadow-rani-900/15"
               />
@@ -67,7 +67,7 @@ export default async function HomePage() {
             <div className="space-y-4 pt-10">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/art/artist-4-p1.svg"
+                src="/art/style-bridal.jpg"
                 alt="Mandala mehandi design"
                 className="w-full rounded-3xl shadow-xl shadow-rani-900/15"
               />

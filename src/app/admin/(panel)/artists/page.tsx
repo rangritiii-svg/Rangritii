@@ -55,7 +55,7 @@ export default async function AdminArtistsPage() {
                   <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={a.profileImage || "/art/artist-1-profile.svg"}
+                      src={a.profileImage || "/art/artist-1-profile.jpg"}
                       alt=""
                       className="h-14 w-11 rounded-lg object-cover object-top"
                     />

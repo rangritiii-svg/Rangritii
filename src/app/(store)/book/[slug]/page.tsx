@@ -49,7 +49,7 @@ export default async function BookPage({ params }: { params: Promise<Params> }) 
         <aside className="h-fit rounded-3xl border border-cream-300 bg-white p-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={artist.profileImage || "/art/artist-1-profile.svg"}
+            src={artist.profileImage || "/art/artist-1-profile.jpg"}
             alt={artist.name}
             className="aspect-[4/3] w-full rounded-2xl object-cover object-top"
           />

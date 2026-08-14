@@ -11,7 +11,7 @@ export const DEMO_STYLES: Style[] = [
     name: "Bridal / Dulhan",
     slug: "bridal",
     description: "Full-hand dulhan mehandi — intricate jaal, portraits & storytelling designs.",
-    image: "/art/style-bridal.svg",
+    image: "/art/style-bridal.jpg",
     sortOrder: 1,
   },
   {
@@ -19,7 +19,7 @@ export const DEMO_STYLES: Style[] = [
     name: "Arabic",
     slug: "arabic",
     description: "Bold strokes, floral trails aur negative space — quick & classy.",
-    image: "/art/style-arabic.svg",
+    image: "/art/style-arabic.jpg",
     sortOrder: 2,
   },
   {
@@ -27,7 +27,7 @@ export const DEMO_STYLES: Style[] = [
     name: "Indo-Arabic",
     slug: "indo-arabic",
     description: "Traditional jaal + Arabic boldness ka perfect mix.",
-    image: "/art/style-indo-arabic.svg",
+    image: "/art/style-indo-arabic.jpg",
     sortOrder: 3,
   },
   {
@@ -35,7 +35,7 @@ export const DEMO_STYLES: Style[] = [
     name: "Traditional / Rajasthani",
     slug: "traditional",
     description: "Dense Marwari-Rajasthani work — peacocks, dulha-dulhan motifs.",
-    image: "/art/style-traditional.svg",
+    image: "/art/style-traditional.jpg",
     sortOrder: 4,
   },
   {
@@ -43,7 +43,7 @@ export const DEMO_STYLES: Style[] = [
     name: "Minimal / Modern",
     slug: "minimal",
     description: "Delicate strings, mandalas aur fingertips — less is more.",
-    image: "/art/style-minimal.svg",
+    image: "/art/style-minimal.jpg",
     sortOrder: 5,
   },
   {
@@ -51,13 +51,13 @@ export const DEMO_STYLES: Style[] = [
     name: "Festive / Party",
     slug: "festive",
     description: "Karva Chauth, Teej, shaadi-guest looks — jaldi bhi, sundar bhi.",
-    image: "/art/style-festive.svg",
+    image: "/art/style-festive.jpg",
     sortOrder: 6,
   },
 ];
 
 function portfolio(n: number): string[] {
-  return [1, 2, 3, 4].map((i) => `/art/artist-${n}-p${i}.svg`);
+  return [1, 2, 3, 4].map((i) => `/art/artist-${n}-p${i}.jpg`);
 }
 
 /** Demo-only payment details (clearly fake; real ones are uploaded by users). */
@@ -80,7 +80,7 @@ export const DEMO_ARTISTS: Artist[] = [
     priceMin: 5100,
     priceMax: 21000,
     styles: ["bridal", "traditional", "indo-arabic"],
-    profileImage: "/art/artist-1-profile.svg",
+    profileImage: "/art/artist-1-profile.jpg",
     portfolioImages: portfolio(1),
     ...demoUpi("meera"),
     isApproved: true,
@@ -100,7 +100,7 @@ export const DEMO_ARTISTS: Artist[] = [
     priceMin: 1100,
     priceMax: 11000,
     styles: ["arabic", "indo-arabic", "festive"],
-    profileImage: "/art/artist-2-profile.svg",
+    profileImage: "/art/artist-2-profile.jpg",
     portfolioImages: portfolio(2),
     ...demoUpi("ayesha"),
     isApproved: true,
@@ -120,7 +120,7 @@ export const DEMO_ARTISTS: Artist[] = [
     priceMin: 900,
     priceMax: 7500,
     styles: ["minimal", "arabic", "festive"],
-    profileImage: "/art/artist-3-profile.svg",
+    profileImage: "/art/artist-3-profile.jpg",
     portfolioImages: portfolio(3),
     ...demoUpi("prachi"),
     isApproved: true,
@@ -140,7 +140,7 @@ export const DEMO_ARTISTS: Artist[] = [
     priceMin: 7100,
     priceMax: 51000,
     styles: ["bridal", "indo-arabic", "arabic"],
-    profileImage: "/art/artist-4-profile.svg",
+    profileImage: "/art/artist-4-profile.jpg",
     portfolioImages: portfolio(4),
     ...demoUpi("farzana"),
     isApproved: true,
@@ -160,7 +160,7 @@ export const DEMO_ARTISTS: Artist[] = [
     priceMin: 700,
     priceMax: 15000,
     styles: ["traditional", "festive", "bridal"],
-    profileImage: "/art/artist-5-profile.svg",
+    profileImage: "/art/artist-5-profile.jpg",
     portfolioImages: portfolio(5),
     ...demoUpi("kiran"),
     isApproved: true,
@@ -180,7 +180,7 @@ export const DEMO_ARTISTS: Artist[] = [
     priceMin: 1500,
     priceMax: 12000,
     styles: ["bridal", "traditional", "minimal"],
-    profileImage: "/art/artist-6-profile.svg",
+    profileImage: "/art/artist-6-profile.jpg",
     portfolioImages: portfolio(6),
     ...demoUpi("sana"),
     isApproved: true,
@@ -200,7 +200,7 @@ export const DEMO_ARTISTS: Artist[] = [
     priceMin: 1100,
     priceMax: 18000,
     styles: ["arabic", "festive", "bridal"],
-    profileImage: "/art/artist-7-profile.svg",
+    profileImage: "/art/artist-7-profile.jpg",
     portfolioImages: portfolio(7),
     ...demoUpi("divya"),
     isApproved: true,
@@ -220,7 +220,7 @@ export const DEMO_ARTISTS: Artist[] = [
     priceMin: 500,
     priceMax: 8000,
     styles: ["festive", "arabic", "minimal"],
-    profileImage: "/art/artist-8-profile.svg",
+    profileImage: "/art/artist-8-profile.jpg",
     portfolioImages: portfolio(8),
     ...demoUpi("ritu"),
     isApproved: true,

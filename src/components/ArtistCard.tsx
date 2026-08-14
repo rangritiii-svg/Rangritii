@@ -20,7 +20,7 @@ export function ArtistCard({
       <Link href={`/artist/${artist.slug}`} className="relative block overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={artist.profileImage || "/art/artist-1-profile.svg"}
+          src={artist.profileImage || "/art/artist-1-profile.jpg"}
           alt={`${artist.name} — mehandi artist`}
           className="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-105"
           loading="lazy"
