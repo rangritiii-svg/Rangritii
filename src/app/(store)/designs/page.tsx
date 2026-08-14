@@ -111,7 +111,7 @@ export default function DesignsPage() {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/art/design-${t.slug}-${n}.svg`}
+                    src={`/art/design-${t.slug}-${n}.jpg`}
                     alt={`${t.name} mehandi design ${n}`}
                     loading={i > 0 ? "lazy" : undefined}
                     className="aspect-[4/5] w-full object-cover transition duration-500 group-hover:scale-[1.04]"
