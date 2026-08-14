@@ -108,10 +108,10 @@ export default async function HomePage() {
             </h2>
           </div>
           <Link
-            href="/artists"
+            href="/designs"
             className="hidden items-center gap-1 text-sm font-semibold text-rani-700 hover:underline sm:inline-flex"
           >
-            All artists <ArrowRight className="h-4 w-4" />
+            Design gallery <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="no-scrollbar mt-7 flex gap-4 overflow-x-auto pb-2 lg:grid lg:grid-cols-6">

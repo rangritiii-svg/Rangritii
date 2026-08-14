@@ -118,6 +118,7 @@ export function Header({ styles }: { styles: NavStyle[] }) {
               </div>
             </div>
           </div>
+          <Link href="/designs" className={navLink}>Designs</Link>
           <Link href="/#how-it-works" className={navLink}>How it Works</Link>
           <Link href="/join" className={`${navLink} inline-flex items-center gap-1.5`}>
             <Sparkles className="h-3.5 w-3.5 text-marigold-600" /> Join as Artist
@@ -192,6 +193,7 @@ export function Header({ styles }: { styles: NavStyle[] }) {
             <nav className="flex flex-col px-3 py-3" aria-label="Mobile">
               {[
                 { href: "/artists", label: "Find Artists" },
+                { href: "/designs", label: "Design Gallery" },
                 { href: "/#how-it-works", label: "How it Works" },
                 { href: "/join", label: "Join as Artist ✨" },
               ].map((l) => (

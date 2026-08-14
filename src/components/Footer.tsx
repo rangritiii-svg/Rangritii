@@ -5,6 +5,7 @@ import { getPlatformSettings } from "@/lib/data";
 
 const exploreLinks = [
   { href: "/artists", label: "Find Artists" },
+  { href: "/designs", label: "Design Gallery" },
   { href: "/artists?style=bridal", label: "Bridal Mehandi" },
   { href: "/artists?style=arabic", label: "Arabic Mehandi" },
   { href: "/join", label: "Join as Artist" },
