@@ -6,6 +6,7 @@ import {
   BadgeCheck,
   CheckCircle2,
   IndianRupee,
+  MessageCircle,
   Search,
   ShieldCheck,
 } from "lucide-react";
@@ -173,6 +174,19 @@ function PayInner() {
               )}
             </div>
           </div>
+
+          {info.artistWhatsapp && (
+            <a
+              href={`https://wa.me/${info.artistWhatsapp}?text=${encodeURIComponent(
+                `Hi ${info.artistName}! This is regarding my confirmed booking ${info.bookingNumber} on Rangritii.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 rounded-2xl border-2 border-[#25d366] bg-white px-6 py-3.5 text-sm font-bold text-[#1da851] transition hover:bg-[#25d366]/10"
+            >
+              <MessageCircle className="h-4 w-4" /> Contact {info.artistName} on WhatsApp
+            </a>
+          )}
 
           {info.paymentStatus !== "verified" && info.amount !== null && (
             <>
