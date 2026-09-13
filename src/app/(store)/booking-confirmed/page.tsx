@@ -18,7 +18,7 @@ export default async function BookingConfirmedPage({
     <div className="mx-auto max-w-2xl px-4 py-20 text-center">
       <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
       <h1 className="mt-6 font-display text-4xl font-semibold text-ink-900">
-        Booking request sent! ð
+        Booking request sent! 🎉
       </h1>
       <p className="mt-3 text-ink-500">
         {artistName ? `${artistName} has received your request.` : "The artist has received your request."}{" "}
@@ -56,7 +56,7 @@ export default async function BookingConfirmedPage({
             href={`/pay?number=${encodeURIComponent(bookingNumber)}`}
             className="inline-flex items-center gap-2 rounded-full border-2 border-rani-700 px-7 py-3.5 text-sm font-bold text-rani-700 hover:bg-rani-50"
           >
-            ð³ Check Status / Make Payment
+            💳 Check Status / Make Payment
           </Link>
         )}
         <Link
