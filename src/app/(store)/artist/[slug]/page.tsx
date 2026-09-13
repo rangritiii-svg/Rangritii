@@ -6,7 +6,6 @@ import {
   BadgeCheck,
   CalendarCheck,
   MapPin,
-  MessageCircle,
   Wallet,
 } from "lucide-react";
 import { ArtistCard } from "@/components/ArtistCard";
@@ -133,19 +132,11 @@ export default async function ArtistProfilePage({ params }: { params: Promise<Pa
             >
               <CalendarCheck className="h-4 w-4" /> Book This Artist
             </Link>
-            {artist.whatsapp && (
-              <a
-                href={`https://wa.me/${artist.whatsapp}?text=${encodeURIComponent(
-                  `Hi ${artist.name}! I saw your profile on Rangritii — I'd like to talk about a mehandi booking.`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-[#25d366] px-6 py-3.5 text-sm font-bold text-[#1da851] transition hover:bg-[#25d366]/10"
-              >
-                <MessageCircle className="h-4 w-4" /> WhatsApp
-              </a>
-            )}
           </div>
+          <p className="mt-3 text-xs text-ink-500">
+            Contact details are shared once the artist confirms your booking — this keeps
+            every booking tracked and protected.
+          </p>
 
           <div className="mt-8">
             <h2 className="font-display text-xl font-semibold text-ink-900">About</h2>
