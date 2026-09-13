@@ -6,6 +6,7 @@ import {
   Clock,
   Database,
   LogOut,
+  MessageCircle,
   Palette,
   Phone,
   ShieldCheck,
@@ -14,7 +15,7 @@ import { ArtistBookingPayments } from "@/components/ArtistBookingPayments";
 import { ArtistSelfEditor } from "@/components/ArtistSelfEditor";
 import { AuthTabs } from "@/components/AuthTabs";
 import { isSupabaseConfigured } from "@/lib/config";
-import { getArtistByUserId, getPlatformSettings, getStyles } from "@/lib/data";
+import { getArtistById, getArtistByUserId, getPlatformSettings, getStyles } from "@/lib/data";
 import { formatDate, formatEventDate, formatINR } from "@/lib/format";
 import { getBookingsForArtist, getBookingsForUser } from "@/lib/bookings";
 import type { Booking, PlatformSettings } from "@/lib/types";
@@ -51,10 +52,12 @@ function BookingList({
   bookings,
   forArtist,
   settings,
+  artistContacts,
 }: {
   bookings: Booking[];
   forArtist?: boolean;
   settings?: PlatformSettings;
+  artistContacts?: Record<string, string>;
 }) {
   if (bookings.length === 0) {
     return (
@@ -77,53 +80,72 @@ function BookingList({
   }
   return (
     <ul className="mt-4 space-y-4">
-      {bookings.map((b) => (
-        <li key={b.id} className="rounded-3xl border border-cream-300 bg-white p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-bold text-ink-900">{b.bookingNumber}</p>
-              <p className="text-xs text-ink-500">Requested {formatDate(b.createdAt)}</p>
+      {bookings.map((b) => {
+        const contactWhatsapp =
+          !forArtist && (b.status === "confirmed" || b.status === "completed")
+            ? artistContacts?.[b.artistId]
+            : undefined;
+        return (
+          <li key={b.id} className="rounded-3xl border border-cream-300 bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-bold text-ink-900">{b.bookingNumber}</p>
+                <p className="text-xs text-ink-500">Requested {formatDate(b.createdAt)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {!forArtist && <PaymentChip b={b} />}
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${
+                    STATUS_STYLES[b.status] ?? "bg-cream-200 text-ink-700"
+                  }`}
+                >
+                  {b.status}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {!forArtist && <PaymentChip b={b} />}
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${
-                  STATUS_STYLES[b.status] ?? "bg-cream-200 text-ink-700"
-                }`}
-              >
-                {b.status}
-              </span>
-            </div>
-          </div>
-          <div className="mt-3 grid gap-2 border-t border-cream-200 pt-3 text-sm text-ink-700 sm:grid-cols-2">
-            <p className="flex items-center gap-2">
-              <Palette className="h-4 w-4 text-rani-700" />
-              {forArtist ? b.customerName : b.artistName}
-            </p>
-            <p className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-rani-700" />
-              {formatEventDate(b.eventDate)} · {b.eventType}
-            </p>
-            {forArtist && (
+            <div className="mt-3 grid gap-2 border-t border-cream-200 pt-3 text-sm text-ink-700 sm:grid-cols-2">
               <p className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-rani-700" />
-                <a href={`tel:${b.phone}`} className="hover:text-rani-700">{b.phone}</a>
+                <Palette className="h-4 w-4 text-rani-700" />
+                {forArtist ? b.customerName : b.artistName}
               </p>
+              <p className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-rani-700" />
+                {formatEventDate(b.eventDate)} · {b.eventType}
+              </p>
+              {forArtist && (
+                <p className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-rani-700" />
+                  <a href={`tel:${b.phone}`} className="hover:text-rani-700">{b.phone}</a>
+                </p>
+              )}
+              {contactWhatsapp && (
+                <p className="flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-rani-700" />
+                  <a
+                    href={`https://wa.me/${contactWhatsapp}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-rani-700"
+                  >
+                    WhatsApp {b.artistName}
+                  </a>
+                </p>
+              )}
+              <p className="text-ink-500 sm:col-span-2">
+                📍 {b.address}, {b.city}
+              </p>
+              {b.notes && <p className="text-ink-500 sm:col-span-2">📝 {b.notes}</p>}
+            </div>
+            {forArtist && (
+              <ArtistBookingPayments
+                booking={b}
+                adminUpi={settings?.upiId ?? ""}
+                adminQr={settings?.upiQr ?? ""}
+              />
             )}
-            <p className="text-ink-500 sm:col-span-2">
-              📍 {b.address}, {b.city}
-            </p>
-            {b.notes && <p className="text-ink-500 sm:col-span-2">📝 {b.notes}</p>}
-          </div>
-          {forArtist && (
-            <ArtistBookingPayments
-              booking={b}
-              adminUpi={settings?.upiId ?? ""}
-              adminQr={settings?.upiQr ?? ""}
-            />
-          )}
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -187,6 +209,17 @@ export default async function AccountPage() {
   const profile = profileRes.data;
   const artistBookings = artist ? await getBookingsForArtist(artist.id) : [];
 
+  const contactableBookings = myBookings.filter(
+    (b) => b.status === "confirmed" || b.status === "completed"
+  );
+  const contactArtists = await Promise.all(
+    [...new Set(contactableBookings.map((b) => b.artistId))].map((id) => getArtistById(id))
+  );
+  const artistContacts: Record<string, string> = {};
+  for (const a of contactArtists) {
+    if (a) artistContacts[a.id] = a.whatsapp;
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -249,7 +282,7 @@ export default async function AccountPage() {
         <h2 className="flex items-center gap-2 font-display text-2xl font-semibold text-ink-900">
           <CalendarDays className="h-5 w-5 text-rani-700" /> My Bookings
         </h2>
-        <BookingList bookings={myBookings} />
+        <BookingList bookings={myBookings} artistContacts={artistContacts} />
       </section>
 
       {!artist && (
