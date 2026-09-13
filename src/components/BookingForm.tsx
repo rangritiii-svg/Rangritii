@@ -1,4 +1,4 @@
-……—"use client";
+"use client";
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -44,7 +44,6 @@ export function BookingForm({
           number: result.bookingNumber,
           artist: result.artistName,
         });
-        if (result.artistWhatsapp) sp.set("wa", result.artistWhatsapp);
         router.push(`/booking-confirmed?${sp.toString()}`);
       } else {
         setError(result.error);
