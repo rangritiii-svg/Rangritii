@@ -93,7 +93,7 @@ export async function createBooking(
   artistId: string,
   details: BookingDetails,
   userId: string | null
-): Promise<{ bookingNumber: string; artistName: string; artistWhatsapp: string }> {
+): Promise<{ bookingNumber: string; artistName: string }> {
   if (!isSupabaseConfigured()) {
     const store = demoStore();
     const artist = store.artists.find(
@@ -118,7 +118,7 @@ export async function createBooking(
       userId,
       createdAt: new Date().toISOString(),
     });
-    return { bookingNumber, artistName: artist.name, artistWhatsapp: artist.whatsapp };
+    return { bookingNumber, artistName: artist.name };
   }
 
   // Supabase mode: SECURITY DEFINER function validates the artist and inserts.
@@ -140,12 +140,10 @@ export async function createBooking(
   const result = data as {
     booking_number: string;
     artist_name: string;
-    artist_whatsapp: string;
   };
   return {
     bookingNumber: result.booking_number,
     artistName: result.artist_name,
-    artistWhatsapp: result.artist_whatsapp ?? "",
   };
 }
 
@@ -365,7 +363,11 @@ export type PaymentInfo = {
   artistQr: string;
   adminUpi: string;
   adminQr: string;
+  /** Only populated once the booking is confirmed/completed — hidden before that. */
+  artistWhatsapp: string;
 };
+
+const CONTACT_VISIBLE_STATUSES: readonly BookingStatus[] = ["confirmed", "completed"];
 
 export async function getPaymentInfo(
   bookingNumber: string,
@@ -395,6 +397,7 @@ export async function getPaymentInfo(
       artistQr: artist?.upiQr ?? "",
       adminUpi: store.settings.upiId,
       adminQr: store.settings.upiQr,
+      artistWhatsapp: CONTACT_VISIBLE_STATUSES.includes(b.status) ? artist?.whatsapp ?? "" : "",
     };
   }
 
@@ -420,6 +423,7 @@ export async function getPaymentInfo(
     artistQr: String(r.artist_qr ?? ""),
     adminUpi: String(r.admin_upi ?? ""),
     adminQr: String(r.admin_qr ?? ""),
+    artistWhatsapp: String(r.artist_whatsapp ?? ""),
   };
 }
 
@@ -437,13 +441,25 @@ export async function claimPayment(
   if (method !== "upi_admin" && method !== "upi_artist") throw new Error("Invalid method.");
 
   if (!isSupabaseConfigured()) {
-    const b = demoStore().bookings.find(
+    const store = demoStore();
+    const b = store.bookings.find(
       (b) =>
         b.bookingNumber.toUpperCase() === bookingNumber.trim().toUpperCase() &&
         b.phone.replace(/\D/g, "").slice(-10) === cleanPhone
     );
     if (!b) throw new Error("Booking not found — check the booking number and phone.");
     if (b.paymentStatus === "verified") throw new Error("This payment is already verified.");
+    const utrReused = store.bookings.some(
+      (other) =>
+        other.id !== b.id &&
+        other.paymentUtr.trim().toUpperCase() === cleanUtr.toUpperCase() &&
+        (other.paymentStatus === "claimed" || other.paymentStatus === "verified")
+    );
+    if (utrReused) {
+      throw new Error(
+        "This UTR/reference number is already recorded against another booking. Please check it and try again."
+      );
+    }
     b.paymentMethod = method;
     b.paymentStatus = "claimed";
     b.paymentUtr = cleanUtr;
