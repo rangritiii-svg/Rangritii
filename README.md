@@ -7,30 +7,25 @@ Built with **Next.js 15 · React 19 · Tailwind CSS 4 · Supabase · Vercel** �
 ## ✨ Features
 
 **For customers**
-- Browse verified artists with real portfolio galleries
-- Filter by **city**, **style** (Bridal, Arabic, Indo-Arabic, Traditional, Minimal, Festive) and search
-- Artist profile pages: portfolio, experience, price range, WhatsApp contact
-- **Free booking requests** — event date, occasion, address; no advance payment
-- Save favourite artists (♥) to compare later
-- Account with booking history
-- Installable as a mobile app (PWA)
+- Browse verified artists with real portfolio galleries; filter by city & style
+- Pick the artist's **packages** (e.g. Bridal ×1, Guest ×3) — the total is shown before paying anything
+- Pay a small fixed **token** on Rangritii's UPI QR (UTR recorded) — only then does the request reach the artist
+- Artist accepts within the response window (default 24 h) → phone/WhatsApp unlock both ways
+- Artist declines or doesn't answer → booking auto-declined, token marked for full refund
+- Balance (total − token) paid after the mehandi: UPI to Rangritii or cash to the artist
+- Save favourite artists, account with booking history, installable app
 
 **For artists**
-- Free self-registration (`/join`): profile + portfolio photo uploads (Supabase Storage)
+- Free self-registration (`/join`) with a packages & prices editor and portfolio uploads
 - Profile goes live after admin approval — verified badge
-- Edit profile anytime from `/account`; see incoming booking requests with customer contact
-- Zero commission — payment directly from customer
+- Accept / decline requests from `/account`, adjust the total, record cash
+- Rangritii's commission is netted against the token it already holds
 
-**UPI payments with commission tracking**
-- Admin sets platform UPI ID + QR + commission % in `/admin` → Payments
-- Artists add their own UPI + QR in their profile
-- Customer pays via `/pay` (booking number + phone): choose artist's QR or
-  platform's QR, submit the UPI UTR — no gateway fees, no advance to platform
-- If customer paid the **platform**: admin pays artist the payout
-  (amount − commission), artist's QR shown right in the admin panel
-- If customer paid the **artist** (UPI or cash): artist pays admin the
-  commission — admin's QR shown in the artist's account, UTR tracked
-- Every leg is UTR-recorded and verified; double-payment protected
+**Payments & settlement**
+- Admin sets UPI ID + QR, **token amount**, **artist response time** and commission % in `/admin/settings`
+- Admin verifies token UTRs (→ request sent to artist), sends refunds, verifies balance payments
+- Net settlement: if the customer paid Rangritii, admin pays the artist out; if the artist collected
+  the balance in cash, the artist pays admin (commission − token), all UTR-tracked
 
 **Admin panel** (`/admin`)
 - Dashboard: artists, pending approvals, bookings at a glance
@@ -56,7 +51,9 @@ Open http://localhost:3000.
 ## 🗄️ Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. SQL Editor → run [`supabase/schema.sql`](supabase/schema.sql), then [`supabase/seed.sql`](supabase/seed.sql).
+2. SQL Editor → run [`supabase/schema.sql`](supabase/schema.sql), then [`supabase/seed.sql`](supabase/seed.sql),
+   then [`supabase/token-flow-v3.sql`](supabase/token-flow-v3.sql) (token bookings + security fixes).
+   **Existing database?** Just run `token-flow-v3.sql` once — it upgrades everything in place.
    (schema.sql also creates the public `portfolios` storage bucket for photo uploads, and safely removes the earlier e-commerce tables if they exist. Want sample artists for testing? Optionally run [`supabase/sample-artists.sql`](supabase/sample-artists.sql) — remove later with `delete from public.artists;`)
 3. `.env.local` (and Vercel → Environment Variables):
    ```
@@ -79,10 +76,28 @@ Open http://localhost:3000.
 2. Add the two Supabase env vars → **Deploy**.
 3. Connect your custom domain from the Vercel dashboard whenever ready.
 
-## 📱 Mobile app
+## 📱 Android app (APK)
 
-Full PWA: Android Chrome shows an "Install app" prompt; on iPhone use Share →
-**Add to Home Screen**. Launches full-screen with its own icon.
+`mobile/` is a Capacitor app that opens the live website full-screen, so every
+website deploy updates the app instantly. It fixes the old APK's problems: proper
+mobile layout (no desktop view), and WhatsApp / call / UPI links open the right app.
+
+**Build it on GitHub (no Android Studio needed):**
+1. Push this repo. GitHub → **Actions** → **Android APK** → **Run workflow**.
+2. When it finishes, download **rangritii-android** from the run's *Artifacts*:
+   `Rangritii-1.0.N.apk` (install on phones) and `.aab` (for the Play Store).
+
+**Signing (do once, before sharing the app):** add these repo secrets
+(Settings → Secrets and variables → Actions):
+`RANGRITII_KEYSTORE_BASE64` (base64 of your `.jks`), `RANGRITII_KEYSTORE_PASSWORD`,
+`RANGRITII_KEY_ALIAS` (`rangritii`). Without them the APK is signed with the
+debug key — fine for testing, not for the Play Store. Keep the `.jks` safe: every
+future update must be signed with the same key.
+
+**Different website address?** Change `server.url` in `mobile/capacitor.config.json`
+(or type it when running the workflow).
+
+Phones without the app can still install the PWA: Chrome → menu → *Install app*.
 
 ## 🧰 Project structure
 
