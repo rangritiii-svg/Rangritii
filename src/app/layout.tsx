@@ -1,22 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Karla } from "next/font/google";
+import "@fontsource/rozha-one/400.css";
+import "@fontsource/hind/400.css";
+import "@fontsource/hind/500.css";
+import "@fontsource/hind/600.css";
+import "@fontsource/hind/700.css";
 import { InstallAppPrompt } from "@/components/InstallAppPrompt";
 import { SavedArtistsProvider } from "@/components/SavedArtistsProvider";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { SITE } from "@/lib/config";
 import "./globals.css";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-});
-
-const karla = Karla({
-  subsets: ["latin"],
-  variable: "--font-karla",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -40,12 +32,13 @@ export const viewport: Viewport = {
   themeColor: "#8b1e3f",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${fraunces.variable} ${karla.variable}`}>
+      <body>
         <SavedArtistsProvider>{children}</SavedArtistsProvider>
         <InstallAppPrompt />
         <ServiceWorkerRegistrar />

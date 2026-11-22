@@ -1,16 +1,7 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BadgeCheck,
-  CalendarCheck,
-  MapPin,
-  Search,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
 import { ArtistCard } from "@/components/ArtistCard";
-import { SITE } from "@/lib/config";
-import { getArtists, getStyles } from "@/lib/data";
+import { BookingSteps } from "@/components/BookingSteps";
+import { getArtists, getPlatformSettings, getStyles } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -20,187 +11,83 @@ export default async function HomePage() {
     getArtists({ limit: 8 }),
   ]);
 
+  const settings = await getPlatformSettings();
+  const heroPhotos = styles.map((s) => s.image).filter(Boolean).slice(0, 6);
+
   return (
     <div>
-      {/* ── Hero ── */}
-      <section className="texture-dots relative overflow-hidden bg-cream-100">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-24">
-          <div className="animate-fade-up">
-            <p className="inline-flex items-center gap-2 rounded-full border border-rani-200 bg-rani-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-rani-700">
-              <Sparkles className="h-3.5 w-3.5" /> India&apos;s mehandi platform
-            </p>
-            <h1 className="mt-5 font-display text-4xl font-semibold leading-tight text-ink-900 sm:text-5xl lg:text-6xl">
-              <span className="italic text-rani-700">Color</span> on your hands,
-              <br />
-              <span className="italic text-marigold-600">joy</span> in your heart.
-            </h1>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-ink-500">
-              The best mehandi artists in your city — browse portfolios, pick your
-              style, and book from home for every occasion, weddings to Karva Chauth.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/artists"
-                className="inline-flex items-center gap-2 rounded-full bg-rani-700 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-rani-800"
-              >
-                <Search className="h-4 w-4" /> Find Your Artist
-              </Link>
-              <Link
-                href="/join"
-                className="inline-flex items-center gap-2 rounded-full border-2 border-rani-700 px-7 py-3.5 text-sm font-semibold text-rani-700 transition hover:bg-rani-50"
-              >
-                Join as Artist
-              </Link>
-            </div>
-          </div>
-
-          {/* Hero collage */}
-          <div className="relative hidden gap-4 lg:grid lg:grid-cols-2">
-            <div className="space-y-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/art/artist-1-profile.jpg"
-                alt="Bridal mehandi design"
-                className="w-full rounded-3xl shadow-xl shadow-rani-900/15"
-              />
-            </div>
-            <div className="space-y-4 pt-10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/art/style-bridal.jpg"
-                alt="Mandala mehandi design"
-                className="w-full rounded-3xl shadow-xl shadow-rani-900/15"
-              />
-            </div>
-            <span className="absolute -left-4 top-8 rounded-full bg-marigold-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-lg -rotate-6">
-              100% Free booking
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Trust strip ── */}
-      <section className="border-y border-cream-300 bg-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-6 text-center sm:px-6 lg:grid-cols-4">
-          {[
-            { icon: BadgeCheck, text: "Verified artists only" },
-            { icon: Wallet, text: "Booking requests are 100% free" },
-            { icon: MapPin, text: "Search in your own city" },
-            { icon: CalendarCheck, text: "Lock your date in advance" },
-          ].map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center justify-center gap-2.5 text-sm text-ink-700">
-              <Icon className="h-5 w-5 shrink-0 text-rani-700" />
-              <span>{text}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Styles ── */}
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
-        <div className="flex items-end justify-between">
+      {/* ── Hero: say what it is, let people search straight away ── */}
+      <section className="overflow-hidden bg-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-8 pt-7 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:py-16">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-marigold-600">
-              Browse by style
+            <p lang="hi" className="font-display text-[64px] leading-[0.9] text-stain-600 sm:text-[88px]">
+              मेहंदी
             </p>
-            <h2 className="mt-1 font-display text-3xl font-semibold text-ink-900">
-              A design for every occasion
-            </h2>
-          </div>
-          <Link
-            href="/designs"
-            className="hidden items-center gap-1 text-sm font-semibold text-rani-700 hover:underline sm:inline-flex"
-          >
-            Design gallery <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="no-scrollbar mt-7 flex gap-4 overflow-x-auto pb-2 lg:grid lg:grid-cols-6">
-          {styles.map((s) => (
-            <Link
-              key={s.slug}
-              href={`/artists?style=${s.slug}`}
-              className="group w-36 shrink-0 lg:w-auto"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={s.image || "/art/style-bridal.svg"}
-                alt={s.name}
-                className="aspect-square w-full rounded-2xl object-cover shadow-md transition group-hover:scale-[1.03] group-hover:shadow-lg"
+            <h1 className="mt-3 font-display text-[34px] leading-[1.1] text-ink-900 sm:text-5xl">
+              Book a mehandi artist who comes to your home
+            </h1>
+            <p className="mt-3 max-w-md text-[17px] leading-relaxed text-ink-700">
+              See real work from verified artists in your city, pick a package, and know the full price before you pay.
+            </p>
+            <form action="/artists" className="mt-6 flex max-w-md gap-2" role="search">
+              <input
+                name="q"
+                placeholder="Your city or area"
+                enterKeyHint="search"
+                aria-label="City or area"
+                className="h-13 w-full rounded-full border border-cream-300 bg-cream-100 px-5 text-[16px] outline-none focus:border-rani-400"
               />
-              <p className="mt-2.5 text-center text-sm font-semibold text-ink-900 group-hover:text-rani-700">
-                {s.name}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ── How it works ── */}
-      <section id="how-it-works" className="bg-white py-14">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-widest text-marigold-600">
-              How it works
-            </p>
-            <h2 className="mt-1 font-display text-3xl font-semibold text-ink-900">
-              Book in 3 easy steps
-            </h2>
+              <button className="h-13 shrink-0 rounded-full bg-rani-700 px-6 text-[16px] font-semibold text-white active:bg-rani-800">
+                Find artists
+              </button>
+            </form>
           </div>
-          <div className="mt-10 grid gap-6 sm:grid-cols-3">
-            {[
-              {
-                step: "1",
-                title: "Find your artist",
-                text: "Pick your city and favorite style, then compare portfolios.",
-              },
-              {
-                step: "2",
-                title: "Book your date",
-                text: "Send a free booking request with your event date, occasion, and address.",
-              },
-              {
-                step: "3",
-                title: "Get your mehandi",
-                text: "The artist confirms and comes to your home. Pay the artist directly, after the service.",
-              },
-            ].map((s) => (
-              <div
-                key={s.step}
-                className="relative rounded-3xl border border-cream-300 bg-cream-50 p-7 text-center"
-              >
-                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rani-700 font-display text-xl font-bold text-white">
-                  {s.step}
-                </span>
-                <h3 className="mt-4 font-display text-xl font-semibold text-ink-900">
-                  {s.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-500">{s.text}</p>
-              </div>
+
+          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0">
+            {heroPhotos.map((src, i) => (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                key={src}
+                src={src}
+                alt=""
+                className={`h-44 w-36 shrink-0 rounded-2xl object-cover sm:h-56 sm:w-44 lg:h-auto lg:w-full ${
+                  i % 3 === 1 ? "lg:translate-y-8" : ""
+                } aspect-[3/4]`}
+              />
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Featured artists ── */}
+      {/* ── Styles ── */}
+      <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6 lg:pt-16">
+        <div className="flex items-end justify-between gap-4">
+          <h2 className="font-display text-[26px] text-ink-900 sm:text-3xl">Pick a style</h2>
+          <Link href="/designs" className="text-[15px] font-medium text-rani-700">
+            See designs
+          </Link>
+        </div>
+        <div className="no-scrollbar -mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-6">
+          {styles.map((s) => (
+            <Link key={s.slug} href={`/artists?style=${s.slug}`} className="w-28 shrink-0 sm:w-32 lg:w-auto">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.image || "/art/style-bridal.jpg"} alt="" className="aspect-square w-full rounded-2xl object-cover" />
+              <p className="mt-2 text-center text-[15px] font-medium leading-tight text-ink-900">{s.name}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Artists ── */}
       {featured.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-marigold-600">
-                Top rated
-              </p>
-              <h2 className="mt-1 font-display text-3xl font-semibold text-ink-900">
-                Featured Artists
-              </h2>
-            </div>
-            <Link
-              href="/artists"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-rani-700 hover:underline"
-            >
-              View all <ArrowRight className="h-4 w-4" />
+        <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6 lg:pt-16">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="font-display text-[26px] text-ink-900 sm:text-3xl">Artists taking bookings</h2>
+            <Link href="/artists" className="text-[15px] font-medium text-rani-700">
+              See all
             </Link>
           </div>
-          <div className="mt-7 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {featured.map((a) => (
               <ArtistCard key={a.id} artist={a} styles={styles} />
             ))}
@@ -208,47 +95,37 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Artist CTA banner ── */}
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
-        <div className="texture-dots relative overflow-hidden rounded-3xl bg-rani-800 px-6 py-12 text-center sm:px-12 sm:py-16">
-          <p className="text-xs font-bold uppercase tracking-widest text-marigold-300">
-            Are you a mehandi artist?
-          </p>
-          <h2 className="mx-auto mt-3 max-w-xl font-display text-3xl font-semibold text-white sm:text-4xl">
-            Show off your portfolio, get bookings from your city
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm text-cream-200/90">
-            Registration is completely free. Once your profile is approved,
-            customers come straight to you — with zero commission.
-          </p>
-          <Link
-            href="/join"
-            className="mt-7 inline-flex items-center gap-2 rounded-full bg-marigold-500 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-marigold-600"
-          >
-            Free Registration <ArrowRight className="h-4 w-4" />
-          </Link>
+      {/* ── How booking works ── */}
+      <section id="how-it-works" className="mx-auto max-w-7xl scroll-mt-20 px-4 pt-12 sm:px-6 lg:pt-20">
+        <div className="grid gap-8 rounded-[28px] bg-white p-6 sm:p-10 lg:grid-cols-[0.9fr_1fr]">
+          <div>
+            <h2 className="font-display text-[26px] text-ink-900 sm:text-3xl">How booking works</h2>
+            <p className="mt-2 max-w-sm text-[16px] text-ink-700">
+              {settings.tokenAmount > 0
+                ? `A small token keeps your date. You pay the rest only after the mehandi is done, and the token is refunded in full if the artist can't come.`
+                : "Send a request, the artist confirms, and you pay after the mehandi."}
+            </p>
+          </div>
+          <BookingSteps tokenAmount={settings.tokenAmount} responseHours={settings.responseHours} />
         </div>
       </section>
 
-      {/* ── Community ── */}
-      <section className="border-t border-cream-300 bg-white py-14">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <h2 className="font-display text-3xl font-semibold text-ink-900">
-            Join the Rangritii family
+      {/* ── For artists ── */}
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-20">
+        <div className="rounded-[28px] bg-rani-800 px-6 py-10 sm:px-12">
+          <h2 className="max-w-xl font-display text-[28px] leading-tight text-white sm:text-4xl">
+            Are you a mehandi artist? Get bookings from your city.
           </h2>
-          <p className="mt-3 text-ink-500">
-            Seasonal offers, design inspiration, and new artist updates on WhatsApp.
+          <p className="mt-3 max-w-md text-[16px] text-rani-100">
+            Listing is free. Customers pay a token before their request reaches you, so every request is serious.
+            Rangritii keeps a {settings.commissionPercent}% commission only on completed bookings.
           </p>
-          <a
-            href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent(
-              "Hi! Please add me to the Rangritii community."
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#25d366] px-7 py-3.5 text-sm font-bold text-white transition hover:brightness-95"
+          <Link
+            href="/join"
+            className="mt-6 inline-flex rounded-full bg-white px-7 py-3.5 text-[16px] font-semibold text-rani-800"
           >
-            Join on WhatsApp
-          </a>
+            Create your free profile
+          </Link>
         </div>
       </section>
     </div>

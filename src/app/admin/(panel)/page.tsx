@@ -3,10 +3,13 @@ import { ArrowRight, CalendarDays, Clock, UserCheck, Users } from "lucide-react"
 import { getArtists } from "@/lib/data";
 import { formatDate, formatEventDate } from "@/lib/format";
 import { getBookings } from "@/lib/bookings";
+import { STATUS_LABEL } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_STYLES: Record<string, string> = {
+  awaiting_token: "bg-stain-50 text-stain-700",
+  declined: "bg-rani-50 text-rani-800",
   pending: "bg-marigold-100 text-marigold-800",
   confirmed: "bg-blue-100 text-blue-800",
   completed: "bg-green-100 text-green-800",
@@ -20,7 +23,8 @@ export default async function AdminDashboard() {
   ]);
 
   const pendingApprovals = artists.filter((a) => !a.isApproved);
-  const pendingBookings = bookings.filter((b) => b.status === "pending");
+  const tokenChecks = bookings.filter((b) => b.status === "awaiting_token" && b.tokenStatus === "claimed");
+  const refunds = bookings.filter((b) => b.tokenStatus === "refund_due");
 
   const stats = [
     { label: "Total artists", value: String(artists.length), icon: Users },
@@ -31,13 +35,19 @@ export default async function AdminDashboard() {
       href: "/admin/artists",
       highlight: pendingApprovals.length > 0,
     },
-    { label: "Total bookings", value: String(bookings.length), icon: CalendarDays },
     {
-      label: "Pending bookings",
-      value: String(pendingBookings.length),
+      label: "Token UTRs to check",
+      value: String(tokenChecks.length),
       icon: Clock,
       href: "/admin/bookings",
-      highlight: pendingBookings.length > 0,
+      highlight: tokenChecks.length > 0,
+    },
+    {
+      label: "Refunds to send",
+      value: String(refunds.length),
+      icon: CalendarDays,
+      href: "/admin/bookings",
+      highlight: refunds.length > 0,
     },
   ];
 
@@ -106,7 +116,7 @@ export default async function AdminDashboard() {
                       STATUS_STYLES[b.status] ?? "bg-cream-200 text-ink-700"
                     }`}
                   >
-                    {b.status}
+                    {STATUS_LABEL[b.status]}
                   </span>
                 </td>
               </tr>

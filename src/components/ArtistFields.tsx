@@ -2,6 +2,7 @@
 
 import type { Artist, Style } from "@/lib/types";
 import { ImageListInput } from "./ImageListInput";
+import { PackagesEditor } from "./PackagesEditor";
 
 const field =
   "w-full rounded-xl border border-cream-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-rani-400";
@@ -48,15 +49,11 @@ export function ArtistFields({
           <label className={label} htmlFor="af-exp">Experience (years) *</label>
           <input id="af-exp" name="experienceYears" type="number" min="0" max="60" required defaultValue={artist?.experienceYears ?? 1} className={field} />
         </div>
-        <div>
-          <label className={label} htmlFor="af-pmin">Price from (₹)</label>
-          <input id="af-pmin" name="priceMin" type="number" min="0" step="50" defaultValue={artist?.priceMin ?? 500} className={field} placeholder="500" />
-        </div>
-        <div>
-          <label className={label} htmlFor="af-pmax">Price upto (₹)</label>
-          <input id="af-pmax" name="priceMax" type="number" min="0" step="50" defaultValue={artist?.priceMax ?? 5000} className={field} placeholder="15000" />
-        </div>
       </div>
+      {/* price range on cards is derived from the packages */}
+      <input type="hidden" name="priceMin" value={artist?.priceMin ?? 0} />
+      <input type="hidden" name="priceMax" value={artist?.priceMax ?? 0} />
+      <PackagesEditor initial={artist?.packages ?? []} />
 
       <div>
         <p className={label}>Styles you offer * (select all that apply)</p>
@@ -106,11 +103,12 @@ export function ArtistFields({
       />
 
       <div className="rounded-2xl border border-marigold-200 bg-marigold-50/50 p-5">
-        <p className="text-sm font-bold text-ink-900">💰 Payment details (UPI)</p>
+        <p className="text-sm font-bold text-ink-900">💰 Payout details (UPI)</p>
         <p className="mt-1 text-xs text-ink-500">
-          Customers will pay you on this UPI, and the admin will send your payouts
-          here too. Download your QR code from your UPI app (GPay/PhonePe/Paytm)
-          and upload it.
+          Only the Rangritii admin sees this — it is used to send you your payouts.
+          It is never shown to customers: they pay on the Rangritii UPI QR, or in
+          cash to you. Download your QR code from your UPI app
+          (GPay/PhonePe/Paytm) and upload it.
         </p>
         <div className="mt-4 space-y-4">
           <div>

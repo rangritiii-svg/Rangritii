@@ -3,9 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { BadgeCheck, IndianRupee } from "lucide-react";
-import { markSettledAction, setAmountAction, verifyPaymentAction } from "@/app/admin/actions";
+import {
+  markRefundedAction,
+  markSettledAction,
+  rejectTokenAction,
+  setAmountAction,
+  verifyPaymentAction,
+  verifyTokenAction,
+} from "@/app/admin/actions";
 import { formatINR } from "@/lib/format";
-import type { Booking } from "@/lib/types";
+import { balanceDue, netToArtist, type Booking } from "@/lib/types";
 
 const chip = "rounded-full px-2.5 py-1 text-xs font-bold";
 
@@ -40,21 +47,73 @@ export function PaymentAdminPanel({
     });
   }
 
-  const paidToAdmin = booking.paymentMethod === "upi_admin";
-  const payout =
-    booking.amount !== null && booking.commissionAmount !== null
-      ? booking.amount - booking.commissionAmount
-      : null;
+  const net = netToArtist(booking);
+  const paidToAdmin = net !== null && net > 0; // admin owes the artist
+  const payout = net !== null ? Math.abs(net) : null;
+  const [refundUtr, setRefundUtr] = useState("");
+  const balance = balanceDue(booking);
 
   return (
     <div className="mt-4 rounded-2xl border border-marigold-200 bg-marigold-50/40 p-4">
+      {/* ── Token ── */}
+      <div className="mb-3 rounded-xl border border-stain-100 bg-white p-3">
+        <p className="text-sm font-semibold text-ink-900">
+          Token {formatINR(booking.tokenAmount)}{" "}
+          <span className={`${chip} ml-1 ${
+            booking.tokenStatus === "verified" ? "bg-green-100 text-green-800"
+              : booking.tokenStatus === "claimed" ? "bg-blue-100 text-blue-800"
+              : booking.tokenStatus === "refund_due" ? "bg-rani-100 text-rani-800"
+              : "bg-cream-200 text-ink-700"
+          }`}>
+            {{ unpaid: "not paid", claimed: "UTR submitted", verified: "received", refund_due: "REFUND DUE", refunded: "refunded" }[booking.tokenStatus]}
+          </span>
+        </p>
+        {booking.tokenUtr && <p className="mt-1 text-xs text-ink-500">Customer UTR: <strong>{booking.tokenUtr}</strong></p>}
+        {booking.tokenStatus === "claimed" && booking.status === "awaiting_token" && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              onClick={() => run(() => verifyTokenAction(booking.id))}
+              disabled={pending}
+              className="inline-flex items-center gap-1 rounded-full bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50"
+            >
+              <BadgeCheck className="h-3.5 w-3.5" /> Token received — send to artist
+            </button>
+            <button
+              onClick={() => run(() => rejectTokenAction(booking.id))}
+              disabled={pending}
+              className="rounded-full border border-cream-300 bg-white px-4 py-2 text-xs font-bold text-ink-700 hover:border-rani-300 disabled:opacity-50"
+            >
+              UTR not found — ask to pay again
+            </button>
+          </div>
+        )}
+        {booking.tokenStatus === "refund_due" && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              value={refundUtr}
+              onChange={(e) => setRefundUtr(e.target.value)}
+              placeholder="Refund UTR"
+              className="w-40 rounded-full border border-cream-300 bg-white px-4 py-2 text-xs outline-none focus:border-rani-400"
+            />
+            <button
+              onClick={() => run(() => markRefundedAction(booking.id, refundUtr))}
+              disabled={pending}
+              className="rounded-full bg-rani-700 px-4 py-2 text-xs font-bold text-white hover:bg-rani-800 disabled:opacity-50"
+            >
+              Refund sent
+            </button>
+          </div>
+        )}
+        {booking.refundUtr && <p className="mt-1 text-xs text-ink-500">Refund UTR: {booking.refundUtr}</p>}
+      </div>
+
       <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink-500">
-        <IndianRupee className="h-3.5 w-3.5 text-rani-700" /> Payment
+        <IndianRupee className="h-3.5 w-3.5 text-rani-700" /> Balance {balance !== null ? formatINR(balance) : ""}
       </p>
 
       {/* Amount */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {booking.paymentStatus === "verified" ? (
+        {booking.paymentStatus !== "unpaid" ? (
           <span className="text-sm font-bold text-ink-900">
             Amount: {booking.amount !== null ? formatINR(booking.amount) : "—"}
           </span>
@@ -108,7 +167,10 @@ export function PaymentAdminPanel({
         {booking.paymentUtr && (
           <span className="text-xs text-ink-500">UTR: {booking.paymentUtr}</span>
         )}
-        {booking.paymentStatus === "claimed" && (
+        {booking.paymentStatus === "claimed" && booking.paymentMethod === "cash" && (
+          <span className="text-xs text-ink-500">The artist confirms cash she received.</span>
+        )}
+        {booking.paymentStatus === "claimed" && booking.paymentMethod !== "cash" && (
           <button
             onClick={() => run(() => verifyPaymentAction(booking.id))}
             disabled={pending}
@@ -127,7 +189,7 @@ export function PaymentAdminPanel({
               <p className="font-semibold text-ink-900">
                 Payout due to artist:{" "}
                 <span className="text-rani-800">{payout !== null ? formatINR(payout) : "—"}</span>{" "}
-                <span className="text-xs text-ink-500">(amount − commission)</span>
+                <span className="text-xs text-ink-500">(total − commission − what the artist collected)</span>
               </p>
               {booking.settlementStatus !== "settled" ? (
                 <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -174,10 +236,9 @@ export function PaymentAdminPanel({
           ) : (
             <div className="text-sm">
               <p className="font-semibold text-ink-900">
-                Commission due from artist:{" "}
-                <span className="text-rani-800">
-                  {booking.commissionAmount !== null ? formatINR(booking.commissionAmount) : "—"}
-                </span>
+                Due from artist:{" "}
+                <span className="text-rani-800">{payout !== null ? formatINR(payout) : "—"}</span>{" "}
+                <span className="text-xs text-ink-500">(commission − token you hold)</span>
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {booking.settlementStatus === "pending" && (

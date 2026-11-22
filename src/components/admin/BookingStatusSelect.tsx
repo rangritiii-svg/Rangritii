@@ -3,7 +3,17 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { updateBookingStatusAction } from "@/app/admin/actions";
-import { BOOKING_STATUSES, type BookingStatus } from "@/lib/types";
+import { STATUS_LABEL, type BookingStatus } from "@/lib/types";
+
+/* Mirrors ADMIN_TRANSITIONS in lib/bookings (server re-checks). */
+const NEXT: Record<BookingStatus, BookingStatus[]> = {
+  awaiting_token: ["cancelled"],
+  pending: ["confirmed", "declined", "cancelled"],
+  confirmed: ["completed", "cancelled"],
+  completed: [],
+  declined: [],
+  cancelled: [],
+};
 
 export function BookingStatusSelect({
   bookingId,
@@ -36,9 +46,9 @@ export function BookingStatusSelect({
       className="rounded-full border border-cream-300 bg-white px-3 py-1.5 text-xs font-bold capitalize text-ink-900 outline-none focus:border-rani-400 disabled:opacity-60"
       aria-label="Booking status"
     >
-      {BOOKING_STATUSES.map((s) => (
+      {[status, ...NEXT[status]].map((s) => (
         <option key={s} value={s}>
-          {s}
+          {STATUS_LABEL[s]}
         </option>
       ))}
     </select>

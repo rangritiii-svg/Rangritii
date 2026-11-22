@@ -13,12 +13,26 @@ export default async function AdminBookingsPage() {
     getArtists({ includeUnapproved: true }),
   ]);
   const artistById = new Map(artists.map((a) => [a.id, a]));
+  // Work that needs the admin first: token UTRs to check, refunds to send.
+  const urgency = (b: (typeof bookings)[number]) =>
+    b.tokenStatus === "claimed" && b.status === "awaiting_token" ? 0
+      : b.tokenStatus === "refund_due" ? 1
+      : b.paymentStatus === "claimed" ? 2
+      : b.settlementStatus === "claimed" || b.settlementStatus === "pending" ? 3
+      : 4;
+  bookings.sort((a, b) => urgency(a) - urgency(b));
+  const todo = bookings.filter((b) => urgency(b) < 3).length;
 
   return (
     <div>
       <h1 className="font-display text-3xl font-semibold text-ink-900">
         Bookings <span className="text-lg text-ink-500">({bookings.length})</span>
       </h1>
+      {todo > 0 && (
+        <p className="mt-2 rounded-xl bg-marigold-50 px-4 py-2 text-sm font-medium text-marigold-800">
+          {todo === 1 ? "1 booking needs" : `${todo} bookings need`} your action — shown first.
+        </p>
+      )}
 
       {bookings.length === 0 ? (
         <div className="mt-6 rounded-3xl border border-dashed border-cream-300 bg-white py-16 text-center text-ink-500">

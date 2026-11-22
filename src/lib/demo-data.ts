@@ -64,7 +64,22 @@ function portfolio(n: number): string[] {
 const demoUpi = (handle: string) => ({
   upiId: `${handle}@demoupi`,
   upiQr: "/art/qr-demo.svg",
+  packages: demoPackages(handle),
 });
+
+/** Demo packages, priced off each artist's range. */
+const PACKAGE_PRICES: Record<string, [number, number, number]> = {
+  meera: [11000, 1100, 600],
+  ayesha: [7100, 900, 500],
+};
+function demoPackages(handle: string) {
+  const [bridal, guest, kid] = PACKAGE_PRICES[handle] ?? [5100, 700, 400];
+  return [
+    { id: `${handle}-bridal`, name: "Bridal — full hands & feet", price: bridal, unit: "per_person" as const },
+    { id: `${handle}-guest`, name: "Guest — both hands (front & back)", price: guest, unit: "per_person" as const },
+    { id: `${handle}-kid`, name: "Kids / simple palm design", price: kid, unit: "per_person" as const },
+  ];
+}
 
 export const DEMO_ARTISTS: Artist[] = [
   {

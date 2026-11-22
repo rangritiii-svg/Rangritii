@@ -35,7 +35,7 @@ begin
     new.id,
     coalesce(
       new.raw_user_meta_data ->> 'full_name',
-      new.raw_user_meta_data ->> 'name', -- Google login provides 'name'
+      new.raw_user_meta_data ->> 'name',  -- Google login provides 'name'
       ''
     )
   )
@@ -113,9 +113,9 @@ as $$
 begin
   if not public.is_admin() then
     new.is_approved := old.is_approved;
-    new.is_active := old.is_active;
-    new.user_id := old.user_id;
-    new.slug := old.slug;
+    new.is_active   := old.is_active;
+    new.user_id     := old.user_id;
+    new.slug        := old.slug;
   end if;
   return new;
 end;
@@ -185,18 +185,18 @@ as $$
 begin
   if not public.is_admin() then
     new.booking_number := old.booking_number;
-    new.artist_id := old.artist_id;
-    new.artist_name := old.artist_name;
-    new.customer_name := old.customer_name;
-    new.phone := old.phone;
-    new.email := old.email;
-    new.address := old.address;
-    new.city := old.city;
-    new.event_date := old.event_date;
-    new.event_type := old.event_type;
-    new.notes := old.notes;
-    new.user_id := old.user_id;
-    new.created_at := old.created_at;
+    new.artist_id      := old.artist_id;
+    new.artist_name    := old.artist_name;
+    new.customer_name  := old.customer_name;
+    new.phone          := old.phone;
+    new.email          := old.email;
+    new.address        := old.address;
+    new.city           := old.city;
+    new.event_date     := old.event_date;
+    new.event_type     := old.event_type;
+    new.notes          := old.notes;
+    new.user_id        := old.user_id;
+    new.created_at     := old.created_at;
   end if;
   return new;
 end;
@@ -238,8 +238,6 @@ create table if not exists public.contact_messages (
 
 -- ── 7. RPCs ─────────────────────────────────────────────────
 -- Booking creation: validates the artist server-side, inserts atomically.
--- Note: the artist's WhatsApp number is deliberately NOT returned here —
--- it stays hidden from the customer until the booking is confirmed.
 create or replace function public.place_booking(p_artist_id uuid, p_details jsonb)
 returns jsonb
 language plpgsql
@@ -252,8 +250,8 @@ declare
   v_event_date date;
 begin
   select id, name into v_artist
-  from public.artists
-  where id = p_artist_id and is_approved and is_active;
+    from public.artists
+    where id = p_artist_id and is_approved and is_active;
   if not found then
     raise exception 'This artist is not available for booking right now';
   end if;
@@ -282,6 +280,7 @@ begin
     'pending', auth.uid()
   );
 
+  -- The artist's contact is deliberately withheld until she confirms.
   return jsonb_build_object(
     'booking_number', v_booking_number,
     'artist_name', v_artist.name
@@ -305,14 +304,16 @@ declare
   v_settings record;
 begin
   select * into v_b
-  from public.bookings
-  where upper(booking_number) = upper(trim(p_booking_number))
-    and right(regexp_replace(phone, '\D', '', 'g'), 10) = p_phone;
+    from public.bookings
+    where upper(booking_number) = upper(trim(p_booking_number))
+      and right(regexp_replace(phone, '\D', '', 'g'), 10) = p_phone;
   if not found then
     return null;
   end if;
 
-  select upi_id, upi_qr, whatsapp into v_artist from public.artists where id = v_b.artist_id;
+  -- The artist's UPI/QR is never returned here — it exists only so the admin
+  -- can pay the artist out. Customers pay the admin UPI, or cash to the artist.
+  select whatsapp into v_artist from public.artists where id = v_b.artist_id;
   select upi_id, upi_qr into v_settings from public.platform_settings where id = 1;
 
   return jsonb_build_object(
@@ -323,11 +324,13 @@ begin
     'amount', v_b.amount,
     'payment_method', v_b.payment_method,
     'payment_status', v_b.payment_status,
-    'artist_upi', coalesce(v_artist.upi_id, ''),
-    'artist_qr', coalesce(v_artist.upi_qr, ''),
+    -- contact unlocks only once the artist has confirmed the booking
+    'artist_whatsapp', case
+      when v_b.status in ('confirmed', 'completed') then coalesce(v_artist.whatsapp, '')
+      else ''
+    end,
     'admin_upi', coalesce(v_settings.upi_id, ''),
-    'admin_qr', coalesce(v_settings.upi_qr, ''),
-    'artist_whatsapp', case when v_b.status in ('confirmed', 'completed') then coalesce(v_artist.whatsapp, '') else '' end
+    'admin_qr', coalesce(v_settings.upi_qr, '')
   );
 end;
 $$;
@@ -346,41 +349,33 @@ set search_path = public
 as $$
 declare
   v_id uuid;
-  v_clean_utr text;
-  v_dupe_count int;
 begin
-  if p_method not in ('upi_admin', 'upi_artist') then
+  -- 'upi_artist' is retired: the artist's QR is for admin payouts only.
+  if p_method not in ('upi_admin', 'cash') then
     raise exception 'Invalid payment method';
   end if;
-  if length(trim(p_utr)) < 4 then
+  if p_method = 'upi_admin' and length(trim(coalesce(p_utr, ''))) < 4 then
     raise exception 'UTR/reference number required';
   end if;
-  v_clean_utr := left(trim(p_utr), 40);
 
   select id into v_id
-  from public.bookings
-  where upper(booking_number) = upper(trim(p_booking_number))
-    and right(regexp_replace(phone, '\D', '', 'g'), 10) = p_phone
-    and payment_status <> 'verified'
-    and status <> 'cancelled';
+    from public.bookings
+    where upper(booking_number) = upper(trim(p_booking_number))
+      and right(regexp_replace(phone, '\D', '', 'g'), 10) = p_phone
+      and payment_status <> 'verified'
+      and status <> 'cancelled';
   if not found then
     raise exception 'Booking not found, cancelled, or the payment is already verified';
   end if;
 
-  select count(*) into v_dupe_count
-  from public.bookings
-  where id <> v_id
-    and upper(payment_utr) = upper(v_clean_utr)
-    and payment_status in ('claimed', 'verified');
-  if v_dupe_count > 0 then
-    raise exception 'This UTR/reference number is already recorded against another booking';
-  end if;
-
   update public.bookings
-  set payment_method = p_method,
-      payment_status = 'claimed',
-      payment_utr = v_clean_utr
-  where id = v_id;
+    set payment_method = p_method,
+        payment_status = 'claimed',
+        payment_utr = case
+          when p_method = 'cash' then ''
+          else left(trim(p_utr), 40)
+        end
+    where id = v_id;
 end;
 $$;
 
@@ -501,8 +496,8 @@ create policy "portfolios_owner_delete" on storage.objects
 
 -- ============================================================
 -- AFTER RUNNING THIS FILE:
---   1. Run seed.sql for starter styles.
---   2. Sign up in the app with your email, then make yourself admin:
+-- 1. Run seed.sql for starter styles.
+-- 2. Sign up in the app with your email, then make yourself admin:
 --      update public.profiles set role = 'admin'
 --      where id = (select id from auth.users where email = 'YOUR_EMAIL_HERE');
 -- ============================================================

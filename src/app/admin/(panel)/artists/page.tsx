@@ -60,7 +60,9 @@ export default async function AdminArtistsPage() {
                       className="h-14 w-11 rounded-lg object-cover object-top"
                     />
                     <div>
-                      <p className="font-semibold text-ink-900">{a.name}</p>
+                      <Link href={`/admin/artists/${a.id}`} className="font-semibold text-ink-900 hover:text-rani-700 hover:underline">
+                        {a.name}
+                      </Link>
                       <p className="text-xs text-ink-500">/{a.slug}</p>
                     </div>
                   </div>

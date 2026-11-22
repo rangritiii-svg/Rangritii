@@ -5,11 +5,11 @@ import { isSupabaseConfigured } from "@/lib/config";
 import { parseArtistSelfFields } from "@/lib/artist-form";
 import { getArtistByUserId, getPlatformSettings, updateArtist } from "@/lib/data";
 import {
-  getBookingById,
-  markPaymentVerified,
-  recordCashPayment,
-  setBookingAmount,
-  submitSettlementUtr,
+  artistRecordCash,
+  artistRespond,
+  artistSetAmount,
+  artistSettlementUtr,
+  getBookingsForArtist,
 } from "@/lib/bookings";
 
 export type AuthResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -83,8 +83,8 @@ async function requireOwnBooking(bookingId: string) {
   if (!user) throw new Error("Please log in again.");
   const artist = await getArtistByUserId(user.id);
   if (!artist) throw new Error("Artist profile not found.");
-  const booking = await getBookingById(bookingId);
-  if (!booking || booking.artistId !== artist.id) {
+  const booking = (await getBookingsForArtist(artist.id)).find((b) => b.id === bookingId);
+  if (!booking) {
     throw new Error("This booking doesn't belong to you.");
   }
   return booking;
@@ -96,7 +96,23 @@ function fail(e: unknown): SimpleResult {
   return { ok: false, error: e instanceof Error ? e.message : "Something went wrong." };
 }
 
-/** Artist sets/updates the final agreed amount for their booking. */
+/** Artist accepts or declines a request (only reachable once the token is verified). */
+export async function artistRespondAction(
+  bookingId: string,
+  accept: boolean,
+  reason: string
+): Promise<SimpleResult> {
+  try {
+    await requireOwnBooking(bookingId);
+    await artistRespond(bookingId, accept, reason);
+    revalidatePath("/account");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Artist revises the total (e.g. extra guests added on the day). */
 export async function artistSetAmountAction(
   bookingId: string,
   amount: number
@@ -104,7 +120,7 @@ export async function artistSetAmountAction(
   try {
     await requireOwnBooking(bookingId);
     const settings = await getPlatformSettings();
-    await setBookingAmount(bookingId, amount, settings.commissionPercent);
+    await artistSetAmount(bookingId, amount, settings.commissionPercent);
     revalidatePath("/account");
     return { ok: true };
   } catch (e) {
@@ -112,26 +128,11 @@ export async function artistSetAmountAction(
   }
 }
 
-/** Artist confirms a customer's claimed UPI payment landed in their account. */
-export async function artistVerifyPaymentAction(bookingId: string): Promise<SimpleResult> {
-  try {
-    const booking = await requireOwnBooking(bookingId);
-    if (booking.paymentMethod !== "upi_artist") {
-      throw new Error("You can only verify UPI payments made directly to you — the admin handles the rest.");
-    }
-    await markPaymentVerified(bookingId);
-    revalidatePath("/account");
-    return { ok: true };
-  } catch (e) {
-    return fail(e);
-  }
-}
-
-/** Artist records that the customer paid cash at the service. */
+/** Artist records that the customer paid the balance in cash. */
 export async function artistRecordCashAction(bookingId: string): Promise<SimpleResult> {
   try {
     await requireOwnBooking(bookingId);
-    await recordCashPayment(bookingId);
+    await artistRecordCash(bookingId);
     revalidatePath("/account");
     return { ok: true };
   } catch (e) {
@@ -139,17 +140,14 @@ export async function artistRecordCashAction(bookingId: string): Promise<SimpleR
   }
 }
 
-/** Artist submits the UTR of the commission they paid to admin. */
+/** Artist submits the UTR of what they owe the admin (commission net of the token). */
 export async function artistCommissionUtrAction(
   bookingId: string,
   utr: string
 ): Promise<SimpleResult> {
   try {
-    const booking = await requireOwnBooking(bookingId);
-    if (booking.paymentMethod === "upi_admin") {
-      throw new Error("No commission is due on this booking — the admin will pay you out.");
-    }
-    await submitSettlementUtr(bookingId, utr);
+    await requireOwnBooking(bookingId);
+    await artistSettlementUtr(bookingId, utr);
     revalidatePath("/account");
     return { ok: true };
   } catch (e) {

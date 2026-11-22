@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import { signIn, signUp } from "@/app/(store)/account/actions";
 
 const field =
@@ -75,6 +75,8 @@ function AuthTabsInner({ next = "/account" }: { next?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<"login" | "register">("login");
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => setInApp(/RangritiiApp/i.test(navigator.userAgent)), []);
   const [error, setError] = useState(
     searchParams.get("auth_error") ? "Google login didn't complete — please try again." : ""
   );
@@ -100,7 +102,8 @@ function AuthTabsInner({ next = "/account" }: { next?: string }) {
 
   return (
     <div className="mx-auto max-w-md rounded-3xl border border-cream-300 bg-white p-6 sm:p-8">
-      {supabaseConfigured && (
+      {/* Google blocks sign-in inside app WebViews, so the Android app uses email only. */}
+      {supabaseConfigured && !inApp && (
         <>
           <GoogleButton next={next} />
           <div className="my-5 flex items-center gap-3">

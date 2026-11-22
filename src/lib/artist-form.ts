@@ -1,4 +1,5 @@
 import { slugify } from "./format";
+import type { ArtistPackage } from "./types";
 
 /** Fields an artist can edit about themselves (no approval/slug/identity). */
 export type ArtistSelfFields = {
@@ -15,7 +16,33 @@ export type ArtistSelfFields = {
   portfolioImages: string[];
   upiId: string;
   upiQr: string;
+  packages: ArtistPackage[];
 };
+
+/** Packages arrive as JSON from the PackagesEditor hidden input. */
+export function parsePackagesField(raw: string): ArtistPackage[] {
+  let list: unknown;
+  try {
+    list = JSON.parse(raw || "[]");
+  } catch {
+    throw new Error("Could not read the packages — please re-enter them.");
+  }
+  if (!Array.isArray(list)) return [];
+  const out: ArtistPackage[] = [];
+  for (const item of list.slice(0, 12)) {
+    const o = (item ?? {}) as Record<string, unknown>;
+    const name = String(o.name ?? "").trim().slice(0, 80);
+    const price = Math.round(Number(o.price ?? 0));
+    if (!name && !price) continue;
+    if (!name) throw new Error("Every package needs a name.");
+    if (!Number.isFinite(price) || price < 50 || price > 500000) {
+      throw new Error(`Enter a price between ₹50 and ₹5,00,000 for "${name}".`);
+    }
+    const id = String(o.id ?? "").replace(/[^\w-]/g, "").slice(0, 40) || `p-${Math.random().toString(36).slice(2, 10)}`;
+    out.push({ id, name, price, unit: o.unit === "per_event" ? "per_event" : "per_person" });
+  }
+  return out;
+}
 
 export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
   const name = String(formData.get("name") ?? "").trim();
@@ -34,8 +61,14 @@ export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
     throw new Error("Experience should be between 0 and 60 years.");
   }
 
-  const priceMin = Number(formData.get("priceMin") ?? 0);
-  const priceMax = Number(formData.get("priceMax") ?? 0);
+  const packages = parsePackagesField(String(formData.get("packages") ?? "[]"));
+  let priceMin = Number(formData.get("priceMin") ?? 0);
+  let priceMax = Number(formData.get("priceMax") ?? 0);
+  if (packages.length > 0) {
+    // the price range shown on cards follows the packages
+    priceMin = Math.min(...packages.map((p) => p.price));
+    priceMax = Math.max(...packages.map((p) => p.price));
+  }
   if (!Number.isFinite(priceMin) || priceMin < 0 || !Number.isFinite(priceMax) || priceMax < 0) {
     throw new Error("Enter valid prices.");
   }
@@ -78,6 +111,7 @@ export function parseArtistSelfFields(formData: FormData): ArtistSelfFields {
     portfolioImages: portfolioImages.slice(0, 12),
     upiId,
     upiQr: upiQrImages[0] ?? "",
+    packages,
   };
 }
 

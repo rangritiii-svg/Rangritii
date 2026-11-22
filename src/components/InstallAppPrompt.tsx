@@ -18,7 +18,8 @@ export function InstallAppPrompt() {
     // Already running as the installed app? Never show the prompt.
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as unknown as { standalone?: boolean }).standalone === true;
+      (navigator as unknown as { standalone?: boolean }).standalone === true ||
+      /RangritiiApp/i.test(navigator.userAgent); // inside the Android app
     setIsStandalone(standalone);
     if (standalone) return;
 
@@ -60,7 +61,7 @@ export function InstallAppPrompt() {
   if (!deferredPrompt && !isIOS) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md animate-slide-up rounded-2xl border border-rani-200 bg-white/95 p-4 shadow-xl backdrop-blur-md sm:bottom-6 sm:left-auto sm:right-6">
+    <div className="fixed bottom-[calc(var(--sab)+5rem)] left-4 right-4 z-50 mx-auto max-w-md animate-slide-up rounded-2xl border border-rani-200 bg-white/95 p-4 shadow-xl backdrop-blur-md sm:bottom-6 sm:left-auto sm:right-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}

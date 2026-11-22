@@ -1,0 +1,24 @@
+{
+  "appId": "com.rangritii.app",
+  "appName": "Rangritii",
+  "webDir": "www",
+  "server": {
+    "url": "https://rangritii.vercel.app",
+    "cleartext": false,
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "appendUserAgent": "RangritiiApp/1.0",
+    "allowMixedContent": false,
+    "backgroundColor": "#ffffff"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#ffffff"
+    }
+  }
+}

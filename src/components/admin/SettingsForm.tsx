@@ -123,6 +123,42 @@ export function SettingsForm({ settings }: { settings: PlatformSettings }) {
           single
         />
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={label} htmlFor="set-token">Booking token (₹)</label>
+            <input
+              id="set-token"
+              name="tokenAmount"
+              type="number"
+              min="0"
+              step="50"
+              required
+              defaultValue={settings.tokenAmount}
+              className={field}
+            />
+            <p className="mt-1.5 text-xs text-ink-500">
+              Fixed advance the customer pays on your UPI before the request reaches the artist.
+              Adjusted in the total; refunded if the artist declines. 0 = no token.
+            </p>
+          </div>
+          <div>
+            <label className={label} htmlFor="set-hours">Artist must answer within (hours)</label>
+            <input
+              id="set-hours"
+              name="responseHours"
+              type="number"
+              min="1"
+              max="168"
+              required
+              defaultValue={settings.responseHours}
+              className={field}
+            />
+            <p className="mt-1.5 text-xs text-ink-500">
+              After this the request is auto-declined and the token marked for refund.
+            </p>
+          </div>
+        </div>
+
         <div>
           <label className={label} htmlFor="set-comm">Commission (%)</label>
           <input

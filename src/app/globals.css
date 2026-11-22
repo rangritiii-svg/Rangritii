@@ -25,18 +25,34 @@
   --color-marigold-800: #6e451d;
   --color-marigold-900: #5e3a1d;
 
-  --color-cream-50: #fdfbf7;
-  --color-cream-100: #faf5ee;
-  --color-cream-200: #f3e9db;
-  --color-cream-300: #e9d8c2;
+  /* Neutrals: a rose-tinted white, like a fresh dupatta — not beige paper */
+  --color-cream-50: #ffffff;
+  --color-cream-100: #fff7f4;
+  --color-cream-200: #f9ebe5;
+  --color-cream-300: #eed9d0;
 
-  --color-ink-900: #2b2118;
-  --color-ink-700: #4a3d32;
-  --color-ink-500: #7a6a5c;
-  --color-ink-300: #b3a698;
+  /* Ink: dark henna-stain brown instead of grey-black */
+  --color-ink-900: #2a1410;
+  --color-ink-700: #523029;
+  --color-ink-500: #85645b;
+  --color-ink-400: #a3847b;
+  --color-ink-300: #c4aaa2;
 
-  --font-display: var(--font-fraunces), "Georgia", serif;
-  --font-body: var(--font-karla), system-ui, sans-serif;
+  /* Fresh henna paste is green — used for "confirmed / paid / verified" */
+  --color-leaf-50: #f1f5ec;
+  --color-leaf-100: #dfe9d4;
+  --color-leaf-600: #557039;
+  --color-leaf-700: #435a2c;
+  --color-leaf-800: #33461f;
+
+  /* The stain: warm orange-brown, used for money (token, balance) */
+  --color-stain-50: #fdf1ea;
+  --color-stain-100: #f9dccb;
+  --color-stain-600: #b4532a;
+  --color-stain-700: #93401e;
+
+  --font-display: "Rozha One", "Georgia", serif;
+  --font-body: "Hind", system-ui, sans-serif;
 }
 
 body {
@@ -46,8 +62,33 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, .font-display {
-  font-family: var(--font-display);
+@layer base {
+  h1, h2, .font-display {
+    font-family: var(--font-display);
+    font-weight: 400; /* Rozha One has a single weight */
+    font-synthesis: none; /* never fake-bold it when a page asks for font-semibold */
+    letter-spacing: -0.005em;
+  }
+}
+
+:root {
+  /* Phone notch / gesture bar. The Android app injects --safe-area-inset-*;
+     browsers provide env(). */
+  --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --sab: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+/* Tap targets: no 300ms delay / grey flash inside the Android app's WebView */
+a, button, label, summary, select { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+:focus-visible { outline: 2px solid var(--color-rani-600); outline-offset: 2px; }
+
+/* Room for the mobile tab bar + the phone's gesture area */
+.pb-safe { padding-bottom: calc(var(--sab) + 4.5rem); }
+@media (min-width: 1024px) { .pb-safe { padding-bottom: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
 ::selection {

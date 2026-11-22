@@ -2,7 +2,14 @@ import "server-only";
 import { isSupabaseConfigured, SITE } from "./config";
 import { demoStore } from "./demo-store";
 import { createClient } from "./supabase/server";
-import type { Artist, ArtistInput, ContactMessage, PlatformSettings, Style } from "./types";
+import type {
+  Artist,
+  ArtistInput,
+  ArtistPackage,
+  ContactMessage,
+  PlatformSettings,
+  Style,
+} from "./types";
 
 /* ── Row mappers (Supabase snake_case → app camelCase) ─────────────── */
 
@@ -23,10 +30,57 @@ type ArtistRow = {
   portfolio_images: string[];
   upi_id: string;
   upi_qr: string;
+  packages: unknown;
   is_approved: boolean;
   is_active: boolean;
   created_at: string;
 };
+
+/** Columns the public may read. whatsapp / upi_id / upi_qr are private (owner + admin
+ *  only, via the get_artist_private() function) so the "contact unlocks after the
+ *  artist confirms" rule can't be bypassed through the API. */
+const PUBLIC_COLS =
+  "id, user_id, name, slug, bio, city, area, experience_years, price_min, price_max, styles, profile_image, portfolio_images, packages, is_approved, is_active, created_at";
+
+export function parsePackages(raw: unknown): ArtistPackage[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((p) => {
+      const o = (p ?? {}) as Record<string, unknown>;
+      return {
+        id: String(o.id ?? ""),
+        name: String(o.name ?? "").slice(0, 80),
+        price: Math.max(0, Math.round(Number(o.price ?? 0))),
+        unit: o.unit === "per_event" ? "per_event" : "per_person",
+      } as ArtistPackage;
+    })
+    .filter((p) => p.id && p.name && p.price > 0);
+}
+
+/** Merge private columns (whatsapp/UPI) for artists the caller owns or administers. */
+async function withPrivate(artists: Artist[]): Promise<Artist[]> {
+  if (artists.length === 0) return artists;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_artist_private", {
+    p_artist_ids: artists.map((a) => a.id),
+  });
+  if (error || !Array.isArray(data)) return artists;
+  const byId = new Map(
+    (data as { artist_id: string; whatsapp: string; upi_id: string; upi_qr: string }[]).map((r) => [
+      r.artist_id,
+      r,
+    ])
+  );
+  return artists.map((a) => {
+    const p = byId.get(a.id);
+    return p ? { ...a, whatsapp: p.whatsapp ?? "", upiId: p.upi_id ?? "", upiQr: p.upi_qr ?? "" } : a;
+  });
+}
+
+/** Strip characters that would break or alter a PostgREST `or()` filter. */
+function safeSearch(q: string): string {
+  return q.replace(/[^\p{L}\p{N}\s-]/gu, " ").trim().slice(0, 60);
+}
 
 type StyleRow = {
   id: string;
@@ -63,6 +117,7 @@ function mapArtist(r: ArtistRow): Artist {
     portfolioImages,
     upiId: r.upi_id ?? "",
     upiQr: r.upi_qr ?? "",
+    packages: parsePackages(r.packages),
     isApproved: r.is_approved,
     isActive: r.is_active,
     createdAt: r.created_at,
@@ -101,6 +156,7 @@ function toArtistRow(input: ArtistInput) {
     portfolio_images: input.portfolioImages,
     upi_id: input.upiId,
     upi_qr: input.upiQr,
+    packages: input.packages,
     is_approved: input.isApproved,
     is_active: input.isActive,
   };
@@ -268,11 +324,12 @@ export async function getArtists(query: ArtistQuery = {}): Promise<Artist[]> {
   }
 
   const supabase = await createClient();
-  let req = supabase.from("artists").select("*");
+  let req = supabase.from("artists").select(PUBLIC_COLS);
   if (!query.includeUnapproved) req = req.eq("is_approved", true).eq("is_active", true);
   if (query.city) req = req.ilike("city", query.city);
   if (query.style) req = req.contains("styles", [query.style]);
-  if (query.q) req = req.or(`name.ilike.%${query.q}%,city.ilike.%${query.q}%,bio.ilike.%${query.q}%`);
+  const q = query.q ? safeSearch(query.q) : "";
+  if (q) req = req.or(`name.ilike.%${q}%,city.ilike.%${q}%,area.ilike.%${q}%,bio.ilike.%${q}%`);
   switch (query.sort) {
     case "price-low":
       req = req.order("price_min", { ascending: true });
@@ -286,7 +343,9 @@ export async function getArtists(query: ArtistQuery = {}): Promise<Artist[]> {
   if (query.limit) req = req.limit(query.limit);
   const { data, error } = await req;
   if (error) throw new Error(`Failed to load artists: ${error.message}`);
-  return (data as ArtistRow[]).map(mapArtist);
+  const list = (data as unknown as ArtistRow[]).map(mapArtist);
+  // Admin listings need payout details; public listings never get them.
+  return query.includeUnapproved ? withPrivate(list) : list;
 }
 
 /** Distinct city list for the filter dropdown (approved artists only). */
@@ -305,13 +364,13 @@ export async function getArtistBySlug(slug: string): Promise<Artist | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("artists")
-    .select("*")
+    .select(PUBLIC_COLS)
     .eq("slug", slug)
     .eq("is_approved", true)
     .eq("is_active", true)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? mapArtist(data as ArtistRow) : null;
+  return data ? mapArtist(data as unknown as ArtistRow) : null;
 }
 
 export async function getArtistById(id: string): Promise<Artist | null> {
@@ -322,11 +381,31 @@ export async function getArtistById(id: string): Promise<Artist | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("artists")
-    .select("*")
+    .select(PUBLIC_COLS)
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? mapArtist(data as ArtistRow) : null;
+  if (!data) return null;
+  const [a] = await withPrivate([mapArtist(data as unknown as ArtistRow)]);
+  return a;
+}
+
+/** Look up several artists at once, keyed by id (used to resolve booking → artist). */
+export async function getArtistsByIds(ids: string[]): Promise<Map<string, Artist>> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return new Map();
+
+  if (!isSupabaseConfigured()) {
+    return new Map(
+      demoStore()
+        .artists.filter((a) => unique.includes(a.id))
+        .map((a) => [a.id, { ...a }])
+    );
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("artists").select(PUBLIC_COLS).in("id", unique);
+  if (error) throw new Error(error.message);
+  return new Map((data as unknown as ArtistRow[]).map((r) => [r.id, mapArtist(r)]));
 }
 
 /** The artist profile owned by a logged-in user (any approval state). */
@@ -338,11 +417,13 @@ export async function getArtistByUserId(userId: string): Promise<Artist | null> 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("artists")
-    .select("*")
+    .select(PUBLIC_COLS)
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? mapArtist(data as ArtistRow) : null;
+  if (!data) return null;
+  const [a] = await withPrivate([mapArtist(data as unknown as ArtistRow)]);
+  return a;
 }
 
 export async function createArtist(input: ArtistInput): Promise<void> {
@@ -395,6 +476,7 @@ export async function updateArtist(id: string, input: Partial<ArtistInput>): Pro
     ["portfolio_images", "portfolioImages"],
     ["upi_id", "upiId"],
     ["upi_qr", "upiQr"],
+    ["packages", "packages"],
     ["is_approved", "isApproved"],
     ["is_active", "isActive"],
   ] as const) {
@@ -412,6 +494,8 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   upiId: "",
   upiQr: "",
   commissionPercent: 10,
+  tokenAmount: 500,
+  responseHours: 24,
   contactPhone: SITE.phone,
   contactWhatsapp: SITE.whatsapp,
   contactEmail: SITE.email,
@@ -422,6 +506,8 @@ type SettingsRow = {
   upi_id: string;
   upi_qr: string;
   commission_percent: number;
+  token_amount?: number;
+  response_hours?: number;
   contact_phone?: string;
   contact_whatsapp?: string;
   contact_email?: string;
@@ -447,6 +533,8 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     upiId: row.upi_id ?? "",
     upiQr: row.upi_qr ?? "",
     commissionPercent: Number(row.commission_percent ?? 10),
+    tokenAmount: Number(row.token_amount ?? 500),
+    responseHours: Number(row.response_hours ?? 24),
     contactPhone: row.contact_phone || SITE.phone,
     contactWhatsapp: row.contact_whatsapp || SITE.whatsapp,
     contactEmail: row.contact_email || SITE.email,
@@ -465,6 +553,8 @@ export async function updatePlatformSettings(settings: PlatformSettings): Promis
     upi_id: settings.upiId,
     upi_qr: settings.upiQr,
     commission_percent: settings.commissionPercent,
+    token_amount: settings.tokenAmount,
+    response_hours: settings.responseHours,
     contact_phone: settings.contactPhone,
     contact_whatsapp: settings.contactWhatsapp,
     contact_email: settings.contactEmail,

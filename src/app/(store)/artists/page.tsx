@@ -17,7 +17,7 @@ type Search = {
 
 const SORTS = [
   { value: "experienced", label: "Most experienced" },
-  { value: "price-low", label: "Price: low to high" },
+  { value: "price-low", label: "Lowest price" },
   { value: "newest", label: "Newest" },
 ] as const;
 
@@ -56,92 +56,64 @@ export default async function ArtistsPage({
         ? `Mehandi Artists in ${params.city}`
         : "Find Mehandi Artists";
 
+  const chip = (active: boolean) =>
+    `shrink-0 rounded-full border px-4 py-2 text-[15px] font-medium ${
+      active ? "border-rani-700 bg-rani-700 text-white" : "border-cream-300 bg-white text-ink-700 hover:border-rani-300"
+    }`;
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <nav className="text-xs text-ink-500" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-rani-700">Home</Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-ink-900">Artists</span>
-      </nav>
-      <h1 className="mt-2 font-display text-3xl font-semibold text-ink-900 sm:text-4xl">
-        {title}
-      </h1>
+    <div className="mx-auto max-w-7xl px-4 pb-10 pt-5 sm:px-6 lg:pt-10">
+      <h1 className="font-display text-[30px] leading-tight text-ink-900 sm:text-4xl">{title}</h1>
       {activeStyle?.description && (
-        <p className="mt-2 max-w-xl text-sm text-ink-500">{activeStyle.description}</p>
+        <p className="mt-1 max-w-xl text-[15px] text-ink-500">{activeStyle.description}</p>
       )}
 
-      {/* City filter */}
-      <div className="no-scrollbar mt-6 flex items-center gap-2 overflow-x-auto pb-1">
-        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold uppercase tracking-wider text-ink-500">
-          <MapPin className="h-3.5 w-3.5 text-rani-700" /> City:
-        </span>
-        <Link
-          href={buildHref(params, { city: undefined })}
-          className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${
-            !params.city
-              ? "border-rani-700 bg-rani-700 text-white"
-              : "border-cream-300 bg-white text-ink-700 hover:border-rani-300"
-          }`}
-        >
-          All India
-        </Link>
-        {cities.map((c) => (
-          <Link
-            key={c}
-            href={buildHref(params, { city: c })}
-            className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${
-              params.city?.toLowerCase() === c.toLowerCase()
-                ? "border-rani-700 bg-rani-700 text-white"
-                : "border-cream-300 bg-white text-ink-700 hover:border-rani-300"
-            }`}
-          >
-            {c}
-          </Link>
-        ))}
-      </div>
-
-      {/* Style pills */}
-      <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
-        <Link
-          href={buildHref(params, { style: undefined })}
-          className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${
-            !params.style
-              ? "border-marigold-500 bg-marigold-500 text-white"
-              : "border-cream-300 bg-white text-ink-700 hover:border-marigold-300"
-          }`}
-        >
-          All Styles
+      {/* Style chips */}
+      <div className="no-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" aria-label="Style">
+        <Link href={buildHref(params, { style: undefined })} className={chip(!params.style)}>
+          All styles
         </Link>
         {styles.map((s) => (
-          <Link
-            key={s.slug}
-            href={buildHref(params, { style: s.slug })}
-            className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${
-              params.style === s.slug
-                ? "border-marigold-500 bg-marigold-500 text-white"
-                : "border-cream-300 bg-white text-ink-700 hover:border-marigold-300"
-            }`}
-          >
+          <Link key={s.slug} href={buildHref(params, { style: s.slug })} className={chip(params.style === s.slug)}>
             {s.name}
           </Link>
         ))}
       </div>
 
-      {/* Toolbar */}
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+      {/* City chips */}
+      <div className="no-scrollbar -mx-4 mt-2 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" aria-label="City">
+        <MapPin className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
+        <Link
+          href={buildHref(params, { city: undefined })}
+          className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ${!params.city ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-cream-200"}`}
+        >
+          All cities
+        </Link>
+        {cities.map((c) => {
+          const on = params.city?.toLowerCase() === c.toLowerCase();
+          return (
+            <Link
+              key={c}
+              href={buildHref(params, { city: c })}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ${on ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-cream-200"}`}
+            >
+              {c}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-cream-300 pt-3">
         <p className="text-sm text-ink-500">
           {artists.length} {artists.length === 1 ? "artist" : "artists"}
         </p>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-ink-500">Sort:</span>
+        <div className="no-scrollbar flex items-center gap-1 overflow-x-auto text-sm">
           {SORTS.map((s) => (
             <Link
               key={s.value}
               href={buildHref(params, { sort: s.value })}
-              className={`rounded-full px-3 py-1.5 font-medium transition ${
-                sort === s.value
-                  ? "bg-rani-100 text-rani-800"
-                  : "text-ink-700 hover:bg-cream-200"
+              className={`shrink-0 rounded-full px-3 py-1.5 font-medium ${
+                sort === s.value ? "bg-rani-50 text-rani-800" : "text-ink-500 hover:bg-cream-200"
               }`}
             >
               {s.label}
@@ -150,23 +122,18 @@ export default async function ArtistsPage({
         </div>
       </div>
 
-      {/* Grid */}
       {artists.length === 0 ? (
-        <div className="mt-16 rounded-3xl border border-dashed border-cream-300 bg-white py-20 text-center">
-          <p className="font-display text-2xl text-ink-900">No artists found 😔</p>
-          <p className="mt-2 text-sm text-ink-500">
-            Try changing the filters, or WhatsApp us — we&apos;ll find an artist
-            for you.
+        <div className="mt-10 rounded-3xl border border-dashed border-cream-300 bg-white px-6 py-16 text-center">
+          <p className="font-display text-2xl text-ink-900">No artists match these filters</p>
+          <p className="mt-2 text-[15px] text-ink-500">
+            Clear a filter, or message us on WhatsApp and we&apos;ll find an artist in your city.
           </p>
-          <Link
-            href="/artists"
-            className="mt-6 inline-block rounded-full bg-rani-700 px-6 py-3 text-sm font-semibold text-white hover:bg-rani-800"
-          >
-            All Artists
+          <Link href="/artists" className="mt-6 inline-block rounded-full bg-rani-700 px-6 py-3 text-[15px] font-semibold text-white">
+            Show all artists
           </Link>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
           {artists.map((a) => (
             <ArtistCard key={a.id} artist={a} styles={styles} />
           ))}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Lock } from "lucide-react";
 import { SITE } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Booking Requested" };
@@ -22,7 +22,7 @@ export default async function BookingConfirmedPage({
       </h1>
       <p className="mt-3 text-ink-500">
         {artistName ? `${artistName} has received your request.` : "The artist has received your request."}{" "}
-        We&apos;ll confirm it shortly.
+        She&apos;ll call or WhatsApp you to confirm.
       </p>
 
       <div className="mt-8 rounded-3xl border border-cream-300 bg-white p-6">
@@ -41,12 +41,17 @@ export default async function BookingConfirmedPage({
           )}
           <div className="flex justify-between">
             <dt className="text-ink-500">Payment</dt>
-            <dd className="font-semibold text-ink-900">After the service, directly to the artist</dd>
+            <dd className="font-semibold text-ink-900">After the service — UPI or cash</dd>
           </div>
         </dl>
-        <p className="mt-5 rounded-xl bg-cream-100 px-4 py-3 text-xs leading-relaxed text-ink-500">
-          Save your booking number. The artist&apos;s contact details will be shared here once your booking is
-          confirmed. If anything comes up before then, WhatsApp us at {SITE.phone}
+        <p className="mt-5 flex items-start gap-2 rounded-xl bg-cream-100 px-4 py-3 text-left text-xs leading-relaxed text-ink-500">
+          <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            The artist&apos;s phone and WhatsApp unlock once she confirms this
+            request — you&apos;ll see them in <strong>My Bookings</strong> and on the
+            payment page. Save your booking number, and for anything urgent
+            WhatsApp us at {SITE.phone}.
+          </span>
         </p>
       </div>
 
@@ -56,7 +61,7 @@ export default async function BookingConfirmedPage({
             href={`/pay?number=${encodeURIComponent(bookingNumber)}`}
             className="inline-flex items-center gap-2 rounded-full border-2 border-rani-700 px-7 py-3.5 text-sm font-bold text-rani-700 hover:bg-rani-50"
           >
-            💳 Check Status / Make Payment
+            💳 Make Payment
           </Link>
         )}
         <Link

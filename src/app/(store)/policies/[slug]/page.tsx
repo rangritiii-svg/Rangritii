@@ -13,16 +13,16 @@ const POLICIES: Record<string, Policy> = {
       {
         heading: "Customer cancellation",
         body: [
-          "You can cancel free of charge any time before your booking request is confirmed.",
-          "After confirmation, please let the artist know on WhatsApp or by call at least 48 hours before the event.",
-          "Booking requests on Rangritii are free — no advance is ever paid to Rangritii, so there is nothing for the platform to refund.",
-          "If you paid the artist an advance, its refund follows the artist's own policy — do ask about it when confirming.",
+          "To send a request you pay a small token to Rangritii. It is adjusted in your total — you pay only the balance after the mehandi.",
+          "If the artist declines, or doesn't answer within the response time shown at booking, your token is refunded in full to the account you paid from.",
+          "Want to cancel after the artist has accepted? Message us at least 48 hours before the event and we'll refund the token. Closer to the date, the token goes to the artist for the slot she kept free.",
+          "Refunds are sent by UPI within 3 working days.",
         ],
       },
       {
         heading: "Artist cancellation",
         body: [
-          "If an artist cancels after confirming, we'll immediately help you find another available artist.",
+          "If an artist cancels after accepting, your token is refunded in full and we'll help you find another available artist.",
           "Artists who cancel repeatedly may have their profiles suspended.",
         ],
       },

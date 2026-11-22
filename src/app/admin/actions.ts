@@ -17,7 +17,10 @@ import {
 import { slugify } from "@/lib/format";
 import {
   markPaymentVerified,
+  markRefunded,
   markSettled,
+  rejectTokenClaim,
+  verifyToken,
   setBookingAmount,
   updateBookingStatus,
 } from "@/lib/bookings";
@@ -127,6 +130,14 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
     if (!Number.isFinite(commissionPercent) || commissionPercent < 0 || commissionPercent > 50) {
       throw new Error("Commission must be between 0 and 50%.");
     }
+    const tokenAmount = Math.round(Number(formData.get("tokenAmount") ?? 500));
+    if (!Number.isFinite(tokenAmount) || tokenAmount < 0 || tokenAmount > 100000) {
+      throw new Error("Token amount must be between ₹0 and ₹1,00,000.");
+    }
+    const responseHours = Math.round(Number(formData.get("responseHours") ?? 24));
+    if (!Number.isFinite(responseHours) || responseHours < 1 || responseHours > 168) {
+      throw new Error("Artist response time must be between 1 and 168 hours.");
+    }
     const upiQr = String(formData.get("upiQr") ?? "")
       .split(/\r?\n/)
       .map((s) => s.trim())
@@ -141,6 +152,8 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
       upiId,
       upiQr,
       commissionPercent,
+      tokenAmount,
+      responseHours,
       contactPhone,
       contactWhatsapp,
       contactEmail,
@@ -180,6 +193,40 @@ export async function markSettledAction(id: string, utr: string): Promise<Action
   try {
     await requireAdmin();
     await markSettled(id, utr || undefined);
+    revalidatePath("/admin/bookings");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function verifyTokenAction(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await verifyToken(id);
+    revalidatePath("/admin/bookings");
+    revalidatePath("/admin");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function rejectTokenAction(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await rejectTokenClaim(id);
+    revalidatePath("/admin/bookings");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function markRefundedAction(id: string, utr: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await markRefunded(id, utr);
     revalidatePath("/admin/bookings");
     return { ok: true };
   } catch (e) {

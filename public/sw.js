@@ -1,5 +1,5 @@
 /* Rangritii service worker — cache-first for static assets, network-first for pages. */
-const CACHE = "rangritii-v3";
+const CACHE = "rangritii-v4";
 const STATIC_DESTINATIONS = ["style", "script", "font", "image"];
 
 self.addEventListener("install", (event) => {
@@ -24,7 +24,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   // Never cache admin, account, booking or API traffic.
-  if (/^\/(admin|account|book|join|api)/.test(url.pathname)) return;
+  if (/^\/(admin|account|book|join|pay|auth|api)/.test(url.pathname)) return;
 
   if (STATIC_DESTINATIONS.includes(request.destination)) {
     // Cache-first for assets

@@ -1,35 +1,76 @@
 import Link from "next/link";
-import { Award, MapPin } from "lucide-react";
-import { priceRange } from "@/lib/format";
+import { BadgeCheck, MapPin } from "lucide-react";
+import { formatINR } from "@/lib/format";
 import type { Artist, Style } from "@/lib/types";
 import { SaveArtistButton } from "./SaveArtistButton";
 
-export function ArtistCard({
-  artist,
-  styles,
-}: {
-  artist: Artist;
-  styles: Style[];
-}) {
+/** Lowest bookable price: cheapest package, else the "from" price. */
+export function startingPrice(artist: Artist): number {
+  if (artist.packages.length) return Math.min(...artist.packages.map((p) => p.price));
+  return artist.priceMin;
+}
+
+/** Photo-first card: customers choose by the designs, so the portfolio leads. */
+export function ArtistCard({ artist, styles }: { artist: Artist; styles: Style[] }) {
   const styleNames = artist.styles
     .map((slug) => styles.find((s) => s.slug === slug)?.name.split(" / ")[0] ?? slug)
-    .slice(0, 3);
+    .slice(0, 3)
+    .join(", ");
+  const photos = [artist.portfolioImages[0] || artist.profileImage, artist.portfolioImages[1], artist.portfolioImages[2]]
+    .filter(Boolean) as string[];
+  const from = startingPrice(artist);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-cream-300 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-rani-900/10">
-      <Link href={`/artist/${artist.slug}`} className="relative block overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={artist.profileImage || "/art/artist-1-profile.jpg"}
-          alt={`${artist.name} — mehandi artist`}
-          className="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
-        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-ink-900 shadow-sm">
-          <Award className="h-3 w-3 text-marigold-600" /> {artist.experienceYears}+ yrs
-        </span>
+    <article className="relative overflow-hidden rounded-[22px] border border-cream-300 bg-white">
+      <Link href={`/artist/${artist.slug}`} className="block" aria-label={`${artist.name}, ${artist.city}`}>
+        <div className="grid h-52 grid-cols-3 grid-rows-2 gap-0.5 bg-cream-200 sm:h-56">
+          {photos.length > 0 ? (
+            photos.map((src, i) => (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                key={src + i}
+                src={src}
+                alt=""
+                loading="lazy"
+                className={`h-full w-full object-cover ${
+                  i === 0 ? (photos.length === 1 ? "col-span-3 row-span-2" : "col-span-2 row-span-2") : ""
+                } ${photos.length === 2 && i === 1 ? "row-span-2" : ""}`}
+              />
+            ))
+          ) : (
+            <div className="col-span-3 row-span-2" />
+          )}
+        </div>
+        <div className="flex items-start gap-3 p-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={artist.profileImage || "/art/artist-1-profile.jpg"}
+            alt=""
+            className="h-12 w-12 shrink-0 rounded-full object-cover object-top ring-2 ring-white"
+          />
+          <div className="min-w-0 flex-1">
+            <h3 className="flex items-center gap-1.5 font-body text-[17px] font-semibold leading-tight text-ink-900">
+              <span className="truncate">{artist.name}</span>
+              <BadgeCheck className="h-4 w-4 shrink-0 text-leaf-600" aria-label="Verified" />
+            </h3>
+            <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-ink-500">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              {artist.area ? `${artist.area}, ` : ""}
+              {artist.city}
+            </p>
+            <p className="mt-1 truncate text-sm text-ink-700">
+              {styleNames}
+              {artist.experienceYears > 0 && <span className="text-ink-500"> — {artist.experienceYears} yrs</span>}
+            </p>
+          </div>
+          <p className="shrink-0 text-right text-sm leading-tight text-ink-500">
+            from
+            <span className="block text-[17px] font-semibold text-stain-700">
+              {from > 0 ? formatINR(from) : "Ask"}
+            </span>
+          </p>
+        </div>
       </Link>
-
       <div className="absolute right-3 top-3">
         <SaveArtistButton
           item={{
@@ -43,40 +84,6 @@ export function ArtistCard({
           }}
         />
       </div>
-
-      <div className="flex flex-1 flex-col p-4">
-        <Link
-          href={`/artist/${artist.slug}`}
-          className="font-display text-lg font-semibold text-ink-900 transition group-hover:text-rani-700"
-        >
-          {artist.name}
-        </Link>
-        <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-500">
-          <MapPin className="h-3 w-3 text-rani-700" />
-          {artist.area ? `${artist.area}, ` : ""}{artist.city}
-        </p>
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {styleNames.map((name) => (
-            <span
-              key={name}
-              className="rounded-full bg-cream-200/80 px-2.5 py-1 text-[11px] font-semibold text-ink-700"
-            >
-              {name}
-            </span>
-          ))}
-        </div>
-        <div className="mt-auto flex items-center justify-between pt-3">
-          <span className="text-sm font-bold text-rani-800">
-            {priceRange(artist.priceMin, artist.priceMax)}
-          </span>
-        </div>
-        <Link
-          href={`/book/${artist.slug}`}
-          className="mt-3 rounded-full bg-rani-700 py-2.5 text-center text-xs font-bold text-white transition hover:bg-rani-800"
-        >
-          Book Now
-        </Link>
-      </div>
-    </div>
+    </article>
   );
 }

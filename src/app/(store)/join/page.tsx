@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const PERKS = [
   { icon: Users, title: "New customers", text: "Brides & families in your city, straight to you." },
-  { icon: IndianRupee, title: "Zero commission", text: "Bookings are free, payment is 100% yours — no cut." },
+  { icon: IndianRupee, title: "Serious requests only", text: "Customers pay a token before a request reaches you." },
   { icon: Megaphone, title: "Free portfolio page", text: "A professional online portfolio of your designs." },
   { icon: BadgeCheck, title: "Verified badge", text: "A trust badge after approval — more bookings." },
 ];
@@ -85,7 +85,7 @@ export default async function JoinPage() {
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-ink-500">
             Create a free profile on Rangritii, show off your best designs, and get
-            direct bookings from your city — with zero commission.
+            bookings from your city. Listing is free; Rangritii takes a small commission only on completed bookings.
           </p>
         </div>
       </section>

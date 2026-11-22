@@ -1,27 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  Award,
-  BadgeCheck,
-  CalendarCheck,
-  MapPin,
-  Wallet,
-} from "lucide-react";
-import { ArtistCard } from "@/components/ArtistCard";
+import { BadgeCheck, Lock, MapPin } from "lucide-react";
+import { ArtistCard, startingPrice } from "@/components/ArtistCard";
+import { BookingSteps } from "@/components/BookingSteps";
 import { SaveArtistButton } from "@/components/SaveArtistButton";
-import { getArtistBySlug, getArtists, getStyles } from "@/lib/data";
-import { priceRange } from "@/lib/format";
+import { getArtistBySlug, getArtists, getPlatformSettings, getStyles } from "@/lib/data";
+import { formatINR, priceRange } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 type Params = { slug: string };
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<Params>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const artist = await getArtistBySlug(slug);
   if (!artist) return { title: "Artist not found" };
@@ -36,81 +27,82 @@ export default async function ArtistProfilePage({ params }: { params: Promise<Pa
   const artist = await getArtistBySlug(slug);
   if (!artist) notFound();
 
-  const [styles, cityArtists] = await Promise.all([
+  const [styles, cityArtists, settings] = await Promise.all([
     getStyles(),
     getArtists({ city: artist.city, limit: 5 }),
+    getPlatformSettings(),
   ]);
   const artistStyles = artist.styles
     .map((s) => styles.find((st) => st.slug === s))
     .filter((s): s is NonNullable<typeof s> => Boolean(s));
   const others = cityArtists.filter((a) => a.id !== artist.id).slice(0, 4);
+  const gallery = artist.portfolioImages.length ? artist.portfolioImages : [artist.profileImage].filter(Boolean);
+  const from = startingPrice(artist);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <nav className="text-xs text-ink-500" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-rani-700">Home</Link>
-        <span className="mx-1.5">/</span>
-        <Link href="/artists" className="hover:text-rani-700">Artists</Link>
-        <span className="mx-1.5">/</span>
-        <span className="text-ink-900">{artist.name}</span>
-      </nav>
+    <div className="mx-auto max-w-6xl pb-24 lg:px-6 lg:pb-12 lg:pt-8">
+      <div className="lg:grid lg:grid-cols-[1.1fr_1fr] lg:gap-10">
+        {/* Portfolio — swipe on phones, grid on desktop */}
+        <section aria-label="Portfolio" className="relative">
+          <div className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto lg:grid lg:grid-cols-2 lg:gap-3 lg:overflow-visible">
+            {gallery.map((img, i) => (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                key={img + i}
+                src={img}
+                alt={`${artist.name} — mehandi design ${i + 1}`}
+                loading={i < 2 ? "eager" : "lazy"}
+                className={`aspect-[4/5] w-[86vw] shrink-0 snap-center object-cover sm:w-[60vw] lg:w-full lg:rounded-2xl ${
+                  i === 0 ? "lg:col-span-2 lg:aspect-[4/3]" : ""
+                } ${i > 0 ? "border-l-2 border-white lg:border-0" : ""}`}
+              />
+            ))}
+          </div>
+          {gallery.length > 1 && (
+            <span className="absolute bottom-3 left-4 rounded-full bg-ink-900/70 px-3 py-1 text-xs font-medium text-white lg:hidden">
+              {gallery.length} photos — swipe
+            </span>
+          )}
+          <div className="absolute right-3 top-3">
+            <SaveArtistButton
+              large
+              item={{
+                artistId: artist.id,
+                slug: artist.slug,
+                name: artist.name,
+                city: artist.city,
+                priceMin: artist.priceMin,
+                priceMax: artist.priceMax,
+                image: artist.profileImage,
+              }}
+            />
+          </div>
+        </section>
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-[420px_1fr]">
-        {/* Profile card */}
-        <div>
-          <div className="relative">
+        <div className="px-4 pt-5 sm:px-6 lg:px-0 lg:pt-0">
+          <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={artist.profileImage || "/art/artist-1-profile.jpg"}
-              alt={`${artist.name} — mehandi artist`}
-              className="aspect-[3/4] w-full rounded-3xl object-cover shadow-lg shadow-rani-900/10"
+              alt=""
+              className="h-16 w-16 rounded-full object-cover object-top"
             />
-            <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-ink-900 shadow-sm">
-              <BadgeCheck className="h-4 w-4 text-green-600" /> Verified
-            </span>
-            <div className="absolute right-4 top-4">
-              <SaveArtistButton
-                large
-                item={{
-                  artistId: artist.id,
-                  slug: artist.slug,
-                  name: artist.name,
-                  city: artist.city,
-                  priceMin: artist.priceMin,
-                  priceMax: artist.priceMax,
-                  image: artist.profileImage,
-                }}
-              />
+            <div>
+              <h1 className="font-display text-[30px] leading-tight text-ink-900 sm:text-4xl">{artist.name}</h1>
+              <p className="flex items-center gap-1 text-[15px] text-ink-500">
+                <MapPin className="h-4 w-4" />
+                {artist.area ? `${artist.area}, ` : ""}
+                {artist.city}
+              </p>
             </div>
           </div>
 
-          <div className="mt-5 space-y-3 rounded-2xl border border-cream-300 bg-white p-5 text-sm text-ink-700">
-            <p className="flex items-center gap-2.5">
-              <Award className="h-4.5 w-4.5 text-rani-700" />
-              {artist.experienceYears}+ years experience
-            </p>
-            <p className="flex items-center gap-2.5">
-              <Wallet className="h-4.5 w-4.5 text-rani-700" />
-              {priceRange(artist.priceMin, artist.priceMax)}
-            </p>
-            <p className="flex items-center gap-2.5">
-              <MapPin className="h-4.5 w-4.5 text-rani-700" />
-              {artist.area ? `${artist.area}, ` : ""}{artist.city} · home service
-            </p>
-            <p className="flex items-center gap-2.5">
-              <CalendarCheck className="h-4.5 w-4.5 text-rani-700" />
-              Free booking request — pay after service
-            </p>
-          </div>
-        </div>
-
-        {/* Details */}
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-ink-900 sm:text-4xl">
-            {artist.name}
-          </h1>
-          <p className="mt-1 text-sm text-ink-500">
-            Mehandi Artist · {artist.city}
+          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-ink-700">
+            <span className="inline-flex items-center gap-1 font-medium text-leaf-700">
+              <BadgeCheck className="h-4 w-4" /> Verified by Rangritii
+            </span>
+            {artist.experienceYears > 0 && <span>{artist.experienceYears}+ years of work</span>}
+            <span>Comes to your home</span>
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -118,65 +110,88 @@ export default async function ArtistProfilePage({ params }: { params: Promise<Pa
               <Link
                 key={s.slug}
                 href={`/artists?style=${s.slug}`}
-                className="rounded-full bg-rani-50 px-3.5 py-1.5 text-xs font-bold text-rani-800 transition hover:bg-rani-100"
+                className="rounded-full border border-cream-300 bg-white px-3.5 py-1.5 text-sm font-medium text-ink-700 hover:border-rani-300"
               >
                 {s.name}
               </Link>
             ))}
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href={`/book/${artist.slug}`}
-              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-rani-700 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-rani-800"
-            >
-              <CalendarCheck className="h-4 w-4" /> Book This Artist
-            </Link>
-          </div>
-          <p className="mt-3 text-xs text-ink-500">
-            Contact details are shared once the artist confirms your booking — this keeps
-            every booking tracked and protected.
+          {/* Packages */}
+          <section className="mt-7">
+            <h2 className="font-display text-[22px] text-ink-900">Packages & prices</h2>
+            {artist.packages.length > 0 ? (
+              <ul className="mt-3 divide-y divide-cream-200 rounded-2xl border border-cream-300 bg-white">
+                {artist.packages.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
+                    <span className="text-[15px] text-ink-900">{p.name}</span>
+                    <span className="shrink-0 text-right text-[15px] font-semibold text-stain-700">
+                      {formatINR(p.price)}
+                      <span className="block text-xs font-normal text-ink-500">
+                        {p.unit === "per_person" ? "per person" : "per event"}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-[15px] text-ink-700">{priceRange(artist.priceMin, artist.priceMax)}</p>
+            )}
+          </section>
+
+          <section className="mt-7">
+            <h2 className="font-display text-[22px] text-ink-900">How your booking works</h2>
+            <BookingSteps tokenAmount={settings.tokenAmount} responseHours={settings.responseHours} artistName={artist.name} />
+          </section>
+
+          {artist.bio && (
+            <section className="mt-7">
+              <h2 className="font-display text-[22px] text-ink-900">About {artist.name.split(" ")[0]}</h2>
+              <p className="mt-2 max-w-prose text-[16px] leading-relaxed text-ink-700">{artist.bio}</p>
+            </section>
+          )}
+
+          <p className="mt-6 flex items-start gap-2 text-sm text-ink-500">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+            Her phone and WhatsApp unlock for you as soon as she accepts your booking.
           </p>
 
-          <div className="mt-8">
-            <h2 className="font-display text-xl font-semibold text-ink-900">About</h2>
-            <p className="mt-3 leading-relaxed text-ink-700">{artist.bio}</p>
+          <div className="mt-6 hidden lg:block">
+            <Link
+              href={`/book/${artist.slug}`}
+              className="inline-flex rounded-full bg-rani-700 px-10 py-4 text-[16px] font-semibold text-white hover:bg-rani-800"
+            >
+              Book {artist.name.split(" ")[0]}
+            </Link>
           </div>
-
-          {/* Portfolio */}
-          {artist.portfolioImages.length > 0 && (
-            <div className="mt-8">
-              <h2 className="font-display text-xl font-semibold text-ink-900">Portfolio</h2>
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2">
-                {artist.portfolioImages.map((img, i) => (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    key={img + i}
-                    src={img}
-                    alt={`${artist.name} — mehandi design ${i + 1}`}
-                    className="aspect-square w-full rounded-2xl object-cover shadow-md transition hover:scale-[1.02] hover:shadow-lg"
-                    loading="lazy"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Other artists in city */}
       {others.length > 0 && (
-        <section className="mt-16">
-          <h2 className="font-display text-2xl font-semibold text-ink-900">
-            More artists in {artist.city}
-          </h2>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+        <section className="mt-12 px-4 sm:px-6 lg:px-0">
+          <h2 className="font-display text-[24px] text-ink-900">More artists in {artist.city}</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {others.map((a) => (
               <ArtistCard key={a.id} artist={a} styles={styles} />
             ))}
           </div>
         </section>
       )}
+
+      {/* Sticky book bar on phones, sits on top of the tab bar */}
+      <div className="fixed inset-x-0 bottom-[calc(var(--sab)+4rem)] z-30 border-t border-cream-300 bg-white px-4 py-3 lg:hidden">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
+          <p className="text-sm leading-tight text-ink-500">
+            from <span className="block text-lg font-semibold text-stain-700">{from > 0 ? formatINR(from) : "Ask"}</span>
+          </p>
+          <Link
+            href={`/book/${artist.slug}`}
+            className="flex-1 rounded-full bg-rani-700 py-3.5 text-center text-[16px] font-semibold text-white active:bg-rani-800"
+          >
+            Book {artist.name.split(" ")[0]}
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

@@ -20,7 +20,7 @@ export default function AboutPage() {
             Rangritii began with a simple thought — every city has incredible mehandi
             artists, but they are hard to find. And artists have the talent, but no
             way to reach new customers. Rangritii brings the two together: real
-            portfolios of verified artists for customers, and direct, commission-free
+            portfolios of verified artists for customers, and serious, token-backed
             bookings for artists.
           </p>
         </div>
@@ -40,8 +40,8 @@ export default function AboutPage() {
           },
           {
             icon: HandHeart,
-            title: "Artists keep it all",
-            text: "Zero commission. Payment goes straight to the artist — their craft, their earnings.",
+            title: "Fair to artists",
+            text: "Listing is free. Every request comes with a paid token, so artists only spend time on serious bookings.",
           },
         ].map(({ icon: Icon, title, text }) => (
           <div key={title} className="rounded-3xl border border-cream-300 bg-white p-7">
