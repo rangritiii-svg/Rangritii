@@ -30,12 +30,15 @@ export function BookingForm({
   artistCity,
   packages,
   tokenAmount,
+  priceHint,
 }: {
   artistId: string;
   artistName: string;
   artistCity: string;
   packages: ArtistPackage[];
   tokenAmount: number;
+  /** Shown when the artist has not listed packages, e.g. "₹400 – ₹5,000". */
+  priceHint?: string;
 }) {
   const router = useRouter();
   const hasPackages = packages.length > 0;
@@ -265,6 +268,15 @@ export function BookingForm({
               {total > 0 && (
                 <div className="flex justify-between"><dt className="font-semibold text-ink-900">Total</dt><dd className="font-semibold">{formatINR(total)}</dd></div>
               )}
+              {!hasPackages && (
+                <div className="flex justify-between gap-4">
+                  <dt className="font-semibold text-ink-900">Price</dt>
+                  <dd className="text-right font-semibold">
+                    {priceHint || "Price on request"}
+                    <span className="block text-sm font-normal text-ink-500">Exact price is confirmed by the artist</span>
+                  </dd>
+                </div>
+              )}
               {token > 0 && (
                 <div className="flex justify-between text-stain-700"><dt className="font-semibold">Pay now (token)</dt><dd className="font-semibold">{formatINR(token)}</dd></div>
               )}
@@ -275,7 +287,9 @@ export function BookingForm({
           </div>
           <p className="mt-3 text-sm text-ink-500">
             {token > 0
-              ? `Your request reaches ${artistName.split(" ")[0]} once the token is received. If she can't take it, the token is refunded in full.`
+              ? `Your request reaches ${artistName.split(" ")[0]} once the token is received. If she can't take it, the token is refunded in full.${
+                  hasPackages ? "" : " The token is adjusted in the price she confirms."
+                }`
               : `${artistName.split(" ")[0]} will confirm the price with you.`}
           </p>
         </section>

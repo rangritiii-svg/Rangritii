@@ -30,7 +30,7 @@ export function ArtistCard({ artist, styles }: { artist: Artist; styles: Style[]
               <img
                 key={src + i}
                 src={src}
-                alt=""
+                alt={`Mehandi design by ${artist.name}${i > 0 ? ` (${i + 1})` : ""}`}
                 loading="lazy"
                 className={`h-full w-full object-cover ${
                   i === 0 ? (photos.length === 1 ? "col-span-3 row-span-2" : "col-span-2 row-span-2") : ""

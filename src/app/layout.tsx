@@ -11,6 +11,7 @@ import { SITE } from "@/lib/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE.url),
   title: {
     default: `${SITE.name} — Book Mehandi Artists Near You`,
     template: `%s — ${SITE.name}`,

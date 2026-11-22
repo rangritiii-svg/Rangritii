@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookingForm } from "@/components/BookingForm";
 import { getArtistBySlug, getPlatformSettings } from "@/lib/data";
+import { priceRange } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,7 @@ export default async function BookPage({ params }: { params: Promise<Params> }) 
           artistCity={artist.city}
           packages={artist.packages}
           tokenAmount={settings.tokenAmount}
+          priceHint={artist.priceMin > 0 || artist.priceMax > 0 ? priceRange(artist.priceMin, artist.priceMax) : undefined}
         />
       </div>
     </div>

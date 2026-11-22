@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { Mail, MessageCircle, Phone } from "lucide-react";
 import { ContactForm } from "@/components/ContactForm";
 import { getPlatformSettings } from "@/lib/data";
+
+export const metadata: Metadata = {
+  title: "Contact Us",
+  description: "Get help with a mehandi booking or with your artist profile — WhatsApp, call or email Rangritii.",
+};
 
 export const revalidate = 0; // Dynamic rendering to fetch latest settings
 

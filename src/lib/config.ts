@@ -7,6 +7,7 @@ export function isSupabaseConfigured(): boolean {
 
 export const SITE = {
   name: "Rangritii",
+  url: (process.env.NEXT_PUBLIC_SITE_URL || "https://rangritii.vercel.app").replace(/\/$/, ""),
   tagline: "The colour of mehandi, the story of you",
   description:
     "India's mehandi platform — discover the best mehandi artists in your city, browse their portfolios, and book from the comfort of your home. Verified artists for every style — bridal, Arabic, and festive.",
